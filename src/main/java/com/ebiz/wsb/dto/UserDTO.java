@@ -6,6 +6,8 @@ public class UserDTO {
     private String password;
     private String email;
     private String phoneNumber;
+    private String userType;
+
 
     // Getter와 Setter 메서드
     public String getUsername() {
@@ -38,5 +40,13 @@ public class UserDTO {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public String getUserType() {
+        return userType;
+    }
+
+    public void setUserType(String userType) {
+        this.userType = userType;
     }
 }

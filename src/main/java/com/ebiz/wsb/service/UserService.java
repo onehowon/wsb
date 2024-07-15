@@ -10,31 +10,30 @@ import java.util.Optional;
 
 @Service
 public class UserService {
-
     @Autowired
     private UserRepository userRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public User saveUser(User user) {
+    public User saveUser(User user){
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }
 
-    public Optional<User> findByUsername(String username) {
+    public Optional<User> findByUsername(String username){
         return userRepository.findByUsername(username);
     }
 
-    public boolean checkPassword(String rawPassword, String encodedPassword) {
+    public boolean checkPassword(String rawPassword, String encodedPassword){
         return passwordEncoder.matches(rawPassword, encodedPassword);
     }
 
-    public void changePassword(String username, String oldPassword, String newPassword) throws Exception {
+    public void changePassword(String username, String oldPassword, String newPassword) throws Exception{
         Optional<User> userOptional = userRepository.findByUsername(username);
-        if (userOptional.isPresent()) {
+        if (userOptional.isPresent()){
             User user = userOptional.get();
-            if (checkPassword(oldPassword, user.getPassword())) {
+            if(checkPassword(oldPassword, user.getPassword())){
                 user.setPassword(passwordEncoder.encode(newPassword));
                 userRepository.save(user);
             } else {

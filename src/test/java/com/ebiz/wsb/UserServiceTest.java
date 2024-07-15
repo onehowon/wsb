@@ -22,6 +22,7 @@ public class UserServiceTest {
         user.setPassword("password");
         user.setEmail("testuser@example.com");
         user.setPhoneNumber("1234567890");
+        user.setUserType("parent");
 
         User savedUser = userService.saveUser(user);
 
@@ -30,5 +31,6 @@ public class UserServiceTest {
         assertNotNull(savedUser.getPassword(), "The password should be encoded and not null");
         assertEquals("testuser@example.com", savedUser.getEmail(), "The email should be 'testuser@example.com'");
         assertEquals("1234567890", savedUser.getPhoneNumber(), "The phone number should be '1234567890'");
+        assertEquals("parent", savedUser.getUserType(), "The user type should be 'parent'");
     }
 }

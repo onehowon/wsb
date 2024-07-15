@@ -28,6 +28,7 @@ public class UserController {
             user.setPassword(userDTO.getPassword());
             user.setEmail(userDTO.getEmail());
             user.setPhoneNumber(userDTO.getPhoneNumber());
+            user.setUserType(userDTO.getUserType()); // 사용자 유형 설정
             // UserService를 통해 사용자 저장
             User savedUser = userService.saveUser(user);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);

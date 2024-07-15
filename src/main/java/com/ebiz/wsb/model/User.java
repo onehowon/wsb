@@ -29,6 +29,9 @@ public class User {
     @NotEmpty
     private String phoneNumber;
 
+
+    private String userType;
+
     private String role;
 
     // Getter와 Setter 메서드
@@ -78,5 +81,13 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getUserType() {
+        return userType;
+    }
+
+    public void setUserType(String userType) {
+        this.userType = userType;
     }
 }
