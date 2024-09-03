@@ -1,6 +1,6 @@
 package com.ebiz.wsb.domain.auth;
 
-import com.ebiz.wsb.global.dto.ErrorResponse;
+import com.ebiz.wsb.domain.auth.filter.AuthExceptionHandlerFilter.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -19,11 +19,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("utf-8");
-
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message("다시 로그인 해주세요")
-                .build();
-
-        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+        response.getWriter().write(objectMapper.writeValueAsString(
+                new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), "다시 로그인 해주세요")));
     }
 }
