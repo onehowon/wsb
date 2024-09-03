@@ -1,7 +1,5 @@
 package com.ebiz.wsb.domain.auth.application;
 
-import com.ebiz.wsb.domain.auth.exception.InvalidTokenException;
-import com.ebiz.wsb.domain.auth.util.EncodingUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -9,7 +7,9 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.io.Encoders;
 import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Arrays;
 import java.util.Collection;
@@ -81,24 +81,27 @@ public class JwtProvider {
     }
 
     /**
-     * 토큰에서 인증 정보를 추출하는 메서드
-     * @param accessToken JWT 액세스 토큰
-     * @return 인증 정보 (Authentication 객체)
-     * @throws InvalidTokenException 권한 정보가 없는 토큰일 때 발생
+     * JMT 토큰을 복호화해 토큰에 들어있는 정보를 꺼내는 메서드
+     * @param accessToken JWT 토큰
      */
     public Authentication getAuthentication(String accessToken){
         Claims claims = parseClaims(accessToken);
-        if (claims.get("auth") == null){
-            throw new InvalidTokenException("권한이 없는 토큰");
+        if (claims.get("auth") == null ){
+            throw new RuntimeException("권한 정보가 없는 토큰입니다.");
         }
 
+        /**
+         * claim에서 권한 정보 가져오기
+         * @param claim : 토큰을 복호화한 것
+         */
         Collection<? extends GrantedAuthority> authorities =
                 Arrays.stream(claims.get("auth").toString().split(","))
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 
-        UserDetails principal = new User(claims.getSubject(), "", authorities);
-        return new UsernamePasswordAuthenticationToken(principal, "", authorities);
+        // UserDetails 객체를 만들어서 Authentication 리턴 / Authentication
+        UserDetails pricipal = new User(claims.getSubject(), "", authorities);
+        return new UsernamePasswordAuthenticationToken(pricipal, "", authorities);
     }
 
     /**
@@ -142,7 +145,7 @@ public class JwtProvider {
      * @param secretKey 비밀키
      * @return Base64로 인코딩된 비밀키
      */
-    public String encodeBase64SecretKey(String secretKey) {
-        return EncodingUtils.encodeBase64(secretKey);
+    public String encodeBase64SecretKey(@Value("${jwt.secretKey}") String secretKey){
+        return Encoders.BASE64.encode(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 }
