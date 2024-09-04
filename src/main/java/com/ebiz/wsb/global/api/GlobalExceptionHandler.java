@@ -1,5 +1,6 @@
 package com.ebiz.wsb.global.api;
 
+import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
 import com.ebiz.wsb.global.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,5 +29,10 @@ public class GlobalExceptionHandler {
         return new ResponseEntity(ErrorResponse.builder()
                 .message(e.getBindingResult().getFieldErrors().get(0).getDefaultMessage())
                 .build(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(NoticeNotFoundException.class)
+    public ResponseEntity<String> handleNoticeNotFoundException(NoticeNotFoundException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 }
