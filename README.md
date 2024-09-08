@@ -1,2 +1,2 @@
 # wsb
-workingSchoolBus
+walkingSchoolBus
