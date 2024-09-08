@@ -9,8 +9,14 @@ import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.repository.ParentRepository;
+import com.ebiz.wsb.domain.token.application.TokenService;
+import com.ebiz.wsb.domain.token.entity.BlackList;
+import com.ebiz.wsb.domain.token.repository.BlackListRepository;
+import com.ebiz.wsb.domain.token.repository.TokenRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
@@ -21,12 +27,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final JwtProvider jwtProvider;
     private final GuardianRepository guardianRepository;
     private final ParentRepository parentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserDetailsServiceImpl userDetailsService;
+    private final TokenRepository tokenRepository;
+    private final TokenService tokenService;
+    private final BlackListRepository blackListRepository;
 
     @Transactional
     public void signUp(SignUpRequest request){
@@ -90,6 +101,30 @@ public class AuthService {
                 .refreshToken(refreshToken)
                 .message(message)
                 .build();
+    }
+
+    public void signOut(String authorizationHeader) {
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        String refreshToken = tokenService.resolveToken(authorizationHeader);
+        if(userByContextHolder instanceof Guardian) {
+            Guardian guardian = (Guardian) userByContextHolder;
+            tokenRepository.deleteId(guardian.getId());
+            saveBlackList(refreshToken);
+        }else if(userByContextHolder instanceof Parent) {
+            Parent parent = (Parent) userByContextHolder;
+            tokenRepository.deleteId(parent.getId());
+            saveBlackList(refreshToken);
+        }
+    }
+
+    private void saveBlackList(String refreshToken) {
+        try {
+            blackListRepository.save(BlackList.builder()
+                    .refreshToken(refreshToken)
+                    .build());
+        } catch (DuplicateKeyException e) {
+            log.info("이미 로그아웃 처리한 토큰: " + refreshToken);
+        }
     }
 
     private Authentication authenticate(SignInRequest request) {
