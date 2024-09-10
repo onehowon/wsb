@@ -18,6 +18,7 @@ public class NotificationType {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "type_id")
     private Long typeId;
 
     @Column(name = "name")

@@ -18,6 +18,7 @@ import org.hibernate.annotations.DynamicInsert;
 public class Student {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "student_id")
     private Long studentId;
 
     @Column(name = "name")

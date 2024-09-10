@@ -1,5 +1,7 @@
 package com.ebiz.wsb.domain.notification.entity;
 
+import com.ebiz.wsb.domain.guardian.entity.Guardian;
+import com.ebiz.wsb.domain.parent.entity.Parent;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,10 +21,12 @@ import java.time.LocalDateTime;
 public class ParentNotification {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "notification_id")
     private Long notificationId;
 
-    @Column(name = "parent_id")
-    private Long parentId;
+    @ManyToOne
+    @JoinColumn(name = "parent_id", referencedColumnName = "id", nullable = false)
+    private Parent parent;  // Guardian 객체 참조
 
     @Column(name = "content")
     private String content;
