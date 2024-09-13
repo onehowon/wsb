@@ -56,9 +56,12 @@ public class NotificationService {
 
         // DTO로 반환
         return GuardianNotificationDTO.builder()
+                .notificationId(notification.getNotificationId())  // 생성된 ID 반환
+                .guardianId(guardian.getId())  // Guardian의 ID 반환
                 .guardianEmail(guardian.getEmail())
                 .content(notification.getContent())
                 .type(notification.getNotificationType().getName())
+                .createdAt(notification.getCreatedAt())  // 생성된 시간을 반환
                 .build();
     }
 
@@ -83,9 +86,13 @@ public class NotificationService {
 
         // DTO로 반환
         return ParentNotificationDTO.builder()
+                .notificationId(notification.getNotificationId())  // notificationId 추가
+                .parentId(parent.getId())  // parentId 추가
                 .parentEmail(parent.getEmail())
                 .content(notification.getContent())
                 .type(notification.getNotificationType().getName())
+                .createdAt(notification.getCreatedAt())  // createdAt 추가
                 .build();
+
     }
 }

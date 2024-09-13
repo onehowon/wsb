@@ -15,5 +15,5 @@ import java.time.LocalDateTime;
 public class AttendanceStatusDTO {
     private String status;
     private LocalDateTime attendanceDate;
-    private Timestamp checkTime;
+    private LocalDateTime checkTime;
 }

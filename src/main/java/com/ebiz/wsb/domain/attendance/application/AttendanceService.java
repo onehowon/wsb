@@ -11,6 +11,10 @@ import com.ebiz.wsb.domain.attendance.repository.AttendanceStatusRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,13 +35,20 @@ public class AttendanceService {
                     AttendanceStatus status = attendanceStatusRepository.findByName(updatedAttendanceDTO.getStatus())
                             .orElseThrow(() -> new StatusNotFoundException("해당 출결 상태를 찾을 수 없습니다: " + updatedAttendanceDTO.getStatus()));
 
+                    // LocalDateTime을 Timestamp로 변환
+                    Timestamp checkTime = convertToTimestamp(
+                            updatedAttendanceDTO.getCheckTime() != null
+                                    ? updatedAttendanceDTO.getCheckTime()
+                                    : LocalDateTime.now()
+                    );
+
                     // 출결 정보 업데이트
                     Attendance updatedAttendance = Attendance.builder()
                             .attendanceId(existingAttendance.getAttendanceId())
                             .studentId(existingAttendance.getStudentId()) // 학생 정보 유지
                             .attendanceDate(existingAttendance.getAttendanceDate()) // 기존 출결 날짜 유지
                             .status(status) // 상태 업데이트
-                            .checkTime(updatedAttendanceDTO.getCheckTime() != null ? updatedAttendanceDTO.getCheckTime() : existingAttendance.getCheckTime()) // 체크 시간 업데이트
+                            .checkTime(checkTime) // 체크 시간 업데이트
                             .build();
 
                     Attendance savedAttendance = attendanceRepository.save(updatedAttendance);
@@ -64,5 +75,12 @@ public class AttendanceService {
                 .attendanceDate(attendance.getAttendanceDate())
                 .checkTime(attendance.getCheckTime())
                 .build();
+    }
+
+    // LocalDateTime을 Timestamp로 변환하는 메서드
+    public Timestamp convertToTimestamp(LocalDateTime localDateTime) {
+        ZoneId zoneId = ZoneId.systemDefault();  // 시스템 기본 시간대 사용
+        ZonedDateTime zdt = localDateTime.atZone(zoneId);
+        return Timestamp.from(zdt.toInstant());
     }
 }
