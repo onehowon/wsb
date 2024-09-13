@@ -2,6 +2,7 @@ package com.ebiz.wsb.domain.route.application;
 
 import com.ebiz.wsb.domain.route.dto.RouteDTO;
 import com.ebiz.wsb.domain.route.entity.Route;
+import com.ebiz.wsb.domain.route.exception.RouteNotFoundException;
 import com.ebiz.wsb.domain.route.repository.RouteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,7 +21,7 @@ public class RouteService {
 
     public RouteDTO getRouteById(Long routeId){
         Route route = routeRepository.findById(routeId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 루트를 찾을 수 없습니다."));
+                .orElseThrow(() -> new RouteNotFoundException("해당 루트를 찾을 수 없습니다."));
         return convertToDTO(route);
     }
 
