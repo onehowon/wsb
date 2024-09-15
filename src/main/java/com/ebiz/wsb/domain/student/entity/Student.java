@@ -14,7 +14,7 @@ import org.hibernate.annotations.DynamicInsert;
 @AllArgsConstructor
 @NoArgsConstructor
 @DynamicInsert
-@Table(name = "StduentProfile")
+@Table(name = "StudentProfile")
 public class Student {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,4 +39,7 @@ public class Student {
 
     @Column(name = "notes")
     private String notes;
+
+    @Column(name = "image_path")
+    private String imagePath;
 }

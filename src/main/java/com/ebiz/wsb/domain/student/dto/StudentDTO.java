@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 @Getter
 @Builder
@@ -17,4 +18,6 @@ public class StudentDTO {
     private String schoolName;
     private String grade;
     private String notes;
+    private String imagePath;
+
 }
