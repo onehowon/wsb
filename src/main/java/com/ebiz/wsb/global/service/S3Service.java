@@ -54,15 +54,16 @@ public class S3Service {
 
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
         try {
+            // Canned ACL 제거
             PutObjectRequest putObjectRequest =
-                    new PutObjectRequest(bucketName, uploadFileName, byteArrayInputStream, metadata)
-                            .withCannedAcl(CannedAccessControlList.PublicRead);
+                    new PutObjectRequest(bucketName, uploadFileName, byteArrayInputStream, metadata);
+
             // 실제 업로드 동작하는 부분
             amazonS3.putObject(putObjectRequest);
             return amazonS3.getUrl(bucketName, uploadFileName).toString();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new AmazonS3Exception("업로드에 실패했습니다");
+        } catch (AmazonS3Exception e) {
+            System.err.println("S3 업로드 오류: " + e.getMessage());
+            throw e;
         } finally {
             byteArrayInputStream.close();
             inputStream.close();

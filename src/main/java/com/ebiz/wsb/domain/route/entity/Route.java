@@ -19,10 +19,10 @@ public class Route {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "route_id")
-    private Long route_id;
+    private Long routeId;
 
     @Column(name = "route_name")
-    private String route_name;
+    private String routeName;
 
     @Column(name = "latitude")
     private Double latitude;
@@ -31,5 +31,5 @@ public class Route {
     private Double longitude;
 
     @Column(name = "route_order")
-    private Integer route_order;
+    private Integer routeOrder;
 }

@@ -27,11 +27,11 @@ public class RouteService {
 
     private RouteDTO convertToDTO(Route route) {
         return RouteDTO.builder()
-                .route_id(route.getRoute_id())
-                .route_name(route.getRoute_name())
+                .routeId(route.getRouteId())
+                .routeName(route.getRouteName())
                 .latitude(route.getLatitude())
                 .longitude(route.getLongitude())
-                .route_order(route.getRoute_order())
+                .routeOrder(route.getRouteOrder())
                 .build();
     }
 }

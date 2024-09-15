@@ -10,9 +10,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RouteDTO {
-    private Long route_id;
-    private String route_name;
+    private Long routeId;
+    private String routeName;
     private Double latitude;
     private Double longitude;
-    private Integer route_order;
+    private Integer routeOrder;
 }
