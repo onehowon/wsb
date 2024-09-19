@@ -84,6 +84,7 @@ public class AuthService {
                         .orElse(null);
                 if (guardian != null) {
                     userId = guardian.getId();
+                    tokenRepository.save(userId, refreshToken);
                 }
             } else if (authentication.getAuthorities().stream()
                     .anyMatch(auth -> auth.getAuthority().equals("ROLE_PARENT"))) {
@@ -91,6 +92,7 @@ public class AuthService {
                         .orElse(null);
                 if (parent != null) {
                     userId = parent.getId();
+                    tokenRepository.save(userId, refreshToken);
                 }
             }
         }

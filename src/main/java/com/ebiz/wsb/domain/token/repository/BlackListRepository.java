@@ -4,5 +4,5 @@ import com.ebiz.wsb.domain.token.entity.BlackList;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BlackListRepository extends JpaRepository<BlackList, Long> {
-
+    BlackList findBlackListByRefreshToken(String refresh_token);
 }
