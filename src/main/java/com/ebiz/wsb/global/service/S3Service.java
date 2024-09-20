@@ -114,4 +114,38 @@ public class S3Service {
         }
     }
 
+    public String uploadScheduleFile(MultipartFile file, String bucketName) throws IOException{
+        String fileName = file.getOriginalFilename();
+        String extension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
+        String uploadFileName = UUID.randomUUID().toString();
+
+        InputStream inputStream = file.getInputStream();
+        byte[] bytes = IOUtils.toByteArray(inputStream);
+
+        String contentType;
+        if("xlsx".equals(extension)){
+            contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        } else {
+            throw new IllegalArgumentException("지원하지 않는 파일 형식입니다: " + extension);
+        }
+
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType(contentType);
+        metadata.setContentLength(bytes.length);
+
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+        try{
+            PutObjectRequest putObjectRequest =
+                    new PutObjectRequest(bucketName, uploadFileName, byteArrayInputStream, metadata)
+                            .withCannedAcl(CannedAccessControlList.Private);
+            amazonS3.putObject(putObjectRequest);
+            return amazonS3.getUrl(bucketName, uploadFileName).toString();
+        } catch (AmazonS3Exception e){
+            System.err.println("S3 업로드 오류: " + e.getMessage());
+            throw e;
+        } finally {
+            byteArrayInputStream.close();
+            inputStream.close();
+        }
+    }
 }
