@@ -11,4 +11,5 @@ public class SignInDTO extends BaseResponse{
     private String accessToken;
     private String refreshToken;
     private String message;
+    private UserType userType;
 }
