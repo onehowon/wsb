@@ -21,16 +21,28 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Set up environment variables
-      env:
-        DB_URL: ${{ secrets.DB_URL }}
-        DB_USERNAME: ${{ secrets.DB_USERNAME }}
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      run: echo "Environment variables set."
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle
 
-    - name: Build with Gradle
+    - name: Build with Gradle (skip tests)
       run: ./gradlew build -x test
 
+    - name: Upload built JAR as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: built-jar
+        path: build/libs/bcube-0.0.1-SNAPSHOT.jar
+
+    - name: Download built JAR
+      uses: actions/download-artifact@v3
+      with:
+        name: built-jar
+        path: /tmp
 
     - name: Deploy to Server via SSH
       uses: appleboy/ssh-action@v0.1.5
@@ -42,7 +54,6 @@ jobs:
         script: |
           cd /home/ubuntu/wsb
           git pull origin main
-          chmod +x ./gradlew
-          ./gradlew build
-          pkill -f wsb-0.0.1-SNAPSHOT.jar || true
+          pkill -f bcube-0.0.1-SNAPSHOT.jar || true
+          cp /tmp/built-jar/wsb-0.0.1-SNAPSHOT.jar /home/ubuntu/wsb/
           nohup java -jar wsb-0.0.1-SNAPSHOT.jar --spring.profiles.active=server > app.log 2>&1 &
