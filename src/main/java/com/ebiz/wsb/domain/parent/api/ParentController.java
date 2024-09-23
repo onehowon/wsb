@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -30,28 +31,26 @@ public class ParentController {
         return ResponseEntity.ok(parentDTO);
     }
 
-    @PutMapping("/{parentsId}")
-    public ResponseEntity<ParentDTO> updateParent(
+    @PutMapping("/address/{parentsId}")
+    public ResponseEntity<ParentDTO> updateParentAddress(
             @PathVariable Long parentsId,
-            @RequestParam("name") String name,
-            @RequestParam("email") String email,
-            @RequestParam("phone") String phone,
-            @RequestParam("address") String address,
-            @RequestParam("imagePath") String imagePath) {
-
-        ParentDTO existingParent = parentService.getParentById(parentsId);
+            @RequestParam("address") String address) {
 
         ParentDTO parentDTO = ParentDTO.builder()
                 .id(parentsId)
-                .name(name)
-                .email(email)
-                .phone(phone)
                 .address(address)
-                .imagePath(imagePath)
-                .password(existingParent.getPassword())
                 .build();
 
-        ParentDTO updatedParentDTO = parentService.updateParent(parentsId, parentDTO);
+        ParentDTO updatedParentDTO = parentService.updateParentAddress(parentsId, parentDTO);
+        return ResponseEntity.ok(updatedParentDTO);
+    }
+
+    @PutMapping("/image/{parentsId}")
+    public ResponseEntity<ParentDTO> updateParentImage(
+            @PathVariable Long parentsId,
+            @RequestParam(value = "imagePath",required = false) MultipartFile imagePath) {
+
+        ParentDTO updatedParentDTO = parentService.updateParentImage(parentsId, imagePath);
         return ResponseEntity.ok(updatedParentDTO);
     }
 
