@@ -32,20 +32,17 @@ jobs:
     - name: Build with Gradle (skip tests)
       run: ./gradlew build -x test
 
-    - name: Upload built JAR as artifact
-      uses: actions/upload-artifact@v3
+    - name: Deploy to Server via SCP
+      uses: appleboy/scp-action@v0.1.1
       with:
-        name: built-jar
-        path: build/libs/wsb-0.0.1-SNAPSHOT.jar
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: 22
+        source: "build/libs/wsb-0.0.1-SNAPSHOT.jar"
+        target: "/home/ubuntu/wsb/wsb-0.0.1-SNAPSHOT.jar"
 
-    - name: Download built JAR
-      uses: actions/download-artifact@v3
-      with:
-        name: built-jar
-        path: /tmp/built-jar/
-
-
-    - name: Deploy to Server via SSH
+    - name: Restart Application via SSH
       uses: appleboy/ssh-action@v0.1.5
       with:
         host: ${{ secrets.SERVER_HOST }}
@@ -53,8 +50,18 @@ jobs:
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
         script: |
-          cd /home/ubuntu/wsb
-          git pull origin main
+          # 기존 애플리케이션 종료
           pkill -f wsb-0.0.1-SNAPSHOT.jar || true
-          cp /tmp/built-jar/wsb-0.0.1-SNAPSHOT.jar /home/ubuntu/wsb/
-          nohup java -jar wsb-0.0.1-SNAPSHOT.jar --spring.profiles.active=server > app.log 2>&1 &
+          
+          # 새 애플리케이션 실행
+          nohup java -jar /home/ubuntu/wsb/wsb-0.0.1-SNAPSHOT.jar --spring.profiles.active=server > /home/ubuntu/wsb/app.log 2>&1 &
+          
+          # 실행 확인 (옵션)
+          sleep 5
+          if pgrep -f wsb-0.0.1-SNAPSHOT.jar; then
+            echo "Application started successfully."
+          else
+            echo "Application failed to start. Check app.log for details."
+            cat /home/ubuntu/wsb/app.log
+            exit 1
+          fi
