@@ -9,18 +9,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # 코드 체크아웃
     - name: Checkout code
       uses: actions/checkout@v3
 
+    # JDK 17 설치
     - name: Set up JDK 17
       uses: actions/setup-java@v3
       with:
         java-version: '17'
         distribution: 'temurin'
 
+    # Gradle 실행 권한 부여
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
+    # Gradle 패키지 캐시 설정
     - name: Cache Gradle packages
       uses: actions/cache@v3
       with:
@@ -29,9 +33,15 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle
 
+    # Gradle 빌드 (테스트 제외)
     - name: Build with Gradle (skip tests)
       run: ./gradlew build -x test
-  
+
+    # JAR 파일 압축
+    - name: Compress JAR file
+      run: tar -czf wsb-0.0.1-SNAPSHOT.tar.gz build/libs/wsb-0.0.1-SNAPSHOT.jar
+
+    # 서버로 압축된 JAR 파일 전송 (SCP 사용)
     - name: Deploy to Server via SCP
       uses: appleboy/scp-action@v0.1.5
       with:
@@ -39,12 +49,25 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
-        source: "build/libs/wsb-0.0.1-SNAPSHOT.jar"
+        source: "wsb-0.0.1-SNAPSHOT.tar.gz"
         target: "/home/ubuntu/wsb/"
         debug: true
 
-    - name: Restart Application via SSH
+    # 서버에서 압축 해제 (SSH 사용)
+    - name: Extract JAR file on server
       uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: 22
+        script: |
+          cd /home/ubuntu/wsb
+          tar -xzf wsb-0.0.1-SNAPSHOT.tar.gz
+
+    # 애플리케이션 재시작 (SSH 사용)
+    - name: Restart Application via SSH
+      uses: appleboy/ssh-action@v0.1.7
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
@@ -57,7 +80,7 @@ jobs:
           # 새 애플리케이션 실행
           sudo systemctl start wsb.service
           
-          # 실행 확인 (옵션)
+          # 실행 확인
           sleep 5
           if sudo systemctl is-active --quiet wsb.service; then
             echo "Application started successfully."
