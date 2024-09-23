@@ -29,9 +29,6 @@ jobs:
       run: echo "Environment variables set."
 
     - name: Build with Gradle
-      run: ./gradlew build
-
-    - name: Build with Gradle
       run: ./gradlew build -x test
 
 
