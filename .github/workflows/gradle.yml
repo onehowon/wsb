@@ -24,6 +24,10 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew build
 
+    - name: Build with Gradle
+      run: ./gradlew build -x test
+
+
     - name: Deploy to Server via SSH
       uses: appleboy/ssh-action@v0.1.5
       with:
