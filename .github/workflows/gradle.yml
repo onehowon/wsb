@@ -42,7 +42,8 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: built-jar
-        path: /tmp
+        path: /tmp/built-jar/
+
 
     - name: Deploy to Server via SSH
       uses: appleboy/ssh-action@v0.1.5
