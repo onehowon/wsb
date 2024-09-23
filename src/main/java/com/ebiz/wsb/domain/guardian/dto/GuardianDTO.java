@@ -1,5 +1,6 @@
 package com.ebiz.wsb.domain.guardian.dto;
 
+import com.ebiz.wsb.domain.route.dto.RouteDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,7 +15,10 @@ public class GuardianDTO {
     private Long id;
     private String name;
     private String email;
+    private String password;
     private String bio;
     private String experience;
     private String phone;
+    private String imagePath;
+    private Long routeId;
 }

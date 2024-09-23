@@ -141,7 +141,6 @@ public class StudentService {
     private String uploadImage(MultipartFile imageFile) {
         try {
             String imageUrl = s3Service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
-            System.out.println("Uploaded image URL: " + imageUrl);  // 이미지 URL 출력
             return imageUrl;
         } catch (IOException e) {
             throw new ImageUploadException("이미지 업로드 실패", e);

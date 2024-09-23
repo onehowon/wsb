@@ -1,16 +1,15 @@
 package com.ebiz.wsb.domain.guardian.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.ebiz.wsb.domain.route.entity.Route;
+import com.ebiz.wsb.domain.student.entity.Student;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicInsert;
+
+import java.util.List;
 
 @Entity
 @Getter
@@ -43,5 +42,13 @@ public class Guardian {
     @Column(name = "phone")
     private String phone;
 
+    @Column(name = "image_path")
+    private String imagePath;
 
+    @OneToMany(mappedBy = "guardian")
+    private List<Student> students;
+
+    @ManyToOne
+    @JoinColumn(name = "route_id", referencedColumnName = "route_id")
+    private Route route;
 }
