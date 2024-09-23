@@ -1,5 +1,6 @@
 package com.ebiz.wsb.domain.student.entity;
 
+import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.route.entity.Route;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -24,8 +25,9 @@ public class    Student {
     @Column(name = "name")
     private String name;
 
-    @Column(name = "guardian_contact")
-    private String guardianContact;
+    @ManyToOne
+    @JoinColumn(name = "guardian_id", referencedColumnName = "id")
+    private Guardian guardian;
 
     @ManyToOne
     @JoinColumn(name = "route_id", referencedColumnName = "route_id")

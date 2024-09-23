@@ -1,8 +1,12 @@
 package com.ebiz.wsb.domain.student.service;
 
+import com.ebiz.wsb.domain.guardian.entity.Guardian;
+import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
+import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
 import com.ebiz.wsb.domain.route.entity.Route;
 import com.ebiz.wsb.domain.route.exception.RouteNotFoundException;
 import com.ebiz.wsb.domain.route.repository.RouteRepository;
+import com.ebiz.wsb.domain.student.dto.StudentCreateRequestDTO;
 import com.ebiz.wsb.domain.student.dto.StudentDTO;
 import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.student.exception.ImageUploadException;
@@ -23,14 +27,14 @@ public class StudentService {
 
     private final StudentRepository studentRepository;
     private final RouteRepository routeRepository;
+    private final GuardianRepository guardianRepository;
     private final S3Service s3Service;
 
     @Transactional
-    public StudentDTO createStudent(StudentDTO studentDTO, MultipartFile imageFile) {
-        validateStudentDTO(studentDTO);
+    public StudentDTO createStudent(StudentCreateRequestDTO studentCreateRequestDTO, MultipartFile imageFile) {
+        validateStudentDTO(studentCreateRequestDTO);
 
         String imageUrl = null;
-
         if (imageFile != null && !imageFile.isEmpty()) {
             try {
                 imageUrl = s3Service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
@@ -39,127 +43,106 @@ public class StudentService {
             }
         }
 
-        Route route = routeRepository.findById(studentDTO.getRouteId())
+        Guardian guardian = guardianRepository.findById(studentCreateRequestDTO.getGuardianId())
+                .orElseThrow(() -> new StudentNotFoundException("인솔자 정보를 찾을 수 없습니다."));
+        Route route = routeRepository.findById(studentCreateRequestDTO.getRouteId())
                 .orElseThrow(() -> new RouteNotFoundException("해당 경로를 찾을 수 없습니다."));
 
         Student student = Student.builder()
-                .name(studentDTO.getName())
-                .guardianContact(studentDTO.getGuardianContact())
+                .name(studentCreateRequestDTO.getName())
+                .guardian(guardian)
                 .route(route)
-                .schoolName(studentDTO.getSchoolName())
-                .grade(studentDTO.getGrade())
-                .notes(studentDTO.getNotes())
+                .schoolName(studentCreateRequestDTO.getSchoolName())
+                .grade(studentCreateRequestDTO.getGrade())
+                .notes(studentCreateRequestDTO.getNotes())
                 .imagePath(imageUrl)
                 .build();
 
         student = studentRepository.save(student);
 
-        return StudentDTO.builder()
-                .studentId(student.getStudentId())
-                .name(student.getName())
-                .guardianContact(student.getGuardianContact())
-                .routeId(student.getRoute().getRouteId())
-                .schoolName(student.getSchoolName())
-                .grade(student.getGrade())
-                .notes(student.getNotes())
-                .imagePath(student.getImagePath())
-                .build();
+        return convertToDTO(student);
     }
 
-    public List<StudentDTO> getAllStudents(){
+
+    public List<StudentDTO> getAllStudents() {
         List<Student> students = studentRepository.findAll();
         return students.stream().map(this::convertToDTO).toList();
     }
 
-    public StudentDTO getStudentById(Long studentId){
+    public StudentDTO getStudentById(Long studentId) {
         Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new StudentNotFoundException("학생을 찾을 수 없습니다."));
-        return StudentDTO.builder()
-                .studentId(student.getStudentId())
-                .name(student.getName())
-                .guardianContact(student.getGuardianContact())
-                .routeId(student.getRoute().getRouteId())
-                .schoolName(student.getSchoolName())
-                .grade(student.getGrade())
-                .notes(student.getNotes())
-                .imagePath(student.getImagePath())
-                .build();
+                .orElseThrow(() -> new StudentNotFoundException("학생 정보를 찾을 수 없습니다."));
+        return convertToDTO(student);
     }
 
     @Transactional
-    public StudentDTO updateStudent(Long studentId, StudentDTO studentDTO, MultipartFile imageFile) {
+    public StudentDTO updateStudent(Long studentId, StudentCreateRequestDTO studentCreateRequestDTO, MultipartFile imageFile) {
         Student existingStudent = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException("학생 정보를 찾을 수 없습니다."));
 
-        // 이미지 업로드 처리
         String imageUrl = existingStudent.getImagePath();
         if (imageFile != null && !imageFile.isEmpty()) {
             imageUrl = uploadImage(imageFile);
         }
 
-        Route route = routeRepository.findById(studentDTO.getRouteId())
-                .orElseThrow(() -> new RouteNotFoundException("경로를 찾을 수 없습니다."));
+        Guardian guardian = guardianRepository.findById(studentCreateRequestDTO.getGuardianId())
+                .orElseThrow(() -> new StudentNotFoundException("인솔자 정보를 찾을 수 없습니다."));
+        Route route = routeRepository.findById(studentCreateRequestDTO.getRouteId())
+                .orElseThrow(() -> new RouteNotFoundException("해당 경로를 찾을 수 없습니다."));
 
         existingStudent = Student.builder()
-                .studentId(existingStudent.getStudentId())  // 기존 studentId 유지
-                .name(studentDTO.getName())
-                .guardianContact(studentDTO.getGuardianContact())
-                .route(routeRepository.findById(studentDTO.getRouteId())
-                        .orElseThrow(() -> new RouteNotFoundException("경로를 찾을 수 없습니다.")))
-                .schoolName(studentDTO.getSchoolName())
-                .grade(studentDTO.getGrade())
-                .notes(studentDTO.getNotes())
-                .imagePath(imageUrl)  // 업데이트된 이미지 경로
+                .studentId(existingStudent.getStudentId())
+                .name(studentCreateRequestDTO.getName())
+                .guardian(guardian)
+                .route(route)
+                .schoolName(studentCreateRequestDTO.getSchoolName())
+                .grade(studentCreateRequestDTO.getGrade())
+                .notes(studentCreateRequestDTO.getNotes())
+                .imagePath(imageUrl)
                 .build();
 
         studentRepository.save(existingStudent);
 
-        return StudentDTO.builder()
-                .studentId(existingStudent.getStudentId())  // studentId 반환
-                .name(existingStudent.getName())
-                .guardianContact(existingStudent.getGuardianContact())
-                .routeId(existingStudent.getRoute().getRouteId())
-                .schoolName(existingStudent.getSchoolName())
-                .grade(existingStudent.getGrade())
-                .notes(existingStudent.getNotes())
-                .imagePath(existingStudent.getImagePath())  // 업데이트된 imagePath 반환
-                .build();
+        return convertToDTO(existingStudent);
     }
 
     @Transactional
-    public void deleteStudent(Long studentId){
+    public void deleteStudent(Long studentId) {
         studentRepository.deleteById(studentId);
     }
 
     private StudentDTO convertToDTO(Student student) {
+        Guardian guardian = student.getGuardian();
         return StudentDTO.builder()
+                .studentId(student.getStudentId())
                 .name(student.getName())
-                .guardianContact(student.getGuardianContact())
-                .routeId(student.getRoute() != null ? student.getRoute().getRouteId() : null)
+                .guardianId(student.getGuardian().getId())
+                .routeId(student.getRoute().getRouteId())
                 .schoolName(student.getSchoolName())
                 .grade(student.getGrade())
                 .notes(student.getNotes())
+                .imagePath(student.getImagePath())
+                .guardianContact(guardian.getPhone())
                 .build();
     }
 
-    private void validateStudentDTO(StudentDTO studentDTO) {
-        System.out.println("Received studentDTO: " + studentDTO); // 디버깅용 로그
+    private void validateStudentDTO(StudentCreateRequestDTO studentDTO) {
         if (studentDTO.getName() == null || studentDTO.getName().isEmpty()) {
             throw new IllegalArgumentException("학생 이름은 필수 항목입니다.");
         }
         if (studentDTO.getRouteId() == null) {
             throw new IllegalArgumentException("Route ID는 필수 항목입니다.");
         }
+        if (studentDTO.getGuardianId() == null) {
+            throw new IllegalArgumentException("Guardian ID는 필수 항목입니다.");
+        }
     }
 
     private String uploadImage(MultipartFile imageFile) {
-        if (imageFile == null || imageFile.isEmpty()) {
-            return null;
-        }
-
         try {
-            // S3에 이미지 업로드
-            return s3Service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
+            String imageUrl = s3Service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
+            System.out.println("Uploaded image URL: " + imageUrl);  // 이미지 URL 출력
+            return imageUrl;
         } catch (IOException e) {
             throw new ImageUploadException("이미지 업로드 실패", e);
         }
