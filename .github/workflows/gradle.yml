@@ -37,10 +37,6 @@ jobs:
     - name: Build with Gradle (skip tests)
       run: ./gradlew build -x test
 
-    # JAR 파일 압축
-    - name: Compress JAR file
-      run: tar -czf wsb-0.0.1-SNAPSHOT.tar.gz build/libs/wsb-0.0.1-SNAPSHOT.jar
-
     # 서버로 압축된 JAR 파일 전송 (SCP 사용)
     - name: Deploy to Server via SCP
       uses: appleboy/scp-action@v0.1.5
@@ -49,21 +45,9 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
-        source: "wsb-0.0.1-SNAPSHOT.tar.gz"
+        source: "build/libs/wsb-0.0.1-SNAPSHOT.jar"
         target: "/home/ubuntu/wsb/"
         debug: true
-
-    # 서버에서 압축 해제 (SSH 사용)
-    - name: Extract JAR file on server
-      uses: appleboy/ssh-action@v0.1.5
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        port: 22
-        script: |
-          cd /home/ubuntu/wsb
-          tar -xzf wsb-0.0.1-SNAPSHOT.tar.gz
 
     # 애플리케이션 재시작 (SSH 사용)
     - name: Restart Application via SSH
