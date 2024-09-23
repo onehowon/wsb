@@ -42,9 +42,11 @@ jobs:
         script: |
           echo "SSH connection successful."
 
-
+    - name: Generate JAR checksum
+      run: sha256sum build/libs/wsb-0.0.1-SNAPSHOT.jar > build/libs/wsb-0.0.1-SNAPSHOT.jar.sha256
+  
     - name: Deploy to Server via SCP
-      uses: appleboy/scp-action@v0.1.1
+      uses: appleboy/scp-action@v0.1.11
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
@@ -53,6 +55,17 @@ jobs:
         source: "build/libs/wsb-0.0.1-SNAPSHOT.jar"
         target: "/home/ubuntu/wsb/wsb-0.0.1-SNAPSHOT.jar"
         debug: true
+
+    - name: Verify JAR checksum on server
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: 22
+        script: |
+          cd /home/ubuntu/wsb
+          sha256sum -c wsb-0.0.1-SNAPSHOT.jar.sha256
 
     - name: Restart Application via SSH
       uses: appleboy/ssh-action@v0.1.5
