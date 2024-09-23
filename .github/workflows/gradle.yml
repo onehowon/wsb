@@ -36,7 +36,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: built-jar
-        path: build/libs/bcube-0.0.1-SNAPSHOT.jar
+        path: build/libs/wsb-0.0.1-SNAPSHOT.jar
 
     - name: Download built JAR
       uses: actions/download-artifact@v3
@@ -54,6 +54,6 @@ jobs:
         script: |
           cd /home/ubuntu/wsb
           git pull origin main
-          pkill -f bcube-0.0.1-SNAPSHOT.jar || true
+          pkill -f wsb-0.0.1-SNAPSHOT.jar || true
           cp /tmp/built-jar/wsb-0.0.1-SNAPSHOT.jar /home/ubuntu/wsb/
           nohup java -jar wsb-0.0.1-SNAPSHOT.jar --spring.profiles.active=server > app.log 2>&1 &
