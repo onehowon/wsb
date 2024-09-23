@@ -63,17 +63,17 @@ jobs:
         port: 22
         script: |
           # 기존 애플리케이션 종료
-          pkill -f wsb-0.0.1-SNAPSHOT.jar || true
+          sudo systemctl stop wsb.service || true
           
           # 새 애플리케이션 실행
-          nohup java -jar /home/ubuntu/wsb/wsb-0.0.1-SNAPSHOT.jar --spring.profiles.active=server > /home/ubuntu/wsb/app.log 2>&1 & disown
+          sudo systemctl start wsb.service
           
           # 실행 확인 (옵션)
           sleep 5
-          if pgrep -f wsb-0.0.1-SNAPSHOT.jar; then
+          if sudo systemctl is-active --quiet wsb.service; then
             echo "Application started successfully."
           else
-            echo "Application failed to start. Check app.log for details."
-            cat /home/ubuntu/wsb/app.log
+            echo "Application failed to start. Check wsb.service logs."
+            sudo journalctl -u wsb.service --no-pager
             exit 1
           fi
