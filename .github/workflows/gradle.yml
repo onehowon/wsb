@@ -41,6 +41,7 @@ jobs:
         port: 22
         source: "build/libs/wsb-0.0.1-SNAPSHOT.jar"
         target: "/home/ubuntu/wsb/wsb-0.0.1-SNAPSHOT.jar"
+        debug: true
 
     - name: Restart Application via SSH
       uses: appleboy/ssh-action@v0.1.5
