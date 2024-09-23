@@ -37,6 +37,11 @@ jobs:
     - name: Build with Gradle (skip tests)
       run: ./gradlew build -x test
 
+   # 빌드 후 JAR 파일 확인
+    - name: Check JAR file existence
+      run: ls -l build/libs/
+
+
     # 서버로 압축된 JAR 파일 전송 (SCP 사용)
     - name: Deploy to Server via SCP
       uses: appleboy/scp-action@v0.1.5
