@@ -41,6 +41,8 @@ public class SecurityConfig {
                     auth.requestMatchers("/healthy").permitAll();
                     auth.requestMatchers("/auth/*").permitAll();
                     auth.requestMatchers("/ws/**", "/app/**", "/topic/**").permitAll();
+                    auth.requestMatchers(("/mail/auth")).permitAll();
+                    auth.requestMatchers(("/mail/check")).permitAll();
                     auth.anyRequest().authenticated();
                 }
         ).addFilterBefore(new JwtAuthenticationFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
