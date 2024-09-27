@@ -59,4 +59,6 @@ public class ParentController {
         parentService.deleteParent(parentsId);
         return ResponseEntity.ok(BaseResponse.builder().message("부모 정보가 삭제되었습니다.").build());
     }
+
+
 }
