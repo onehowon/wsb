@@ -2,10 +2,8 @@ package com.ebiz.wsb.domain.route.api;
 
 import com.ebiz.wsb.domain.route.application.GroupRouteService;
 import com.ebiz.wsb.domain.route.dto.GroupRouteAssignRequest;
-import com.ebiz.wsb.domain.student.dto.GroupStudentAssignRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

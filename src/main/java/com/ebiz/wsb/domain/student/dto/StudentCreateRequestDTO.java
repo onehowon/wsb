@@ -13,6 +13,7 @@ public class StudentCreateRequestDTO {
     private String name;
     private Long guardianId;
     private Long routeId;
+    private Long groupId;
     private String schoolName;
     private String grade;
     private String notes;

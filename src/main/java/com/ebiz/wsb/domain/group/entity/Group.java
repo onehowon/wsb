@@ -15,12 +15,11 @@ import java.util.List;
 @Entity
 @Getter
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @DynamicInsert
 @Table(name = "`Group`")
 public class Group {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "group_id")
@@ -35,4 +34,7 @@ public class Group {
     @OneToMany(mappedBy = "group")
     private List<Parent> parents = new ArrayList<>();
 
+    @ManyToOne
+    @JoinColumn(name = "guardian_id")
+    private Guardian guardian;
 }
