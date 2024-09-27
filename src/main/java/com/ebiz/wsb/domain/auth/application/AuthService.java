@@ -13,6 +13,7 @@ import com.ebiz.wsb.domain.token.application.TokenService;
 import com.ebiz.wsb.domain.token.entity.BlackList;
 import com.ebiz.wsb.domain.token.repository.BlackListRepository;
 import com.ebiz.wsb.domain.token.repository.TokenRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -24,6 +25,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -135,5 +138,43 @@ public class AuthService {
                 request.getPassword()
         );
         return authenticationManagerBuilder.getObject().authenticate(authenticationToken);
+    }
+
+    public void updatePassword(String email, String password) {
+        Optional<Parent> optionalParent = parentRepository.findParentByEmail(email);
+
+        Optional<Guardian> optionalGuardian = guardianRepository.findGuardianByEmail(email);
+
+        if(optionalParent.isPresent()) {
+            Parent parent = optionalParent.get();
+            Parent updatedParent = Parent.builder()
+                    .id(parent.getId())
+                    .name(parent.getName())
+                    .email(parent.getEmail())
+                    .password(passwordEncoder.encode(password))
+                    .phone(parent.getPhone())
+                    .address(parent.getAddress())
+                    .imagePath(parent.getImagePath())
+                    .group(parent.getGroup())
+                    .build();
+            parentRepository.save(updatedParent);
+        } else if (optionalGuardian.isPresent()) {
+            Guardian guardian = optionalGuardian.get();
+            Guardian updatedGuardian = Guardian.builder()
+                    .id(guardian.getId())
+                    .name(guardian.getName())
+                    .email(guardian.getEmail())
+                    .password(passwordEncoder.encode(password))
+                    .bio(guardian.getBio())
+                    .experience(guardian.getExperience())
+                    .phone(guardian.getPhone())
+                    .imagePath(guardian.getImagePath())
+                    .route(guardian.getRoute())
+                    .group(guardian.getGroup())
+                    .build();
+            guardianRepository.save(updatedGuardian);
+        } else {
+            throw new EntityNotFoundException("해당 이메일로 사용자를 찾을 수 없습니다.");
+        }
     }
 }
