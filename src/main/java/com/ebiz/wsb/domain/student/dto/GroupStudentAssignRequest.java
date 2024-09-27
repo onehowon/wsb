@@ -1,10 +1,9 @@
 package com.ebiz.wsb.domain.student.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
-@Data
+@Getter
+@Builder
 @AllArgsConstructor
 @RequiredArgsConstructor
 public class GroupStudentAssignRequest {
