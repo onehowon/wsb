@@ -58,7 +58,6 @@ public class ParentService {
                 .phone(parent.getPhone())
                 .address(parent.getAddress())
                 .imagePath(parent.getImagePath())
-                .password(parent.getPassword())
                 .build();
         return parentDTO;
     }
