@@ -26,7 +26,7 @@ public class GuardianNotification {
 
     @ManyToOne
     @JoinColumn(name = "guardian_id", referencedColumnName = "id", nullable = false)
-    private Guardian guardian;  // Guardian 객체 참조
+    private Guardian guardian;
 
     @Column(name = "content")
     private String content;

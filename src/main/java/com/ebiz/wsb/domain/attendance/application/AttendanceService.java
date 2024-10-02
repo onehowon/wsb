@@ -31,34 +31,30 @@ public class AttendanceService {
     public AttendanceDTO updateAttendance(Long attendanceId, AttendanceStatusDTO updatedAttendanceDTO) {
         return attendanceRepository.findById(attendanceId)
                 .map(existingAttendance -> {
-                    // status 업데이트를 위해 AttendanceStatus를 조회
                     AttendanceStatus status = attendanceStatusRepository.findByName(updatedAttendanceDTO.getStatus())
                             .orElseThrow(() -> new StatusNotFoundException("해당 출결 상태를 찾을 수 없습니다: " + updatedAttendanceDTO.getStatus()));
 
-                    // LocalDateTime을 Timestamp로 변환
                     Timestamp checkTime = convertToTimestamp(
                             updatedAttendanceDTO.getCheckTime() != null
                                     ? updatedAttendanceDTO.getCheckTime()
                                     : LocalDateTime.now()
                     );
 
-                    // 출결 정보 업데이트
                     Attendance updatedAttendance = Attendance.builder()
                             .attendanceId(existingAttendance.getAttendanceId())
                             .studentId(existingAttendance.getStudentId()) // 학생 정보 유지
                             .attendanceDate(existingAttendance.getAttendanceDate()) // 기존 출결 날짜 유지
-                            .status(status) // 상태 업데이트
-                            .checkTime(checkTime) // 체크 시간 업데이트
+                            .status(status)
+                            .checkTime(checkTime)
                             .build();
 
                     Attendance savedAttendance = attendanceRepository.save(updatedAttendance);
 
-                    // 변환된 DTO 반환
                     return convertToDTO(savedAttendance);
                 })
                 .orElseThrow(() -> new AttendanceNotFoundException(attendanceId));
     }
-    // 학생별 출결 정보 조회
+
     public List<AttendanceDTO> getAttendanceByStudentId(Long studentId) {
         List<Attendance> attendanceList = attendanceRepository.findByStudentId(studentId);
         return attendanceList.stream()
@@ -66,20 +62,19 @@ public class AttendanceService {
                 .collect(Collectors.toList());
     }
 
-    // Attendance 엔티티를 AttendanceDTO로 변환하는 메서드
+
     private AttendanceDTO convertToDTO(Attendance attendance) {
         return AttendanceDTO.builder()
                 .attendanceId(attendance.getAttendanceId())
                 .studentId(attendance.getStudentId())
-                .status(attendance.getStatus().getName()) // 상태의 이름을 반환
+                .status(attendance.getStatus().getName())
                 .attendanceDate(attendance.getAttendanceDate())
                 .checkTime(attendance.getCheckTime())
                 .build();
     }
 
-    // LocalDateTime을 Timestamp로 변환하는 메서드
     public Timestamp convertToTimestamp(LocalDateTime localDateTime) {
-        ZoneId zoneId = ZoneId.systemDefault();  // 시스템 기본 시간대 사용
+        ZoneId zoneId = ZoneId.systemDefault();
         ZonedDateTime zdt = localDateTime.atZone(zoneId);
         return Timestamp.from(zdt.toInstant());
     }

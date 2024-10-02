@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 public class SignUpRequest {
     private String email;
     private String password;
-    private UserType userType; // Enum으로 사용자 유형 추가
+    private UserType userType;
     private String name;
 }
 

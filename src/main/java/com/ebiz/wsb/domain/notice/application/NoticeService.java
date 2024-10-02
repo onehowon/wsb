@@ -55,7 +55,6 @@ public class NoticeService {
         noticeRepository.deleteById(noticeId);
     }
 
-    // 엔티티 -> DTO 변환 메서드
     private NoticeDTO convertToDTO(Notice notice) {
         return NoticeDTO.builder()
                 .noticeId(notice.getNoticeId())

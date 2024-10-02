@@ -32,7 +32,7 @@ public class ScheduleService {
     @Transactional
     public ScheduleDTO createSchedule(ScheduleDTO scheduleDTO, MultipartFile scheduleFile) {
 
-        // Guardian ID를 전달받지 않으므로, 현재 로그인된 사용자로부터 Guardian 정보를 가져옴
+
         Guardian guardian = findCurrentGuardian();
         if (guardian == null) {
             throw new IllegalArgumentException("현재 로그인된 사용자로부터 Guardian 정보를 찾을 수 없습니다.");
@@ -41,19 +41,19 @@ public class ScheduleService {
         String scheduleFileUrl = null;
         if (scheduleFile != null && !scheduleFile.isEmpty()) {
             try {
-                // S3에 PDF 또는 XLSX 파일을 업로드
+
                 scheduleFileUrl = s3Service.uploadScheduleFile(scheduleFile, "walkingschoolbus-bucket");
             } catch (IOException e) {
                 throw new RuntimeException("파일 업로드 중 오류가 발생했습니다.", e);
             }
         }
 
-        // 등록일자가 null인 경우, 현재 시간으로 설정
+
         if (scheduleDTO.getRegistrationDate() == null) {
             scheduleDTO.setRegistrationDate(LocalDateTime.now());
         }
 
-        // Schedule 엔티티 생성
+
         Schedule schedule = Schedule.builder()
                 .guardian(guardian)
                 .registrationDate(scheduleDTO.getRegistrationDate())
@@ -86,7 +86,7 @@ public class ScheduleService {
             }
         }
 
-        // 등록일자가 null인 경우, 기존 등록일자를 유지하거나 현재 시간으로 설정
+
         LocalDateTime registrationDate = scheduleDTO.getRegistrationDate() != null
                 ? scheduleDTO.getRegistrationDate()
                 : existingSchedule.getRegistrationDate() != null ? existingSchedule.getRegistrationDate() : LocalDateTime.now();
@@ -131,10 +131,10 @@ public class ScheduleService {
     }
 
     private Guardian findCurrentGuardian() {
-        // Spring Security에서 현재 사용자 이메일 가져오기
+
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        // 이메일로 Guardian을 찾는 로직
+
         return guardianRepository.findGuardianByEmail(currentEmail)
                 .orElseThrow(() -> new IllegalArgumentException("현재 사용자에 대한 Guardian을 찾을 수 없습니다."));
     }

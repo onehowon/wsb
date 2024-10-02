@@ -40,7 +40,6 @@ public class MessageService {
 
     @Transactional
     public MessageDTO sendMessage(Long parentId, String content) {
-        // Parent 정보를 통해 Group을 가져옴
         Parent parent = parentRepository.findById(parentId)
                 .orElseThrow(() -> new ParentNotFoundException("부모 정보를 찾을 수 없습니다."));
 
@@ -50,7 +49,6 @@ public class MessageService {
             throw new GroupNotFoundException("부모가 속한 그룹이 없습니다.");
         }
 
-        // 메시지 생성 및 저장
         Message message = Message.builder()
                 .group(group)
                 .parent(parent)
@@ -60,7 +58,6 @@ public class MessageService {
 
         messageRepository.save(message);
 
-        // 해당 그룹의 모든 인솔자에게 메시지 보내기
         List<Guardian> guardians = group.getGuardians();
         for(Guardian guardian : guardians) {
             MessageRecipient recipient = MessageRecipient.builder()
@@ -80,18 +77,15 @@ public class MessageService {
 
     public List<MessageDTO> getMessagesForGuardian(Long guardianId) {
 
-        // Guardian 존재 여부 확인
         Guardian guardian = guardianRepository.findById(guardianId)
                 .orElseThrow(() -> new GuardianNotFoundException("인솔자를 찾을 수 없습니다."));
 
         List<MessageRecipient> recipients = messageRecipientRepository.findByGuardianId(guardianId);
 
-        // 메시지가 없는 경우 빈 리스트 반환
         if (recipients.isEmpty()) {
             return Collections.emptyList();
         }
 
-        // MessageRecipient 엔티티를 MessageDTO로 변환
         return recipients.stream()
                 .map(recipient -> MessageDTO.builder()
                         .messageId(recipient.getMessage().getMessageId())

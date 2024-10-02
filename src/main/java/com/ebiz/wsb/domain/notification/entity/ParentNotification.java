@@ -27,7 +27,7 @@ public class ParentNotification {
 
     @ManyToOne
     @JoinColumn(name = "parent_id", referencedColumnName = "id", nullable = false)
-    private Parent parent;  // Guardian 객체 참조
+    private Parent parent;
 
     @Column(name = "content")
     private String content;

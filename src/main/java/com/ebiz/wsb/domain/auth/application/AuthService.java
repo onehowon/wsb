@@ -80,7 +80,6 @@ public class AuthService {
         if (principal instanceof UserDetails) {
             String email = ((UserDetails) principal).getUsername();
 
-            // Guardian 또는 Parent에서 사용자 찾기
             if (authentication.getAuthorities().stream()
                     .anyMatch(auth -> auth.getAuthority().equals("ROLE_GUARDIAN"))) {
                 Guardian guardian = guardianRepository.findGuardianByEmail(email)

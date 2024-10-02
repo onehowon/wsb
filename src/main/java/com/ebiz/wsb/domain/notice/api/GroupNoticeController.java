@@ -16,29 +16,24 @@ import java.util.List;
 public class GroupNoticeController {
 
     private final GroupNoticeService groupNoticeService;
-
-    // 모든 그룹 공지 가져오기
     @GetMapping
     public ResponseEntity<List<GroupNoticeDTO>> getAllGroupNotices() {
         List<GroupNoticeDTO> groupNotices = groupNoticeService.getAllGroupNotices();
         return ResponseEntity.ok(groupNotices);
     }
 
-    // 특정 그룹 공지 가져오기
     @GetMapping("/{groupNoticeId}")
     public ResponseEntity<GroupNoticeDTO> getGroupNoticeById(@PathVariable Long groupNoticeId) {
         GroupNoticeDTO groupNotice = groupNoticeService.getGroupNoticeById(groupNoticeId);
         return ResponseEntity.ok(groupNotice);
     }
 
-    // 새로운 그룹 공지 생성
     @PostMapping
     public ResponseEntity<GroupNoticeDTO> createGroupNotice(@RequestBody GroupNoticeDTO groupNoticeDTO) {
         GroupNoticeDTO createdGroupNotice = groupNoticeService.createGroupNotice(groupNoticeDTO);
         return new ResponseEntity<>(createdGroupNotice, HttpStatus.CREATED);
     }
 
-    // 기존 그룹 공지 수정
     @PutMapping("/{groupNoticeId}")
     public ResponseEntity<GroupNoticeDTO> updateGroupNotice(
             @PathVariable Long groupNoticeId,
@@ -47,7 +42,6 @@ public class GroupNoticeController {
         return ResponseEntity.ok(updatedNotice);
     }
 
-    // 그룹 공지 삭제
     @DeleteMapping("/{groupNoticeId}")
     public ResponseEntity<Void> deleteGroupNotice(@PathVariable Long groupNoticeId) {
         groupNoticeService.deleteGroupNotice(groupNoticeId);

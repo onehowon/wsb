@@ -44,11 +44,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public boolean configureMessageConverters(List<MessageConverter> messageConverters) {
-        // MappingJackson2MessageConverter에 ObjectMapper를 설정하여 LocalDateTime을 직렬화 가능하게 함
         MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
-        objectMapper.registerModule(new JavaTimeModule());  // ObjectMapper에 JavaTimeModule 등록
+        objectMapper.registerModule(new JavaTimeModule());
         converter.setObjectMapper(objectMapper);
         messageConverters.add(converter);
-        return false;  // 기본 메시지 컨버터들을 유지하도록 설정
+        return false;
     }
 }

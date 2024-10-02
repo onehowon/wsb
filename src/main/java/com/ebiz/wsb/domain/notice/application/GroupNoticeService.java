@@ -23,14 +23,12 @@ public class GroupNoticeService {
 
     private final GroupNoticeRepository groupNoticeRepository;
 
-    // 모든 그룹 공지 가져오기
     public List<GroupNoticeDTO> getAllGroupNotices() {
         return groupNoticeRepository.findAll().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    // 특정 그룹 공지 가져오기
     public GroupNoticeDTO getGroupNoticeById(Long groupNoticeId) {
         GroupNotice groupNotice = groupNoticeRepository.findById(groupNoticeId)
                 .orElseThrow(() -> new NoticeNotFoundException(groupNoticeId));
@@ -38,14 +36,12 @@ public class GroupNoticeService {
     }
 
 
-    // 새로운 그룹 공지 생성 (DTO에서 엔티티로 변환)
     public GroupNoticeDTO createGroupNotice(GroupNoticeDTO groupNoticeDTO) {
         GroupNotice groupNotice = convertToEntity(groupNoticeDTO);
         GroupNotice savedGroupNotice = groupNoticeRepository.save(groupNotice);
         return convertToDTO(savedGroupNotice);
     }
 
-    // 기존 그룹 공지 수정
     public GroupNoticeDTO updateGroupNotice(Long groupNoticeId, GroupNoticeDTO updatedGroupNoticeDTO) {
         return groupNoticeRepository.findById(groupNoticeId)
                 .map(existingGroupNotice -> {
@@ -64,12 +60,10 @@ public class GroupNoticeService {
                 .orElseThrow(() -> new NoticeNotFoundException(groupNoticeId));
     }
 
-    // 그룹 공지 삭제
     public void deleteGroupNotice(Long groupNoticeId) {
         groupNoticeRepository.deleteById(groupNoticeId);
     }
 
-    // 엔티티를 DTO로 변환하는 메서드
     private GroupNoticeDTO convertToDTO(GroupNotice groupNotice) {
         return GroupNoticeDTO.builder()
                 .groupNoticeId(groupNotice.getGroupNoticeId())
@@ -88,7 +82,6 @@ public class GroupNoticeService {
     }
 
 
-    // DTO를 엔티티로 변환하는 메서드
     private GroupNotice convertToEntity(GroupNoticeDTO groupNoticeDTO) {
         NoticeTypeEnum noticeTypeEnum;
         try {

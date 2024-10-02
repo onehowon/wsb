@@ -17,14 +17,12 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
-    // 인솔자 알림 생성 API
     @PostMapping("/guardian")
     public ResponseEntity<GuardianNotificationDTO> createGuardianNotification(@RequestBody GuardianNotificationDTO dto) {
         GuardianNotificationDTO createdNotification = notificationService.createGuardianNotification(dto);
         return ResponseEntity.ok(createdNotification);
     }
 
-    // 부모 알림 생성 API
     @PostMapping("/parent")
     public ResponseEntity<ParentNotificationDTO> createParentNotification(@RequestBody ParentNotificationDTO dto) {
         ParentNotificationDTO createdNotification = notificationService.createParentNotification(dto);
