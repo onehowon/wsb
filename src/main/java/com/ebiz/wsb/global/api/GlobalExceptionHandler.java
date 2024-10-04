@@ -1,6 +1,7 @@
 package com.ebiz.wsb.global.api;
 
 import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
+import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.location.exception.InvalidLocationDataException;
 import com.ebiz.wsb.domain.mail.exception.InvalidMailException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
@@ -97,6 +98,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidMailException.class)
     public ResponseEntity<ErrorResponse> handleInvalidMailException(InvalidMailException ex){
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.builder()
+                        .message(ex.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(GuardianNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleGuardianNotFoundException(GuardianNotFoundException ex){
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.builder()
                         .message(ex.getMessage())
                         .build());

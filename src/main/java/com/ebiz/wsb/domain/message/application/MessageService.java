@@ -59,14 +59,13 @@ public class MessageService {
         messageRepository.save(message);
 
         List<Guardian> guardians = group.getGuardians();
-        for(Guardian guardian : guardians) {
-            MessageRecipient recipient = MessageRecipient.builder()
-                    .guardian(guardian)
-                    .message(message)
-                    .build();
 
-            messageRecipientRepository.save(recipient);
-        }
+        List<MessageRecipient> recipients = guardians.stream()
+                .map(guardian -> MessageRecipient.builder()
+                        .guardian(guardian)
+                        .message(message)
+                        .build())
+                .collect(Collectors.toList());
 
         return MessageDTO.builder()
                 .messageId(message.getMessageId())
