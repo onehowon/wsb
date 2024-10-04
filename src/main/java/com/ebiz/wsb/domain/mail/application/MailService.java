@@ -16,6 +16,7 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.util.Random;
 
 @Service
@@ -50,7 +51,7 @@ public class MailService {
     }
 
     private String generateRandomCode() {
-        Random random = new Random();
+        SecureRandom random = new SecureRandom();
         int n = random.nextInt(1000000);
         return String.format("%06d", n);
     }

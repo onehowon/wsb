@@ -2,6 +2,7 @@ package com.ebiz.wsb.global.api;
 
 import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.location.exception.InvalidLocationDataException;
+import com.ebiz.wsb.domain.mail.exception.InvalidMailException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
 import com.ebiz.wsb.domain.token.exception.InvalidTokenException;
 import com.ebiz.wsb.global.dto.ErrorResponse;
@@ -88,6 +89,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleFileUploadException(FileUploadException ex){
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.builder()
+                        .message(ex.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(InvalidMailException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidMailException(InvalidMailException ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.builder()
                         .message(ex.getMessage())
                         .build());
