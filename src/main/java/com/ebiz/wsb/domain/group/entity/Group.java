@@ -33,8 +33,4 @@ public class Group {
 
     @OneToMany(mappedBy = "group")
     private List<Parent> parents = new ArrayList<>();
-
-    @ManyToOne
-    @JoinColumn(name = "guardian_id")
-    private Guardian guardian;
 }
