@@ -7,20 +7,15 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 
 @Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class GroupNoticeDTO {
-
-    private Long groupNoticeId;
     private NoticeTypeDTO noticeType;
-    private GuardianDTO guardian;
     private String content;
     private String photo;
-    private int likes;
-    private String createdAt;
-
-
 }

@@ -2,12 +2,12 @@ package com.ebiz.wsb.domain.notice.api;
 
 import com.ebiz.wsb.domain.notice.application.GroupNoticeService;
 import com.ebiz.wsb.domain.notice.dto.GroupNoticeDTO;
-import com.ebiz.wsb.domain.notice.entity.GroupNotice;
 import lombok.AllArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
@@ -29,16 +29,23 @@ public class GroupNoticeController {
     }
 
     @PostMapping
-    public ResponseEntity<GroupNoticeDTO> createGroupNotice(@RequestBody GroupNoticeDTO groupNoticeDTO) {
-        GroupNoticeDTO createdGroupNotice = groupNoticeService.createGroupNotice(groupNoticeDTO);
+    public ResponseEntity<GroupNoticeDTO> createGroupNotice(
+            @RequestParam("noticeType") String noticeType,
+            @RequestParam("content") String content,
+            @RequestPart(value = "photo", required = false) MultipartFile photo,
+            Authentication authentication
+    ) {
+        GroupNoticeDTO createdGroupNotice = groupNoticeService.createGroupNotice(noticeType, content, photo, authentication);
         return new ResponseEntity<>(createdGroupNotice, HttpStatus.CREATED);
     }
 
     @PutMapping("/{groupNoticeId}")
     public ResponseEntity<GroupNoticeDTO> updateGroupNotice(
             @PathVariable Long groupNoticeId,
-            @RequestBody GroupNoticeDTO updatedGroupNoticeDTO) {
-        GroupNoticeDTO updatedNotice = groupNoticeService.updateGroupNotice(groupNoticeId, updatedGroupNoticeDTO);
+            @RequestParam("content") String content,
+            @RequestPart(value = "photo", required = false) MultipartFile photo
+    ) {
+        GroupNoticeDTO updatedNotice = groupNoticeService.updateGroupNotice(groupNoticeId, content, photo);
         return ResponseEntity.ok(updatedNotice);
     }
 

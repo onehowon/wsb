@@ -1,7 +1,9 @@
 package com.ebiz.wsb.domain.notice.application;
 
+import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
+import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.notice.dto.GroupNoticeDTO;
 import com.ebiz.wsb.domain.notice.dto.NoticeTypeDTO;
 import com.ebiz.wsb.domain.notice.entity.GroupNotice;
@@ -10,9 +12,14 @@ import com.ebiz.wsb.domain.notice.entity.NoticeTypeEnum;
 import com.ebiz.wsb.domain.notice.exception.CustomInvalidNoticeTypeException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
 import com.ebiz.wsb.domain.notice.repository.GroupNoticeRepository;
+import com.ebiz.wsb.domain.notice.repository.NoticeTypeRepository;
+import com.ebiz.wsb.global.service.S3Service;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +29,9 @@ import java.util.stream.Collectors;
 public class GroupNoticeService {
 
     private final GroupNoticeRepository groupNoticeRepository;
+    private final S3Service s3service;
+    private final UserDetailsServiceImpl userDetailsService;
+    private final NoticeTypeRepository noticeTypeRepository;
 
     public List<GroupNoticeDTO> getAllGroupNotices() {
         return groupNoticeRepository.findAll().stream()
@@ -36,24 +46,44 @@ public class GroupNoticeService {
     }
 
 
-    public GroupNoticeDTO createGroupNotice(GroupNoticeDTO groupNoticeDTO) {
-        GroupNotice groupNotice = convertToEntity(groupNoticeDTO);
+    public GroupNoticeDTO createGroupNotice(String noticeType, String content, MultipartFile imageFile, Authentication authentication) {
+
+        NoticeType existingNoticeType = noticeTypeRepository.findByName(NoticeTypeEnum.valueOf(noticeType))
+                .orElseThrow(() -> new CustomInvalidNoticeTypeException("유효하지 않은 공지 타입: " + noticeType));
+
+        Guardian guardian = (Guardian) userDetailsService.getUserByContextHolder();
+
+        String photoUrl = imageFile != null ? uploadImage(imageFile) : null;
+
+        GroupNotice groupNotice = GroupNotice.builder()
+                .noticeType(existingNoticeType)
+                .guardian(guardian)
+                .content(content)
+                .photo(photoUrl)
+                .likes(0)
+                .createdAt(LocalDateTime.now())
+                .build();
+
         GroupNotice savedGroupNotice = groupNoticeRepository.save(groupNotice);
         return convertToDTO(savedGroupNotice);
     }
 
-    public GroupNoticeDTO updateGroupNotice(Long groupNoticeId, GroupNoticeDTO updatedGroupNoticeDTO) {
+
+    public GroupNoticeDTO updateGroupNotice(Long groupNoticeId, String content, MultipartFile imageFile) {
         return groupNoticeRepository.findById(groupNoticeId)
                 .map(existingGroupNotice -> {
+                    String updatedPhotoUrl = imageFile != null ? uploadImage(imageFile) : existingGroupNotice.getPhoto();
+
                     GroupNotice updatedGroupNotice = GroupNotice.builder()
                             .groupNoticeId(existingGroupNotice.getGroupNoticeId())
                             .noticeType(existingGroupNotice.getNoticeType())
                             .guardian(existingGroupNotice.getGuardian())
-                            .content(updatedGroupNoticeDTO.getContent())
-                            .photo(updatedGroupNoticeDTO.getPhoto() != null ? updatedGroupNoticeDTO.getPhoto() : existingGroupNotice.getPhoto())
-                            .likes(updatedGroupNoticeDTO.getLikes() != 0 ? updatedGroupNoticeDTO.getLikes() : existingGroupNotice.getLikes())
+                            .content(content)
+                            .photo(updatedPhotoUrl)
+                            .likes(existingGroupNotice.getLikes())
                             .createdAt(existingGroupNotice.getCreatedAt())
                             .build();
+
                     GroupNotice savedGroupNotice = groupNoticeRepository.save(updatedGroupNotice);
                     return convertToDTO(savedGroupNotice);
                 })
@@ -66,45 +96,20 @@ public class GroupNoticeService {
 
     private GroupNoticeDTO convertToDTO(GroupNotice groupNotice) {
         return GroupNoticeDTO.builder()
-                .groupNoticeId(groupNotice.getGroupNoticeId())
                 .noticeType(NoticeTypeDTO.builder()
                         .id(groupNotice.getNoticeType().getId())
                         .name(groupNotice.getNoticeType().getName().name())
                         .build())
-                .guardian(GuardianDTO.builder()
-                        .id(groupNotice.getGuardian().getId())
-                        .build())
                 .content(groupNotice.getContent())
-                .photo(groupNotice.getPhoto())
-                .likes(groupNotice.getLikes())
-                .createdAt(groupNotice.getCreatedAt() != null ? groupNotice.getCreatedAt().toString() : null)
+                .photo(groupNotice.getPhoto())  // S3 URL
                 .build();
     }
 
-
-    private GroupNotice convertToEntity(GroupNoticeDTO groupNoticeDTO) {
-        NoticeTypeEnum noticeTypeEnum;
+    private String uploadImage(MultipartFile imageFile) {
         try {
-            noticeTypeEnum = NoticeTypeEnum.valueOf(groupNoticeDTO.getNoticeType().getName());
-        } catch (IllegalArgumentException e) {
-            throw new CustomInvalidNoticeTypeException("유효하지 않은 공지 타입: " + groupNoticeDTO.getNoticeType().getName());
+            return s3service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
+        } catch (IOException e) {
+            throw new FileUploadException("이미지 업로드 실패", e);
         }
-
-        return GroupNotice.builder()
-                .groupNoticeId(groupNoticeDTO.getGroupNoticeId())
-                .noticeType(groupNoticeDTO.getNoticeType() != null ?
-                        NoticeType.builder()
-                                .id(groupNoticeDTO.getNoticeType().getId())
-                                .name(noticeTypeEnum)
-                                .build() : null)
-                .guardian(groupNoticeDTO.getGuardian() != null ?
-                        Guardian.builder()
-                                .id(groupNoticeDTO.getGuardian().getId())
-                                .build() : null)
-                .content(groupNoticeDTO.getContent())
-                .photo(groupNoticeDTO.getPhoto())
-                .likes(groupNoticeDTO.getLikes())
-                .createdAt(groupNoticeDTO.getCreatedAt() != null ? LocalDateTime.parse(groupNoticeDTO.getCreatedAt()) : null)
-                .build();
     }
 }
