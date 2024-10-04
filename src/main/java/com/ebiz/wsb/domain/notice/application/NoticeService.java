@@ -60,7 +60,7 @@ public class NoticeService {
                 .noticeId(notice.getNoticeId())
                 .title(notice.getTitle())
                 .content(notice.getContent())
-                .createdAt(notice.getCreatedAt() != null ? notice.getCreatedAt().toString() : null)
+                .createdAt(notice.getCreatedAt())
                 .build();
     }
 
@@ -69,7 +69,7 @@ public class NoticeService {
                 .noticeId(noticeDTO.getNoticeId())
                 .title(noticeDTO.getTitle())
                 .content(noticeDTO.getContent())
-                .createdAt(noticeDTO.getCreatedAt() != null ? LocalDateTime.parse(noticeDTO.getCreatedAt()) : null)
+                .createdAt(noticeDTO.getCreatedAt())
                 .build();
     }
 }

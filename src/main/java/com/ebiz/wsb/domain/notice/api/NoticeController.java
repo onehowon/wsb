@@ -3,6 +3,7 @@ package com.ebiz.wsb.domain.notice.api;
 import com.ebiz.wsb.domain.notice.application.NoticeService;
 import com.ebiz.wsb.domain.notice.dto.NoticeDTO;
 import com.ebiz.wsb.domain.notice.entity.Notice;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,14 +27,11 @@ public class NoticeController {
     @GetMapping("/{id}")
     public ResponseEntity<NoticeDTO> getNoticeById(@PathVariable Long id){
         NoticeDTO noticeDTO = noticeService.getNoticeById(id);
-        if (noticeDTO == null){
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
         return ResponseEntity.ok(noticeDTO);
     }
 
     @PostMapping
-    public ResponseEntity<NoticeDTO> createNotice(@RequestBody NoticeDTO newNoticeDTO) {
+    public ResponseEntity<NoticeDTO> createNotice(@Valid @RequestBody NoticeDTO newNoticeDTO) {
         NoticeDTO createdNotice = noticeService.createNotice(newNoticeDTO);
         return new ResponseEntity<>(createdNotice, HttpStatus.CREATED);
     }
