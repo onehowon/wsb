@@ -2,6 +2,7 @@ package com.ebiz.wsb.domain.guardian.application;
 
 import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
+import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
 import com.ebiz.wsb.domain.route.entity.Route;
@@ -26,11 +27,6 @@ public class GuardianService {
     private final GuardianRepository guardianRepository;
     private final RouteRepository routeRepository;
     private final S3Service s3service;
-
-    public List<GuardianDTO> getAllGuardians() {
-        List<Guardian> guardians = guardianRepository.findAll();
-        return guardians.stream().map(this::convertToDTO).toList();
-    }
 
     public GuardianDTO getGuardianById(Long guardianId) {
         Guardian guardian = guardianRepository.findById(guardianId)
@@ -60,32 +56,7 @@ public class GuardianService {
                 .experience(guardianDTO.getExperience() != null ? guardianDTO.getExperience() : existingGuardian.getExperience())
                 .imagePath(imageUrl != null ? imageUrl : existingGuardian.getImagePath())
                 .route(route)
-                .password(existingGuardian.getPassword())  // 비밀번호는 변경하지 않음
-                .build();
-
-        guardianRepository.save(updatedGuardian);
-
-        return convertToDTO(updatedGuardian);
-    }
-
-
-    @Transactional
-    public GuardianDTO updateGuardianImage(Long guardianId, MultipartFile imageFile) {
-        Guardian existingGuardian = guardianRepository.findById(guardianId)
-                .orElseThrow(() -> new GuardianNotFoundException("인솔자 정보를 찾을 수 없습니다."));
-
-        String newImagePath = uploadImage(imageFile);
-
-        Guardian updatedGuardian = Guardian.builder()
-                .id(existingGuardian.getId())
-                .name(existingGuardian.getName())
-                .email(existingGuardian.getEmail())
-                .phone(existingGuardian.getPhone())
-                .bio(existingGuardian.getBio())
-                .experience(existingGuardian.getExperience())
-                .imagePath(newImagePath)
-                .route(existingGuardian.getRoute())
-                .password(existingGuardian.getPassword())  // 비밀번호는 변경하지 않음
+                .password(existingGuardian.getPassword())
                 .build();
 
         guardianRepository.save(updatedGuardian);
@@ -115,7 +86,6 @@ public class GuardianService {
                 .experience(guardian.getExperience())
                 .imagePath(guardian.getImagePath())  // S3에서 받아온 전체 경로
                 .routeId(guardian.getRoute() != null ? guardian.getRoute().getId() : null)
-                .password(guardian.getPassword())  // password 필드 추가
                 .build();
     }
 
@@ -123,7 +93,7 @@ public class GuardianService {
         try {
             return s3service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
         } catch (IOException e) {
-            throw new RuntimeException("이미지 업로드 실패", e);
+            throw new FileUploadException("이미지 업로드 실패", e);
         }
     }
 }

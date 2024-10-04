@@ -15,7 +15,6 @@ public class GuardianDTO {
     private Long id;
     private String name;
     private String email;
-    private String password;
     private String bio;
     private String experience;
     private String phone;

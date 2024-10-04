@@ -8,6 +8,7 @@ import com.ebiz.wsb.domain.attendance.exception.AttendanceNotFoundException;
 import com.ebiz.wsb.domain.attendance.exception.StatusNotFoundException;
 import com.ebiz.wsb.domain.attendance.repository.AttendanceRepository;
 import com.ebiz.wsb.domain.attendance.repository.AttendanceStatusRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class AttendanceService {
 
     @Autowired
@@ -27,7 +29,6 @@ public class AttendanceService {
     @Autowired
     private AttendanceStatusRepository attendanceStatusRepository;
 
-    // 출결 업데이트 (인솔자가 특정 학생의 출석 상태를 인증하는 상황)
     public AttendanceDTO updateAttendance(Long attendanceId, AttendanceStatusDTO updatedAttendanceDTO) {
         return attendanceRepository.findById(attendanceId)
                 .map(existingAttendance -> {

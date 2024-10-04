@@ -1,5 +1,6 @@
 package com.ebiz.wsb.global.api;
 
+import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.location.exception.InvalidLocationDataException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
 import com.ebiz.wsb.domain.token.exception.InvalidTokenException;
@@ -39,8 +40,12 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(NoticeNotFoundException.class)
-    public ResponseEntity<String> handleNoticeNotFoundException(NoticeNotFoundException ex) {
-        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+    public ResponseEntity<ErrorResponse> handleNoticeNotFoundException(NoticeNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.builder()
+                        .message(ex.getMessage())
+                        .build());
     }
 
     @ExceptionHandler(IOException.class)
@@ -76,6 +81,15 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.builder()
                         .message("잘못된 위치 데이터입니다.")
+                        .build());
+    }
+
+    @ExceptionHandler(FileUploadException.class)
+    public ResponseEntity<ErrorResponse> handleFileUploadException(FileUploadException ex){
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.builder()
+                        .message(ex.getMessage())
                         .build());
     }
 }

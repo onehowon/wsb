@@ -49,15 +49,6 @@ public class GuardianController {
         return new ResponseEntity<>(updatedGuardian, HttpStatus.OK);
     }
 
-    @PutMapping("/{id}/image")
-    public ResponseEntity<GuardianDTO> updateGuardianImage(
-            @PathVariable Long id,
-            @RequestPart(value = "file") MultipartFile file) throws IOException {
-
-        GuardianDTO updatedGuardian = guardianService.updateGuardianImage(id, file);
-        return new ResponseEntity<>(updatedGuardian, HttpStatus.OK);
-    }
-
 
     @DeleteMapping("{id}")
     public ResponseEntity<Void> deleteGuardian(@PathVariable Long id){
