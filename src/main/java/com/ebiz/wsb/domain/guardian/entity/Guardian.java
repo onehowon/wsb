@@ -49,7 +49,7 @@ public class Guardian {
     @OneToMany(mappedBy = "guardian")
     private List<Student> students;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "route_id", referencedColumnName = "route_id")
     private Route route;
 

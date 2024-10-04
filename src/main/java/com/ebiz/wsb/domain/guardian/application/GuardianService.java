@@ -60,7 +60,7 @@ public class GuardianService {
                 .experience(guardianDTO.getExperience() != null ? guardianDTO.getExperience() : existingGuardian.getExperience())
                 .imagePath(imageUrl != null ? imageUrl : existingGuardian.getImagePath())
                 .route(route)
-                .password(existingGuardian.getPassword())
+                .password(existingGuardian.getPassword())  // 비밀번호는 변경하지 않음
                 .build();
 
         guardianRepository.save(updatedGuardian);
@@ -85,7 +85,7 @@ public class GuardianService {
                 .experience(existingGuardian.getExperience())
                 .imagePath(newImagePath)
                 .route(existingGuardian.getRoute())
-                .password(existingGuardian.getPassword())
+                .password(existingGuardian.getPassword())  // 비밀번호는 변경하지 않음
                 .build();
 
         guardianRepository.save(updatedGuardian);
@@ -113,9 +113,9 @@ public class GuardianService {
                 .phone(guardian.getPhone())
                 .bio(guardian.getBio())
                 .experience(guardian.getExperience())
-                .imagePath(guardian.getImagePath())
-                .routeId(guardian.getRoute() != null ? guardian.getRoute().getRouteId() : null)
-                .password(guardian.getPassword())
+                .imagePath(guardian.getImagePath())  // S3에서 받아온 전체 경로
+                .routeId(guardian.getRoute() != null ? guardian.getRoute().getId() : null)
+                .password(guardian.getPassword())  // password 필드 추가
                 .build();
     }
 
