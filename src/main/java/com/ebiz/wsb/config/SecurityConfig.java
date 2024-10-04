@@ -40,7 +40,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests((auth) -> {
                     auth.requestMatchers("/healthy").permitAll();
                     auth.requestMatchers("/auth/*").permitAll();
-                    auth.requestMatchers("/ws/**", "/app/**", "/topic/**").permitAll();
+                    auth.requestMatchers("/ws", "/ws/**", "/app/**", "/topic/**").permitAll();
                     auth.requestMatchers(("/mail/auth")).permitAll();
                     auth.requestMatchers(("/mail/check")).permitAll();
                     auth.anyRequest().authenticated();
