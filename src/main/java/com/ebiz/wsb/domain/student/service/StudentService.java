@@ -117,7 +117,7 @@ public class StudentService {
                 .studentId(student.getStudentId())
                 .name(student.getName())
                 .guardianId(student.getGuardian().getId())
-                .routeId(student.getRoute().getRouteId())
+                .routeId(student.getRoute().getId())
                 .schoolName(student.getSchoolName())
                 .grade(student.getGrade())
                 .notes(student.getNotes())
