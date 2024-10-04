@@ -23,6 +23,14 @@ public class StompHandler implements ChannelInterceptor {
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
 
+        if(StompCommand.CONNECT.equals(accessor.getCommand())) {
+            String accessToken = accessor.getFirstNativeHeader("accessToken");
+            if(accessToken == null || !jwtProvider.validateToken(accessToken)) {
+                throw new InvalidTokenException("유효하지 않은 토큰");
+            }
+
+        }
+
         if (StompCommand.SEND.equals(accessor.getCommand())) {
             String latitude = accessor.getFirstNativeHeader("latitude");
             String longitude = accessor.getFirstNativeHeader("longitude");

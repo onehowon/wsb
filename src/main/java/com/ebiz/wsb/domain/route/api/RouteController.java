@@ -2,6 +2,7 @@ package com.ebiz.wsb.domain.route.api;
 
 import com.ebiz.wsb.domain.route.application.RouteService;
 import com.ebiz.wsb.domain.route.dto.RouteDTO;
+import com.ebiz.wsb.domain.waypoint.dto.WaypointDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,15 +19,21 @@ public class RouteController {
 
     private final RouteService routeService;
 
-    @GetMapping
-    public ResponseEntity<List<RouteDTO>> getAllRoutes(){
-        List<RouteDTO> routes = routeService.getAllRoutes();
-        return ResponseEntity.ok(routes);
-    }
+//    @GetMapping
+//    public ResponseEntity<List<RouteDTO>> getAllRoutes(){
+//        List<RouteDTO> routes = routeService.getAllRoutes();
+//        return ResponseEntity.ok(routes);
+//    }
+//
+//    @GetMapping("/{routeId}")
+//    public ResponseEntity<RouteDTO> getRouteById(@PathVariable Long routeId){
+//        RouteDTO routeDTO = routeService.getRouteById(routeId);
+//        return ResponseEntity.ok(routeDTO);
+//    }
 
-    @GetMapping("/{routeId}")
-    public ResponseEntity<RouteDTO> getRouteById(@PathVariable Long routeId){
-        RouteDTO routeDTO = routeService.getRouteById(routeId);
-        return ResponseEntity.ok(routeDTO);
+    @GetMapping("/waypoints/{guardianId}")
+    public ResponseEntity<List<WaypointDTO>> getWaypointsByGuardianId(@PathVariable("guardianId") Long guardianId) {
+        List<WaypointDTO> waypointsByGuardianId = routeService.getWaypointsByGuardianId(guardianId);
+        return ResponseEntity.ok(waypointsByGuardianId);
     }
 }
