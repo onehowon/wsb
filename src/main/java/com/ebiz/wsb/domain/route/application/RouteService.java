@@ -1,5 +1,6 @@
 package com.ebiz.wsb.domain.route.application;
 
+import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
@@ -25,17 +26,21 @@ public class RouteService {
     private final RouteRepository routeRepository;
     private final GuardianRepository guardianRepository;
     private final WaypointRepository waypointRepository;
+    private final UserDetailsServiceImpl userDetailsService;
 
-    public List<WaypointDTO> getWaypointsByGuardianId(Long guardianId) {
-        Guardian guardian = guardianRepository.findById(guardianId)
-                .orElseThrow(() -> new GuardianNotFoundException("인솔자를 찾을 수 없습니다."));
-
+    public List<WaypointDTO> getWaypoints() {
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        if (userByContextHolder instanceof Guardian) {
+            Guardian guardian = (Guardian) userByContextHolder;
             Route route = guardian.getRoute();
             List<Waypoint> waypoints = waypointRepository.findByRoute_Id(route.getId());
 
             return waypoints.stream()
                     .map(this::convertToDTO)
                     .collect(Collectors.toList());
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     private WaypointDTO convertToDTO(Waypoint waypoint) {
