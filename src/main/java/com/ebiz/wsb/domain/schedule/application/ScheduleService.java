@@ -1,5 +1,6 @@
 package com.ebiz.wsb.domain.schedule.application;
 
+import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
 import com.ebiz.wsb.domain.schedule.dto.ScheduleDTO;
@@ -7,6 +8,8 @@ import com.ebiz.wsb.domain.schedule.entity.Schedule;
 import com.ebiz.wsb.domain.schedule.exception.ScheduleNotFoundException;
 import com.ebiz.wsb.domain.schedule.repository.ScheduleRepository;
 import com.ebiz.wsb.global.service.S3Service;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,6 +29,7 @@ public class ScheduleService {
     private final ScheduleRepository scheduleRepository;
     private final GuardianRepository guardianRepository;
     private final S3Service s3Service;
+    private final UserDetailsServiceImpl userDetailsService;
 
     private static final String FILE_UPLOAD_DIRECTORY = "/uploads";
 
@@ -65,11 +69,28 @@ public class ScheduleService {
         return convertToDTO(schedule);
     }
 
-    public ScheduleDTO getScheduleById(Long scheduleId){
-        Schedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ScheduleNotFoundException("스케줄울 찾을 수 없습니다."));
+    @Transactional(readOnly = true)
+    public List<ScheduleDTO> getScheduleForCurrentUser() {
+        Guardian currentGuardian = (Guardian) userDetailsService.getUserByContextHolder();
 
-        return convertToDTO(schedule);
+        List<Schedule> schedules = scheduleRepository.findByGuardian(currentGuardian);
+
+        return schedules.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ScheduleDTO> getScheduleByDateRange(LocalDateTime startDate, LocalDateTime endDate){
+        Guardian currentGuardian = (Guardian) userDetailsService.getUserByContextHolder();
+
+        List<Schedule> schedules = scheduleRepository.findByGuardianAndRegistrationDateBetween(
+                currentGuardian, startDate, endDate
+        );
+
+        return schedules.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     @Transactional
