@@ -31,9 +31,9 @@ public class RouteController {
 //        return ResponseEntity.ok(routeDTO);
 //    }
 
-    @GetMapping("/waypoints/{guardianId}")
-    public ResponseEntity<List<WaypointDTO>> getWaypointsByGuardianId(@PathVariable("guardianId") Long guardianId) {
-        List<WaypointDTO> waypointsByGuardianId = routeService.getWaypointsByGuardianId(guardianId);
-        return ResponseEntity.ok(waypointsByGuardianId);
+    @GetMapping("/waypoints")
+    public ResponseEntity<List<WaypointDTO>> getWaypoints() {
+        List<WaypointDTO> waypoints = routeService.getWaypoints();
+        return ResponseEntity.ok(waypoints);
     }
 }
