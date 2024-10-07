@@ -46,9 +46,6 @@ public class Guardian {
     @Column(name = "image_path")
     private String imagePath;
 
-    @OneToMany(mappedBy = "guardian")
-    private List<Student> students;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "route_id", referencedColumnName = "route_id")
     private Route route;

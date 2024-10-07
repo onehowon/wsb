@@ -30,7 +30,7 @@ public class WaypointService {
                 .grade(student.getGrade())
                 .notes(student.getNotes())
                 .imagePath(student.getImagePath())
-                .guardianId(student.getGuardian().getId())
+                .groupId(student.getGroup().getId())
                 .routeId(student.getRoute().getId())
                 .build();
     }

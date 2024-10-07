@@ -1,5 +1,6 @@
 package com.ebiz.wsb.domain.student.entity;
 
+import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.route.entity.Route;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
@@ -27,8 +28,8 @@ public class Student {
     private String name;
 
     @ManyToOne
-    @JoinColumn(name = "guardian_id", referencedColumnName = "id")
-    private Guardian guardian;
+    @JoinColumn(name = "group_id")
+    private Group group;
 
     @ManyToOne
     @JoinColumn(name = "route_id", referencedColumnName = "route_id")

@@ -1,5 +1,8 @@
 package com.ebiz.wsb.domain.student.service;
 
+import com.ebiz.wsb.domain.group.entity.Group;
+import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
+import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
@@ -12,6 +15,9 @@ import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.student.exception.ImageUploadException;
 import com.ebiz.wsb.domain.student.exception.StudentNotFoundException;
 import com.ebiz.wsb.domain.student.repository.StudentRepository;
+import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
+import com.ebiz.wsb.domain.waypoint.exception.WaypointNotFoundException;
+import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
 import com.ebiz.wsb.global.service.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,7 +34,9 @@ public class StudentService {
     private final StudentRepository studentRepository;
     private final RouteRepository routeRepository;
     private final GuardianRepository guardianRepository;
+    private final GroupRepository groupRepository;
     private final S3Service s3Service;
+    private final WaypointRepository waypointRepository;
 
     @Transactional
     public StudentDTO createStudent(StudentCreateRequestDTO studentCreateRequestDTO, MultipartFile imageFile) {
@@ -43,15 +51,18 @@ public class StudentService {
             }
         }
 
-        Guardian guardian = guardianRepository.findById(studentCreateRequestDTO.getGuardianId())
-                .orElseThrow(() -> new StudentNotFoundException("인솔자 정보를 찾을 수 없습니다."));
+        Group group = groupRepository.findById(studentCreateRequestDTO.getGroupId())
+                .orElseThrow(() -> new GroupNotFoundException("그룹 정보를 찾을 수 없습니다."));
         Route route = routeRepository.findById(studentCreateRequestDTO.getRouteId())
                 .orElseThrow(() -> new RouteNotFoundException("해당 경로를 찾을 수 없습니다."));
+        Waypoint waypoint = waypointRepository.findById(studentCreateRequestDTO.getWaypointId())
+                .orElseThrow(() -> new WaypointNotFoundException("해당 경유지를 찾을 수 없습니다."));
 
         Student student = Student.builder()
                 .name(studentCreateRequestDTO.getName())
-                .guardian(guardian)
+                .group(group)
                 .route(route)
+                .waypoint(waypoint)
                 .schoolName(studentCreateRequestDTO.getSchoolName())
                 .grade(studentCreateRequestDTO.getGrade())
                 .notes(studentCreateRequestDTO.getNotes())
@@ -85,16 +96,19 @@ public class StudentService {
             imageUrl = uploadImage(imageFile);
         }
 
-        Guardian guardian = guardianRepository.findById(studentCreateRequestDTO.getGuardianId())
-                .orElseThrow(() -> new StudentNotFoundException("인솔자 정보를 찾을 수 없습니다."));
+        Group group = groupRepository.findById(studentCreateRequestDTO.getGroupId())
+                .orElseThrow(() -> new GroupNotFoundException("그룹 정보를 찾을 수 없습니다."));
         Route route = routeRepository.findById(studentCreateRequestDTO.getRouteId())
                 .orElseThrow(() -> new RouteNotFoundException("해당 경로를 찾을 수 없습니다."));
+        Waypoint waypoint = waypointRepository.findById(studentCreateRequestDTO.getWaypointId())
+                .orElseThrow(() -> new WaypointNotFoundException("해당 경유지를 찾을 수 없습니다."));
 
         existingStudent = Student.builder()
                 .studentId(existingStudent.getStudentId())
                 .name(studentCreateRequestDTO.getName())
-                .guardian(guardian)
+                .group(group)
                 .route(route)
+                .waypoint(waypoint)
                 .schoolName(studentCreateRequestDTO.getSchoolName())
                 .grade(studentCreateRequestDTO.getGrade())
                 .notes(studentCreateRequestDTO.getNotes())
@@ -112,17 +126,16 @@ public class StudentService {
     }
 
     private StudentDTO convertToDTO(Student student) {
-        Guardian guardian = student.getGuardian();
         return StudentDTO.builder()
                 .studentId(student.getStudentId())
                 .name(student.getName())
-                .guardianId(student.getGuardian().getId())
+                .groupId(student.getGroup().getId())
                 .routeId(student.getRoute().getId())
+                .waypointId(student.getWaypoint().getId())
                 .schoolName(student.getSchoolName())
                 .grade(student.getGrade())
                 .notes(student.getNotes())
                 .imagePath(student.getImagePath())
-                .guardianContact(guardian.getPhone())
                 .build();
     }
 
@@ -133,8 +146,8 @@ public class StudentService {
         if (studentDTO.getRouteId() == null) {
             throw new IllegalArgumentException("Route ID는 필수 항목입니다.");
         }
-        if (studentDTO.getGuardianId() == null) {
-            throw new IllegalArgumentException("Guardian ID는 필수 항목입니다.");
+        if (studentDTO.getGroupId() == null) {
+            throw new IllegalArgumentException("Group ID는 필수 항목입니다.");
         }
     }
 
