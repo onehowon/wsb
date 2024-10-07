@@ -2,6 +2,7 @@ package com.ebiz.wsb.domain.student.entity;
 
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.route.entity.Route;
+import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,6 +33,10 @@ public class Student {
     @ManyToOne
     @JoinColumn(name = "route_id", referencedColumnName = "route_id")
     private Route route;
+
+    @ManyToOne
+    @JoinColumn(name = "waypoint_id")
+    private Waypoint waypoint;
 
     @Column(name = "school_name")
     private String schoolName;
