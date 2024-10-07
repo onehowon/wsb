@@ -20,7 +20,8 @@ public class StudentController {
     @PostMapping
     public ResponseEntity<StudentDTO> createStudent(
             @RequestParam("name") String name,
-            @RequestParam("guardianId") Long guardianId,
+            @RequestParam("groupId") Long groupId,
+            @RequestParam("waypointId") Long waypointId,
             @RequestParam("routeId") Long routeId,
             @RequestParam("schoolName") String schoolName,
             @RequestParam("grade") String grade,
@@ -29,8 +30,9 @@ public class StudentController {
 
         StudentCreateRequestDTO studentCreateRequestDTO = StudentCreateRequestDTO.builder()
                 .name(name)
-                .guardianId(guardianId)
+                .groupId(groupId)
                 .routeId(routeId)
+                .waypointId(waypointId)
                 .schoolName(schoolName)
                 .grade(grade)
                 .notes(notes)
@@ -56,7 +58,8 @@ public class StudentController {
     public ResponseEntity<StudentDTO> updateStudent(
             @PathVariable Long studentId,
             @RequestParam("name") String name,
-            @RequestParam("guardianId") Long guardianId,
+            @RequestParam("groupId") Long groupId,
+            @RequestParam("waypointId") Long waypointId,
             @RequestParam("routeId") Long routeId,
             @RequestParam("schoolName") String schoolName,
             @RequestParam("grade") String grade,
@@ -65,7 +68,8 @@ public class StudentController {
 
         StudentCreateRequestDTO studentCreateRequestDTO = StudentCreateRequestDTO.builder()
                 .name(name)
-                .guardianId(guardianId)
+                .groupId(groupId)
+                .waypointId(waypointId)
                 .routeId(routeId)
                 .schoolName(schoolName)
                 .grade(grade)

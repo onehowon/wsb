@@ -2,6 +2,7 @@ package com.ebiz.wsb.domain.group.entity;
 
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.parent.entity.Parent;
+import com.ebiz.wsb.domain.student.entity.Student;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,4 +34,7 @@ public class Group {
 
     @OneToMany(mappedBy = "group")
     private List<Parent> parents = new ArrayList<>();
+
+    @OneToMany(mappedBy = "group")
+    private List<Student> students = new ArrayList<>();
 }

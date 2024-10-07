@@ -13,8 +13,9 @@ import org.springframework.web.multipart.MultipartFile;
 public class StudentDTO {
     private Long studentId;
     private String name;
-    private Long guardianId;
+    private Long groupId;
     private Long routeId;
+    private Long waypointId;
     private String schoolName;
     private String grade;
     private String notes;
