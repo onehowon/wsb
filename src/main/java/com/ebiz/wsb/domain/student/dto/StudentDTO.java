@@ -19,6 +19,4 @@ public class StudentDTO {
     private String grade;
     private String notes;
     private String imagePath;
-    private String guardianContact;
-
 }
