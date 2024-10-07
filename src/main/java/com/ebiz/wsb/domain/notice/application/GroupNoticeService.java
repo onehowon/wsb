@@ -15,6 +15,8 @@ import com.ebiz.wsb.domain.notice.repository.GroupNoticeRepository;
 import com.ebiz.wsb.domain.notice.repository.NoticeTypeRepository;
 import com.ebiz.wsb.global.service.S3Service;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,10 +35,9 @@ public class GroupNoticeService {
     private final UserDetailsServiceImpl userDetailsService;
     private final NoticeTypeRepository noticeTypeRepository;
 
-    public List<GroupNoticeDTO> getAllGroupNotices() {
-        return groupNoticeRepository.findAll().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public Page<GroupNoticeDTO> getAllGroupNotices(Pageable pageable) {
+        return groupNoticeRepository.findAll(pageable)
+                .map(this::convertToDTO);
     }
 
     public GroupNoticeDTO getGroupNoticeById(Long groupNoticeId) {

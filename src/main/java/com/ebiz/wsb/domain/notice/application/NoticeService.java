@@ -4,6 +4,8 @@ import com.ebiz.wsb.domain.notice.dto.NoticeDTO;
 import com.ebiz.wsb.domain.notice.entity.Notice;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
 import com.ebiz.wsb.domain.notice.repository.NoticeRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +20,9 @@ public class NoticeService {
 
     private final NoticeRepository noticeRepository;
 
-    public List<NoticeDTO> getAllNotices() {
-        return noticeRepository.findAll().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public Page<NoticeDTO> getAllNotices(Pageable pageable) {
+        return noticeRepository.findAll(pageable)
+                .map(this::convertToDTO);
     }
 
     public NoticeDTO getNoticeById(Long noticeId) {

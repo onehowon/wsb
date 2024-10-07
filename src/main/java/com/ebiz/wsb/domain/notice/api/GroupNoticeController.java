@@ -3,6 +3,9 @@ package com.ebiz.wsb.domain.notice.api;
 import com.ebiz.wsb.domain.notice.application.GroupNoticeService;
 import com.ebiz.wsb.domain.notice.dto.GroupNoticeDTO;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +20,12 @@ public class GroupNoticeController {
 
     private final GroupNoticeService groupNoticeService;
     @GetMapping
-    public ResponseEntity<List<GroupNoticeDTO>> getAllGroupNotices() {
-        List<GroupNoticeDTO> groupNotices = groupNoticeService.getAllGroupNotices();
+    public ResponseEntity<Page<GroupNoticeDTO>> getAllGroupNotices(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<GroupNoticeDTO> groupNotices = groupNoticeService.getAllGroupNotices(pageable);
         return ResponseEntity.ok(groupNotices);
     }
 
