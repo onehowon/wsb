@@ -1,6 +1,7 @@
 package com.ebiz.wsb.domain.notice.entity;
 
 
+import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -46,6 +47,10 @@ public class GroupNotice {
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @ManyToOne
+    @JoinColumn(name = "group_id", referencedColumnName = "group_id")
+    private Group group;
 
 
 }

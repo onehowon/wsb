@@ -110,4 +110,9 @@ public class GlobalExceptionHandler {
                         .message(ex.getMessage())
                         .build());
     }
+
+    @ExceptionHandler(java.nio.file.AccessDeniedException.class)
+    public ResponseEntity<String> handleAccessDeniedException(java.nio.file.AccessDeniedException ex){
+        return new ResponseEntity<>("접근이 거부되었습니다." + ex.getMessage(), HttpStatus.FORBIDDEN);
+    }
 }

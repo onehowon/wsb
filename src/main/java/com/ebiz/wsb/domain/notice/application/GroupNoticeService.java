@@ -1,6 +1,7 @@
 package com.ebiz.wsb.domain.notice.application;
 
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
+import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
@@ -10,10 +11,13 @@ import com.ebiz.wsb.domain.notice.entity.GroupNotice;
 import com.ebiz.wsb.domain.notice.entity.NoticeType;
 import com.ebiz.wsb.domain.notice.entity.NoticeTypeEnum;
 import com.ebiz.wsb.domain.notice.exception.CustomInvalidNoticeTypeException;
+import com.ebiz.wsb.domain.notice.exception.NoticeAccessDeniedException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
 import com.ebiz.wsb.domain.notice.repository.GroupNoticeRepository;
 import com.ebiz.wsb.domain.notice.repository.NoticeTypeRepository;
+import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.global.service.S3Service;
+import java.nio.file.AccessDeniedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +38,7 @@ public class GroupNoticeService {
     private final S3Service s3service;
     private final UserDetailsServiceImpl userDetailsService;
     private final NoticeTypeRepository noticeTypeRepository;
+    private final GroupRepository groupRepository;
 
     public Page<GroupNoticeDTO> getAllGroupNotices(Pageable pageable) {
         return groupNoticeRepository.findAll(pageable)
@@ -43,6 +48,26 @@ public class GroupNoticeService {
     public GroupNoticeDTO getGroupNoticeById(Long groupNoticeId) {
         GroupNotice groupNotice = groupNoticeRepository.findById(groupNoticeId)
                 .orElseThrow(() -> new NoticeNotFoundException(groupNoticeId));
+
+        if(groupNotice.getGroup() == null){
+            throw new IllegalStateException("공지사항에 연결된 그룹이 없습니다.");
+        }
+
+        Object currentUser = userDetailsService.getUserByContextHolder();
+
+        boolean isMember = false;
+        if (currentUser instanceof Guardian) {
+            Guardian guardian = (Guardian) currentUser;
+            isMember = groupRepository.isUserInGroupForGuardian(guardian.getId(), groupNotice.getGroup().getId());
+        } else if (currentUser instanceof Parent) {
+            Parent parent = (Parent) currentUser;
+            isMember = groupRepository.isUserInGroupForParent(parent.getId(), groupNotice.getGroup().getId());
+        }
+
+        if(!isMember){
+            throw new NoticeAccessDeniedException("공지사항 열람 권한이 없습니다.");
+        }
+
         return convertToDTO(groupNotice);
     }
 
