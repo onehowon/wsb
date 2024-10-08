@@ -1,6 +1,5 @@
 package com.ebiz.wsb.domain.waypoint.dto;
 
-import com.ebiz.wsb.domain.route.dto.RouteDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
