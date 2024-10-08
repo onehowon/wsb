@@ -1,5 +1,6 @@
 package com.ebiz.wsb.domain.guardian.api;
 
+import com.ebiz.wsb.domain.group.dto.GroupDTO;
 import com.ebiz.wsb.domain.guardian.application.GuardianService;
 import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
 import lombok.RequiredArgsConstructor;
@@ -52,5 +53,12 @@ public class GuardianController {
     public ResponseEntity<Void> deleteGuardian(@PathVariable Long id){
         guardianService.deleteGuardian(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/group")
+    public ResponseEntity<GroupDTO> getGuardianGroup() {
+        GroupDTO group = guardianService.getGuardianGroup();
+        return new ResponseEntity<>(group, HttpStatus.OK);
+
     }
 }
