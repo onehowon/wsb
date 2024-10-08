@@ -1,10 +1,15 @@
 package com.ebiz.wsb.domain.guardian.application;
 
+import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
+import com.ebiz.wsb.domain.group.dto.GroupDTO;
+import com.ebiz.wsb.domain.group.entity.Group;
+import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
 import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
+import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
 import com.ebiz.wsb.global.service.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +19,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +30,7 @@ public class GuardianService {
 
     private final GuardianRepository guardianRepository;
     private final S3Service s3service;
+    private final UserDetailsServiceImpl userDetailsService;
 
     public GuardianDTO getGuardianById(Long guardianId) {
         Guardian guardian = guardianRepository.findById(guardianId)
@@ -85,6 +93,20 @@ public class GuardianService {
             return s3service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
         } catch (IOException e) {
             throw new FileUploadException("이미지 업로드 실패", e);
+        }
+    }
+
+    public GroupDTO getGuardianGroup() {
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        if (userByContextHolder instanceof Guardian) {
+            Guardian guardian = (Guardian) userByContextHolder;
+            Group group = guardian.getGroup();
+            return GroupDTO.builder()
+                    .groupName(group.getGroupName())
+                    .schoolName(group.getSchoolName())
+                    .build();
+        } else {
+            throw new GroupNotFoundException("배정된 그룹을 찾을 수 없습니다.");
         }
     }
 }

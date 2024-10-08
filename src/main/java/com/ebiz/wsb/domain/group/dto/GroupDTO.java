@@ -17,6 +17,7 @@ public class GroupDTO {
 
     private Long id;
     private String groupName;
+    private String schoolName;
     private List<GuardianDTO> guardians;
     private List<ParentDTO> parents;
 
