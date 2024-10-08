@@ -32,22 +32,24 @@ public class WaypointService {
             List<Waypoint> waypoints = waypointRepository.findByGroup_Id(group.getId());
 
             return waypoints.stream()
-                    .map(this::convertToDTO)
+                    .map(this::convertToDTOWithStudentCount)
                     .collect(Collectors.toList());
         } else {
             return Collections.emptyList();
         }
     }
 
-    private WaypointDTO convertToDTO(Waypoint waypoint) {
-        return WaypointDTO.builder()
-                .waypointId(waypoint.getId())
-                .waypointName(waypoint.getWaypointName())
-                .latitude(waypoint.getLatitude())
-                .longitude(waypoint.getLongitude())
-                .waypointOrder(waypoint.getWaypointOrder())
-                .groupId(waypoint.getGroup().getId())
-                .build();
+    private WaypointDTO convertToDTOWithStudentCount(Waypoint waypoint) {
+        // Waypoint -> WaypointDTO 변환, 학생 수 포함
+        return new WaypointDTO(
+                waypoint.getId(),
+                waypoint.getWaypointName(),
+                waypoint.getLatitude(),
+                waypoint.getLongitude(),
+                waypoint.getWaypointOrder(),
+                waypoint.getGroup().getId(),
+                waypoint.getStudents().size()
+        );
     }
 
 

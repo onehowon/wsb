@@ -17,6 +17,7 @@ public class WaypointDTO {
     private Double longitude;
     private Integer waypointOrder;
     private Long groupId;
+    private int studentCount;
 
 
 }
