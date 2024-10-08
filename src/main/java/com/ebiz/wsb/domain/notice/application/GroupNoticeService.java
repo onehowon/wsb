@@ -19,6 +19,7 @@ import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.global.service.S3Service;
 import java.nio.file.AccessDeniedException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GroupNoticeService {
 
     private final GroupNoticeRepository groupNoticeRepository;
@@ -58,9 +60,21 @@ public class GroupNoticeService {
         boolean isMember = false;
         if (currentUser instanceof Guardian) {
             Guardian guardian = (Guardian) currentUser;
+
+            if(guardian.getGroup().getId() == null){
+                log.error("Guardian ID {}는 그룹에 속해 있지 않습니다..", guardian.getId());
+                throw new NoticeAccessDeniedException("해당 인솔자는 그룹에 속해 있지 않습니다.");
+            }
+
             isMember = groupRepository.isUserInGroupForGuardian(guardian.getId(), groupNotice.getGroup().getId());
+
         } else if (currentUser instanceof Parent) {
             Parent parent = (Parent) currentUser;
+
+            if(parent.getGroup().getId() == null){
+                log.error("Parent ID {}는 그룹에 속해 있지 않습니다..", parent.getId());
+                throw new NoticeAccessDeniedException("해당 학부모는 그룹에 속해 있지 않습니다.");
+            }
             isMember = groupRepository.isUserInGroupForParent(parent.getId(), groupNotice.getGroup().getId());
         }
 

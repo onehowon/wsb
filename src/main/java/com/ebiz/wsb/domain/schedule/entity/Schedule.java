@@ -1,5 +1,6 @@
 package com.ebiz.wsb.domain.schedule.entity;
 
+import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -33,4 +34,8 @@ public class Schedule {
 
     @Column(name = "schedule_file")
     private String scheduleFile;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id")
+    private Group group;
 }

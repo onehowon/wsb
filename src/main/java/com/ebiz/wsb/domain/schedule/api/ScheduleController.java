@@ -40,6 +40,22 @@ public class ScheduleController {
         return ResponseEntity.ok(schedules);
     }
 
+    @GetMapping("/group/{groupId}/date")
+    public ResponseEntity<List<ScheduleDTO>> getGroupScheduleByDate(
+            @PathVariable Long groupId,
+            @RequestParam("specificDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime specificDate) {
+        List<ScheduleDTO> groupSchedules = scheduleService.getGroupScheduleByDate(groupId, specificDate);
+        return ResponseEntity.ok(groupSchedules);
+    }
+
+    @GetMapping("/month")
+    public ResponseEntity<List<ScheduleDTO>> getMySchedulesByMonth(
+            @RequestParam("year") int year,
+            @RequestParam("month") int month){
+        List<ScheduleDTO> myMonthlySchedules = scheduleService.getScheduleByMonth(year, month);
+        return ResponseEntity.ok(myMonthlySchedules);
+    }
+
     @PutMapping("/{scheduleId}")
     public ResponseEntity<ScheduleDTO> updateSchedule(
             @PathVariable Long scheduleId,

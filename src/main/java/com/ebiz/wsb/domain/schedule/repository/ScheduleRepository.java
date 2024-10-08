@@ -13,4 +13,6 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
     List<Schedule> findByGuardian(Guardian guardian);
 
     List<Schedule> findByGuardianAndRegistrationDateBetween(Guardian guardian, LocalDateTime startDate, LocalDateTime endDate);
+
+    List<Schedule> findByGroupIdAndRegistrationDateBetween(Long groupId, LocalDateTime startDate, LocalDateTime endDate);
 }

@@ -5,6 +5,7 @@ import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.location.exception.InvalidLocationDataException;
 import com.ebiz.wsb.domain.mail.exception.InvalidMailException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
+import com.ebiz.wsb.domain.schedule.exception.ScheduleAccessException;
 import com.ebiz.wsb.domain.token.exception.InvalidTokenException;
 import com.ebiz.wsb.global.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
@@ -114,5 +116,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(java.nio.file.AccessDeniedException.class)
     public ResponseEntity<String> handleAccessDeniedException(java.nio.file.AccessDeniedException ex){
         return new ResponseEntity<>("접근이 거부되었습니다." + ex.getMessage(), HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(ScheduleAccessException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public String handleScheduleAccessException(ScheduleAccessException ex) {
+        return ex.getMessage();
     }
 }

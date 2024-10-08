@@ -1,13 +1,16 @@
 package com.ebiz.wsb.domain.schedule.application;
 
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
+import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
 import com.ebiz.wsb.domain.schedule.dto.ScheduleDTO;
 import com.ebiz.wsb.domain.schedule.entity.Schedule;
+import com.ebiz.wsb.domain.schedule.exception.ScheduleAccessException;
 import com.ebiz.wsb.domain.schedule.exception.ScheduleNotFoundException;
 import com.ebiz.wsb.domain.schedule.repository.ScheduleRepository;
 import com.ebiz.wsb.global.service.S3Service;
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Builder;
@@ -30,6 +33,7 @@ public class ScheduleService {
     private final GuardianRepository guardianRepository;
     private final S3Service s3Service;
     private final UserDetailsServiceImpl userDetailsService;
+    private final GroupRepository groupRepository;
 
     private static final String FILE_UPLOAD_DIRECTORY = "/uploads";
 
@@ -86,6 +90,44 @@ public class ScheduleService {
 
         List<Schedule> schedules = scheduleRepository.findByGuardianAndRegistrationDateBetween(
                 currentGuardian, startDate, endDate
+        );
+
+        return schedules.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ScheduleDTO> getGroupScheduleByDate(Long groupId, LocalDateTime specificDate) {
+        Guardian currentGuardian = (Guardian) userDetailsService.getUserByContextHolder();
+
+        boolean isMember = groupRepository.isUserInGroupForGuardian(currentGuardian.getId(), groupId);
+        if (!isMember) {
+            throw new ScheduleAccessException("해당 그룹의 스케줄에 접근할 권한이 없습니다.");
+        }
+
+        LocalDateTime startOfDay = specificDate.toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = specificDate.toLocalDate().atTime(23, 59, 59);
+
+        List<Schedule> schedules = scheduleRepository.findByGroupIdAndRegistrationDateBetween(
+                groupId, startOfDay, endOfDay
+        );
+
+        return schedules.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ScheduleDTO> getScheduleByMonth(int year, int month){
+        Guardian currentGuardian = (Guardian) userDetailsService.getUserByContextHolder();
+
+        LocalDateTime startOfMonth = LocalDateTime.of(year, month, 1, 0, 0);
+        LocalDateTime endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.toLocalDate().lengthOfMonth())
+                .withHour(23).withMinute(59).withSecond(59);
+
+        List<Schedule> schedules = scheduleRepository.findByGuardianAndRegistrationDateBetween(
+                currentGuardian, startOfMonth, endOfMonth
         );
 
         return schedules.stream()
