@@ -17,7 +17,7 @@ public class WaypointDTO {
     private Double latitude;
     private Double longitude;
     private Integer waypointOrder;
-    private Long routeId;
+    private Long groupId;
 
 
 }

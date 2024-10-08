@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 public interface WaypointRepository extends JpaRepository<Waypoint, Long> {
-   List<Waypoint> findByRoute_Id(Long routeId);
+   List<Waypoint> findByGroup_Id(Long groupId);
 
     // 경유지 ID로 학생 목록을 조회하는 JPQL 쿼리
     @Query("SELECT s FROM Student s WHERE s.waypoint.id = :waypointId")

@@ -1,6 +1,6 @@
 package com.ebiz.wsb.domain.waypoint.entity;
 
-import com.ebiz.wsb.domain.route.entity.Route;
+import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.student.entity.Student;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -39,8 +39,8 @@ public class Waypoint {
     private Integer waypointOrder;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "route_id")
-    private Route route;
+    @JoinColumn(name = "group_id")
+    private Group group;
 
     @OneToMany(mappedBy = "waypoint")
     private List<Student> students = new ArrayList<>();

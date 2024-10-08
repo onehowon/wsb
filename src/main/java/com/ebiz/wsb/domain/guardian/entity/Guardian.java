@@ -1,7 +1,6 @@
 package com.ebiz.wsb.domain.guardian.entity;
 
 import com.ebiz.wsb.domain.group.entity.Group;
-import com.ebiz.wsb.domain.route.entity.Route;
 import com.ebiz.wsb.domain.student.entity.Student;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -45,10 +44,6 @@ public class Guardian {
 
     @Column(name = "image_path")
     private String imagePath;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "route_id", referencedColumnName = "route_id")
-    private Route route;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")

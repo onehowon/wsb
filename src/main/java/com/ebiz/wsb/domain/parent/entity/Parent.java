@@ -1,7 +1,6 @@
 package com.ebiz.wsb.domain.parent.entity;
 
 import com.ebiz.wsb.domain.group.entity.Group;
-import com.ebiz.wsb.domain.route.entity.Route;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,10 +40,6 @@ public class Parent {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")
     private Group group;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "route_id")
-    private Route route;
 
     @Column(name = "image_path")
     private String imagePath;

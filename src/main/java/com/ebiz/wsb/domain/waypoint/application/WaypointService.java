@@ -1,12 +1,12 @@
 package com.ebiz.wsb.domain.waypoint.application;
 
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
+import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
-import com.ebiz.wsb.domain.route.entity.Route;
-import com.ebiz.wsb.domain.route.repository.RouteRepository;
 import com.ebiz.wsb.domain.student.dto.StudentDTO;
 import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.student.exception.StudentNotFoundException;
+import com.ebiz.wsb.domain.waypoint.dto.WaypointDTO;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
 import com.ebiz.wsb.domain.waypoint.exception.WaypointWithoutStudentsException;
 import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
@@ -23,7 +23,32 @@ public class WaypointService {
 
     private final WaypointRepository waypointRepository;
     private final UserDetailsServiceImpl userDetailsService;
-    private final RouteRepository routeRepository;
+
+    public List<WaypointDTO> getWaypoints() {
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        if (userByContextHolder instanceof Guardian) {
+            Guardian guardian = (Guardian) userByContextHolder;
+            Group group = guardian.getGroup();
+            List<Waypoint> waypoints = waypointRepository.findByGroup_Id(group.getId());
+
+            return waypoints.stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    private WaypointDTO convertToDTO(Waypoint waypoint) {
+        return WaypointDTO.builder()
+                .waypointId(waypoint.getId())
+                .waypointName(waypoint.getWaypointName())
+                .latitude(waypoint.getLatitude())
+                .longitude(waypoint.getLongitude())
+                .waypointOrder(waypoint.getWaypointOrder())
+                .groupId(waypoint.getGroup().getId())
+                .build();
+    }
 
 
     public List<StudentDTO> getStudentByWaypoint(Long waypointId) {
@@ -31,8 +56,8 @@ public class WaypointService {
 
         if (userByContextHolder instanceof Guardian) {
             Guardian guardian = (Guardian) userByContextHolder;
-            Route route = guardian.getRoute();
-            List<Waypoint> waypoints = waypointRepository.findByRoute_Id(route.getId());
+            Group group = guardian.getGroup();
+            List<Waypoint> waypoints = waypointRepository.findByGroup_Id(group.getId());
 
             for (Waypoint waypoint : waypoints) {
                 if (waypoint.getId().equals(waypointId)) {
@@ -57,7 +82,6 @@ public class WaypointService {
                 .notes(student.getNotes())
                 .imagePath(student.getImagePath())
                 .groupId(student.getGroup().getId())
-                .routeId(student.getRoute().getId())
                 .build();
     }
 }

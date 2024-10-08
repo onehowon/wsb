@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class StudentCreateRequestDTO {
     private String name;
-    private Long routeId;
     private Long groupId;
     private Long waypointId;
     private String schoolName;

@@ -14,7 +14,6 @@ public class StudentDTO {
     private Long studentId;
     private String name;
     private Long groupId;
-    private Long routeId;
     private Long waypointId;
     private String schoolName;
     private String grade;

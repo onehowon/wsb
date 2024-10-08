@@ -32,7 +32,6 @@ public class GuardianController {
             @RequestParam("phone") String phone,
             @RequestParam("bio") String bio,
             @RequestParam("experience") String experience,
-            @RequestParam("routeId") Long routeId,
             @RequestPart(value = "file", required = false) MultipartFile file) throws IOException {
 
 
@@ -42,7 +41,6 @@ public class GuardianController {
                 .phone(phone)
                 .bio(bio)
                 .experience(experience)
-                .routeId(routeId)
                 .build();
 
         GuardianDTO updatedGuardian = guardianService.updateGuardian(id, guardianDTO, file);

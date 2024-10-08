@@ -2,7 +2,6 @@ package com.ebiz.wsb.domain.student.entity;
 
 import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
-import com.ebiz.wsb.domain.route.entity.Route;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -30,10 +29,6 @@ public class Student {
     @ManyToOne
     @JoinColumn(name = "group_id")
     private Group group;
-
-    @ManyToOne
-    @JoinColumn(name = "route_id", referencedColumnName = "route_id")
-    private Route route;
 
     @ManyToOne
     @JoinColumn(name = "waypoint_id")
