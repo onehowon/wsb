@@ -6,9 +6,6 @@ import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
-import com.ebiz.wsb.domain.route.entity.Route;
-import com.ebiz.wsb.domain.route.exception.RouteNotFoundException;
-import com.ebiz.wsb.domain.route.repository.RouteRepository;
 import com.ebiz.wsb.domain.student.dto.StudentCreateRequestDTO;
 import com.ebiz.wsb.domain.student.dto.StudentDTO;
 import com.ebiz.wsb.domain.student.entity.Student;
@@ -32,7 +29,6 @@ import java.util.List;
 public class StudentService {
 
     private final StudentRepository studentRepository;
-    private final RouteRepository routeRepository;
     private final GuardianRepository guardianRepository;
     private final GroupRepository groupRepository;
     private final S3Service s3Service;
@@ -53,15 +49,12 @@ public class StudentService {
 
         Group group = groupRepository.findById(studentCreateRequestDTO.getGroupId())
                 .orElseThrow(() -> new GroupNotFoundException("그룹 정보를 찾을 수 없습니다."));
-        Route route = routeRepository.findById(studentCreateRequestDTO.getRouteId())
-                .orElseThrow(() -> new RouteNotFoundException("해당 경로를 찾을 수 없습니다."));
         Waypoint waypoint = waypointRepository.findById(studentCreateRequestDTO.getWaypointId())
                 .orElseThrow(() -> new WaypointNotFoundException("해당 경유지를 찾을 수 없습니다."));
 
         Student student = Student.builder()
                 .name(studentCreateRequestDTO.getName())
                 .group(group)
-                .route(route)
                 .waypoint(waypoint)
                 .schoolName(studentCreateRequestDTO.getSchoolName())
                 .grade(studentCreateRequestDTO.getGrade())
@@ -98,8 +91,6 @@ public class StudentService {
 
         Group group = groupRepository.findById(studentCreateRequestDTO.getGroupId())
                 .orElseThrow(() -> new GroupNotFoundException("그룹 정보를 찾을 수 없습니다."));
-        Route route = routeRepository.findById(studentCreateRequestDTO.getRouteId())
-                .orElseThrow(() -> new RouteNotFoundException("해당 경로를 찾을 수 없습니다."));
         Waypoint waypoint = waypointRepository.findById(studentCreateRequestDTO.getWaypointId())
                 .orElseThrow(() -> new WaypointNotFoundException("해당 경유지를 찾을 수 없습니다."));
 
@@ -107,7 +98,6 @@ public class StudentService {
                 .studentId(existingStudent.getStudentId())
                 .name(studentCreateRequestDTO.getName())
                 .group(group)
-                .route(route)
                 .waypoint(waypoint)
                 .schoolName(studentCreateRequestDTO.getSchoolName())
                 .grade(studentCreateRequestDTO.getGrade())
@@ -130,7 +120,6 @@ public class StudentService {
                 .studentId(student.getStudentId())
                 .name(student.getName())
                 .groupId(student.getGroup().getId())
-                .routeId(student.getRoute().getId())
                 .waypointId(student.getWaypoint().getId())
                 .schoolName(student.getSchoolName())
                 .grade(student.getGrade())
@@ -142,9 +131,6 @@ public class StudentService {
     private void validateStudentDTO(StudentCreateRequestDTO studentDTO) {
         if (studentDTO.getName() == null || studentDTO.getName().isEmpty()) {
             throw new IllegalArgumentException("학생 이름은 필수 항목입니다.");
-        }
-        if (studentDTO.getRouteId() == null) {
-            throw new IllegalArgumentException("Route ID는 필수 항목입니다.");
         }
         if (studentDTO.getGroupId() == null) {
             throw new IllegalArgumentException("Group ID는 필수 항목입니다.");

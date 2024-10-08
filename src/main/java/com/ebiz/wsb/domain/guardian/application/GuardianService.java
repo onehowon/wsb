@@ -5,9 +5,6 @@ import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
-import com.ebiz.wsb.domain.route.entity.Route;
-import com.ebiz.wsb.domain.route.exception.RouteNotFoundException;
-import com.ebiz.wsb.domain.route.repository.RouteRepository;
 import com.ebiz.wsb.global.service.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +22,6 @@ import java.util.List;
 public class GuardianService {
 
     private final GuardianRepository guardianRepository;
-    private final RouteRepository routeRepository;
     private final S3Service s3service;
 
     public GuardianDTO getGuardianById(Long guardianId) {
@@ -44,9 +40,6 @@ public class GuardianService {
             imageUrl = uploadImage(imageFile);
         }
 
-        Route route = routeRepository.findById(guardianDTO.getRouteId())
-                .orElseThrow(() -> new RouteNotFoundException("경로 정보를 찾을 수 없습니다."));
-
         Guardian updatedGuardian = Guardian.builder()
                 .id(existingGuardian.getId())
                 .name(guardianDTO.getName() != null ? guardianDTO.getName() : existingGuardian.getName())
@@ -55,7 +48,6 @@ public class GuardianService {
                 .bio(guardianDTO.getBio() != null ? guardianDTO.getBio() : existingGuardian.getBio())
                 .experience(guardianDTO.getExperience() != null ? guardianDTO.getExperience() : existingGuardian.getExperience())
                 .imagePath(imageUrl != null ? imageUrl : existingGuardian.getImagePath())
-                .route(route)
                 .password(existingGuardian.getPassword())
                 .build();
 
@@ -85,7 +77,6 @@ public class GuardianService {
                 .bio(guardian.getBio())
                 .experience(guardian.getExperience())
                 .imagePath(guardian.getImagePath())  // S3에서 받아온 전체 경로
-                .routeId(guardian.getRoute() != null ? guardian.getRoute().getId() : null)
                 .build();
     }
 

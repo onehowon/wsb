@@ -22,7 +22,6 @@ public class StudentController {
             @RequestParam("name") String name,
             @RequestParam("groupId") Long groupId,
             @RequestParam("waypointId") Long waypointId,
-            @RequestParam("routeId") Long routeId,
             @RequestParam("schoolName") String schoolName,
             @RequestParam("grade") String grade,
             @RequestParam("notes") String notes,
@@ -31,7 +30,6 @@ public class StudentController {
         StudentCreateRequestDTO studentCreateRequestDTO = StudentCreateRequestDTO.builder()
                 .name(name)
                 .groupId(groupId)
-                .routeId(routeId)
                 .waypointId(waypointId)
                 .schoolName(schoolName)
                 .grade(grade)
@@ -60,7 +58,6 @@ public class StudentController {
             @RequestParam("name") String name,
             @RequestParam("groupId") Long groupId,
             @RequestParam("waypointId") Long waypointId,
-            @RequestParam("routeId") Long routeId,
             @RequestParam("schoolName") String schoolName,
             @RequestParam("grade") String grade,
             @RequestParam("notes") String notes,
@@ -70,7 +67,6 @@ public class StudentController {
                 .name(name)
                 .groupId(groupId)
                 .waypointId(waypointId)
-                .routeId(routeId)
                 .schoolName(schoolName)
                 .grade(grade)
                 .notes(notes)

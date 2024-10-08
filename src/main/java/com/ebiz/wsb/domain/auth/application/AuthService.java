@@ -168,7 +168,6 @@ public class AuthService {
                     .experience(guardian.getExperience())
                     .phone(guardian.getPhone())
                     .imagePath(guardian.getImagePath())
-                    .route(guardian.getRoute())
                     .group(guardian.getGroup())
                     .build();
             guardianRepository.save(updatedGuardian);

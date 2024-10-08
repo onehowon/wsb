@@ -3,6 +3,7 @@ package com.ebiz.wsb.domain.group.entity;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.student.entity.Student;
+import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,7 +27,10 @@ public class Group {
     @Column(name = "group_id")
     private Long id;
 
-    @Column(name = "name")
+    @Column(name = "school_name")
+    private String schoolName;
+
+    @Column(name = "group_name")
     private String groupName;
 
     @OneToMany(mappedBy = "group")
@@ -37,4 +41,7 @@ public class Group {
 
     @OneToMany(mappedBy = "group")
     private List<Student> students = new ArrayList<>();
+
+    @OneToMany(mappedBy = "group")
+    private List<Waypoint> waypoints = new ArrayList<>();
 }
