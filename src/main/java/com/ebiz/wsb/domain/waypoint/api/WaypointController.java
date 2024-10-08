@@ -19,7 +19,7 @@ public class WaypointController {
 
     private final WaypointService waypointService;
 
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<List<WaypointDTO>> getWaypoints() {
         List<WaypointDTO> waypoints = waypointService.getWaypoints();
         return ResponseEntity.ok(waypoints);
