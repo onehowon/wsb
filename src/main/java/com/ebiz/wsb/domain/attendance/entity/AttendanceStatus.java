@@ -8,19 +8,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicInsert;
 
-@Entity
-@Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-@DynamicInsert
-@Table(name = "AttendanceStatus")
-public class AttendanceStatus {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "status_id")
-    private Long statusId;
-
-    @Column(name = "name")
-    private String name;
+public enum AttendanceStatus {
+    UNCONFIRMED,  // 미인증
+    PRESENT,      // 출석 완료
+    ABSENT,       // 결석
+    PREABSENT     // 사전 결석
 }

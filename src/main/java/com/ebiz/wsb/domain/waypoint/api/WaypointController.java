@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,8 +28,11 @@ public class WaypointController {
     }
 
     @GetMapping("/{waypointId}/students")
-    public ResponseEntity<List<StudentDTO>> getStudentsByWaypoint(@PathVariable Long waypointId) {
+    public ResponseEntity<Map<String, Object>> getStudentsByWaypoint(@PathVariable Long waypointId) {
         List<StudentDTO> students = waypointService.getStudentByWaypoint(waypointId);
-        return ResponseEntity.ok(students);
+        Map<String, Object> response = new HashMap<>();
+        response.put("students", students);
+        response.put("totalStudentCount", students.size());
+        return ResponseEntity.ok(response);
     }
 }

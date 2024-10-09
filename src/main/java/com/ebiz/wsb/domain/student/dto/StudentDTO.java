@@ -1,5 +1,6 @@
 package com.ebiz.wsb.domain.student.dto;
 
+import com.ebiz.wsb.domain.attendance.entity.AttendanceStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,4 +20,5 @@ public class StudentDTO {
     private String grade;
     private String notes;
     private String imagePath;
+    private AttendanceStatus attendanceStatus;
 }
