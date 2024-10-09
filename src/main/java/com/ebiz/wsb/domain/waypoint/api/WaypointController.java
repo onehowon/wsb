@@ -28,11 +28,8 @@ public class WaypointController {
     }
 
     @GetMapping("/{waypointId}/students")
-    public ResponseEntity<Map<String, Object>> getStudentsByWaypoint(@PathVariable Long waypointId) {
+    public ResponseEntity<List<StudentDTO>> getStudentsByWaypoint(@PathVariable Long waypointId) {
         List<StudentDTO> students = waypointService.getStudentByWaypoint(waypointId);
-        Map<String, Object> response = new HashMap<>();
-        response.put("students", students);
-        response.put("totalStudentCount", students.size());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(students);
     }
 }
