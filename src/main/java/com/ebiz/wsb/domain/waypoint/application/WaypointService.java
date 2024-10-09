@@ -84,8 +84,6 @@ public class WaypointService {
         LocalDate today = LocalDate.now();
         Attendance attendance = attendanceRepository.findByStudentAndAttendanceDate(student, today)
                 .orElse(Attendance.builder()
-                        .student(student)
-                        .attendanceDate(today)
                         .attendanceStatus(AttendanceStatus.UNCONFIRMED)
                         .build());
 
