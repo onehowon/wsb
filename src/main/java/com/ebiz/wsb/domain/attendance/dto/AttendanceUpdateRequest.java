@@ -11,7 +11,7 @@ import lombok.Getter;
 public class AttendanceUpdateRequest {
 
     private Long studentId;
-    private AttendanceStatus AttendanceStatus;
+    private AttendanceStatus attendanceStatus;
 
 }
 
