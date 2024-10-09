@@ -118,13 +118,14 @@ public class StudentService {
     private StudentDTO convertToDTO(Student student) {
         return StudentDTO.builder()
                 .studentId(student.getStudentId())
+                .schoolName(student.getSchoolName())
+                .imagePath(student.getImagePath())
+                .grade(student.getGrade())
                 .name(student.getName())
+                .waypointName(student.getWaypoint().getWaypointName())
                 .groupId(student.getGroup().getId())
                 .waypointId(student.getWaypoint().getId())
-                .schoolName(student.getSchoolName())
-                .grade(student.getGrade())
                 .notes(student.getNotes())
-                .imagePath(student.getImagePath())
                 .build();
     }
 

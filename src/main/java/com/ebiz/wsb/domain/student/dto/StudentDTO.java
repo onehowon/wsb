@@ -21,4 +21,5 @@ public class StudentDTO {
     private String notes;
     private String imagePath;
     private AttendanceStatus attendanceStatus;
+    private String waypointName;
 }
