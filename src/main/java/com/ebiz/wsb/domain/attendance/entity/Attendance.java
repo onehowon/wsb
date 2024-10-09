@@ -40,9 +40,9 @@ public class Attendance {
     private LocalDate attendanceDate;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "attendance_status")
     private AttendanceStatus attendanceStatus;
 
     @Column(name = "parent_notice_absence")
     private boolean parentNoticeAbsence;
-
 }
