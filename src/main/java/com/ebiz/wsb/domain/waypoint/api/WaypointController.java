@@ -31,5 +31,7 @@ public class WaypointController {
     public ResponseEntity<List<StudentDTO>> getStudentsByWaypoint(@PathVariable Long waypointId) {
         List<StudentDTO> students = waypointService.getStudentByWaypoint(waypointId);
         return ResponseEntity.ok(students);
+
+
     }
 }
