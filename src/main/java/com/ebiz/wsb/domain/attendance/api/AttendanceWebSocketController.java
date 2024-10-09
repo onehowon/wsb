@@ -2,7 +2,6 @@ package com.ebiz.wsb.domain.attendance.api;
 
 import com.ebiz.wsb.domain.attendance.application.AttendanceService;
 import com.ebiz.wsb.domain.attendance.dto.AttendanceDTO;
-import com.ebiz.wsb.domain.attendance.dto.AttendanceStatusDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
