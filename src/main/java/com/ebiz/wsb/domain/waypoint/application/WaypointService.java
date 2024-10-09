@@ -84,6 +84,7 @@ public class WaypointService {
                 .notes(student.getNotes())
                 .imagePath(student.getImagePath())
                 .groupId(student.getGroup().getId())
+                .waypointId(student.getWaypoint().getId())
                 .build();
     }
 }
