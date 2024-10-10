@@ -42,7 +42,7 @@ public class Schedule {
     private Guardian guardian;
 
     @Column(name = "time")
-    private LocalTime time;
+    private LocalDateTime time;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id")

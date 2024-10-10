@@ -18,6 +18,7 @@ import com.ebiz.wsb.domain.schedule.repository.ScheduleTypeRepository;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
@@ -75,20 +76,36 @@ public class ScheduleService {
         return convertToResponseDTO(schedules, specificDate);
     }
     @Transactional(readOnly = true)
-    public List<ScheduleDTO> getScheduleByMonth(int year, int month) {
-        Guardian currentGuardian = (Guardian) userDetailsService.getUserByContextHolder();
+    public ScheduleByMonthResponseDTO getMyScheduleByMonth(int year, int month) {
+        Guardian currentGuardian = findCurrentGuardian();
 
-        LocalDateTime startOfMonth = LocalDateTime.of(year, month, 1, 0, 0);  // 해당 월의 첫째 날
-        LocalDateTime endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.toLocalDate().lengthOfMonth())
-                .withHour(23).withMinute(59).withSecond(59);  // 마지막 날
+        LocalDate startOfMonth = LocalDate.of(year, month, 1);
+        LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
+
+        LocalDateTime startOfDay = startOfMonth.atStartOfDay();
+        LocalDateTime endOfDay = endOfMonth.atTime(23, 59, 59);
 
         List<Schedule> schedules = scheduleRepository.findByGuardianAndTimeBetween(
-                currentGuardian, startOfMonth, endOfMonth
+                currentGuardian, startOfDay, endOfDay
         );
 
-        return schedules.stream()
-                .map(this::convertScheduleToDTO)
+        Map<LocalDate, List<String>> schedulesByDay = schedules.stream()
+                .collect(Collectors.groupingBy(
+                        schedule -> schedule.getTime().toLocalDate(),  // LocalDateTime에서 날짜만 추출
+                        Collectors.mapping(schedule -> schedule.getScheduleType().getName(), Collectors.toList())
+                ));
+
+        List<DayScheduleDTO> daySchedules = schedulesByDay.entrySet().stream()
+                .map(entry -> DayScheduleDTO.builder()
+                        .day(entry.getKey())
+                        .scheduleTypes(entry.getValue())
+                        .build())
                 .collect(Collectors.toList());
+
+        return ScheduleByMonthResponseDTO.builder()
+                .month(year + "-" + (month < 10 ? "0" + month : month))
+                .schedules(daySchedules)
+                .build();
     }
 
     @Transactional
@@ -127,10 +144,10 @@ public class ScheduleService {
                         .time(schedule.getTime().toString())
                         .guardianList(schedule.getGroup().getGuardians().stream()
                                 .map(guardian -> GuardianSummaryDTO.builder()
-                                        .name(guardian.getName())  // name만 설정
+                                        .name(guardian.getName())
                                         .imagePath(guardian.getImagePath() != null ? guardian.getImagePath() : "")  // imagePath 설정, null 처리
-                                        .build())  // GuardianSummaryDTO 생성
-                                .collect(Collectors.toList()))  // GuardianSummaryDTO 리스트로 반환
+                                        .build())
+                                .collect(Collectors.toList()))
                         .build())
                 .collect(Collectors.toList());
 

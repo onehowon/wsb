@@ -2,6 +2,7 @@ package com.ebiz.wsb.domain.schedule.api;
 
 import com.amazonaws.Response;
 import com.ebiz.wsb.domain.schedule.application.ScheduleService;
+import com.ebiz.wsb.domain.schedule.dto.ScheduleByMonthResponseDTO;
 import com.ebiz.wsb.domain.schedule.dto.ScheduleDTO;
 
 import java.time.LocalDate;
@@ -39,10 +40,10 @@ public class ScheduleController {
 
     // 사용자 월별 스케줄 조회
     @GetMapping("/month")
-    public ResponseEntity<List<ScheduleDTO>> getMySchedulesByMonth(
+    public ResponseEntity<ScheduleByMonthResponseDTO> getMySchedulesByMonth(
             @RequestParam("year") int year,
             @RequestParam("month") int month) {
-        List<ScheduleDTO> myMonthlySchedules = scheduleService.getScheduleByMonth(year, month);
+        ScheduleByMonthResponseDTO myMonthlySchedules = scheduleService.getMyScheduleByMonth(year, month);
         return ResponseEntity.ok(myMonthlySchedules);
     }
 
