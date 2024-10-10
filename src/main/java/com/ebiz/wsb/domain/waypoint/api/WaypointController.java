@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,7 +21,7 @@ public class WaypointController {
 
     private final WaypointService waypointService;
 
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<List<WaypointDTO>> getWaypoints() {
         List<WaypointDTO> waypoints = waypointService.getWaypoints();
         return ResponseEntity.ok(waypoints);
@@ -29,5 +31,7 @@ public class WaypointController {
     public ResponseEntity<List<StudentDTO>> getStudentsByWaypoint(@PathVariable Long waypointId) {
         List<StudentDTO> students = waypointService.getStudentByWaypoint(waypointId);
         return ResponseEntity.ok(students);
+
+
     }
 }

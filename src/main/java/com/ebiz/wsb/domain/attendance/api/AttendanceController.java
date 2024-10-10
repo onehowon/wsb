@@ -1,35 +1,24 @@
 package com.ebiz.wsb.domain.attendance.api;
 
 import com.ebiz.wsb.domain.attendance.application.AttendanceService;
-import com.ebiz.wsb.domain.attendance.dto.AttendanceDTO;
-import com.ebiz.wsb.domain.attendance.dto.AttendanceStatusDTO;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.ebiz.wsb.domain.attendance.dto.AttendanceUpdateRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/attendance")
 public class AttendanceController {
 
     private final AttendanceService attendanceService;
 
-    @Autowired
-    public AttendanceController(AttendanceService attendanceService){
-        this.attendanceService = attendanceService;
+    @PostMapping("/update")
+    public ResponseEntity<String> updateAttendance(@RequestBody AttendanceUpdateRequest request) {
+        attendanceService.updateAttendance(request.getStudentId(), request.getAttendanceStatus());
+        return ResponseEntity.ok("출석 상태가 업데이트되었습니다.");
     }
 
-    @PutMapping("/{attendanceId}")
-    public ResponseEntity<AttendanceDTO> updateAttendance(@PathVariable Long attendanceId,
-                                                          @RequestBody AttendanceStatusDTO attendanceStatusDTO){
-        AttendanceDTO updateAttendance = attendanceService.updateAttendance(attendanceId, attendanceStatusDTO);
-        return ResponseEntity.ok(updateAttendance);
-    }
-
-    @GetMapping("/student/{studentId}")
-    public ResponseEntity<List<AttendanceDTO>> getAttendanceByStudentId(@PathVariable Long studentId){
-        List<AttendanceDTO> attendanceList = attendanceService.getAttendanceByStudentId(studentId);
-        return ResponseEntity.ok(attendanceList);
-    }
 }

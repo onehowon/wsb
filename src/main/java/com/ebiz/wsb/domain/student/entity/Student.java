@@ -26,14 +26,6 @@ public class Student {
     @Column(name = "name")
     private String name;
 
-    @ManyToOne
-    @JoinColumn(name = "group_id")
-    private Group group;
-
-    @ManyToOne
-    @JoinColumn(name = "waypoint_id")
-    private Waypoint waypoint;
-
     @Column(name = "school_name")
     private String schoolName;
 
@@ -45,4 +37,12 @@ public class Student {
 
     @Column(name = "image_path")
     private String imagePath;
+
+    @ManyToOne
+    @JoinColumn(name = "group_id")
+    private Group group;
+
+    @ManyToOne
+    @JoinColumn(name = "waypoint_id")
+    private Waypoint waypoint;
 }

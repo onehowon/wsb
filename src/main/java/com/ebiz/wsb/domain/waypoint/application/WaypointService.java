@@ -1,5 +1,8 @@
 package com.ebiz.wsb.domain.waypoint.application;
 
+import com.ebiz.wsb.domain.attendance.entity.Attendance;
+import com.ebiz.wsb.domain.attendance.entity.AttendanceStatus;
+import com.ebiz.wsb.domain.attendance.repository.AttendanceRepository;
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
@@ -13,6 +16,7 @@ import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +27,7 @@ public class WaypointService {
 
     private final WaypointRepository waypointRepository;
     private final UserDetailsServiceImpl userDetailsService;
+    private final AttendanceRepository attendanceRepository;
 
     public List<WaypointDTO> getWaypoints() {
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
@@ -32,22 +37,24 @@ public class WaypointService {
             List<Waypoint> waypoints = waypointRepository.findByGroup_Id(group.getId());
 
             return waypoints.stream()
-                    .map(this::convertToDTO)
+                    .map(this::convertToDTOWithStudentCount)
                     .collect(Collectors.toList());
         } else {
             return Collections.emptyList();
         }
     }
 
-    private WaypointDTO convertToDTO(Waypoint waypoint) {
-        return WaypointDTO.builder()
-                .waypointId(waypoint.getId())
-                .waypointName(waypoint.getWaypointName())
-                .latitude(waypoint.getLatitude())
-                .longitude(waypoint.getLongitude())
-                .waypointOrder(waypoint.getWaypointOrder())
-                .groupId(waypoint.getGroup().getId())
-                .build();
+    private WaypointDTO convertToDTOWithStudentCount(Waypoint waypoint) {
+        // Waypoint -> WaypointDTO 변환, 학생 수 포함
+        return new WaypointDTO(
+                waypoint.getId(),
+                waypoint.getWaypointName(),
+                waypoint.getLatitude(),
+                waypoint.getLongitude(),
+                waypoint.getWaypointOrder(),
+                waypoint.getGroup().getId(),
+                waypoint.getStudents().size()
+        );
     }
 
 
@@ -72,8 +79,14 @@ public class WaypointService {
         throw new WaypointWithoutStudentsException("해당 경유지에 배정된 학생을 찾을 수가 없습니다.");
     }
 
-
     private StudentDTO convertToStudentDTO(Student student) {
+        // 오늘 날짜의 출석 상태를 가져옴
+        LocalDate today = LocalDate.now();
+        Attendance attendance = attendanceRepository.findByStudentAndAttendanceDate(student, today)
+                .orElse(Attendance.builder()
+                        .attendanceStatus(AttendanceStatus.UNCONFIRMED)
+                        .build());
+
         return StudentDTO.builder()
                 .studentId(student.getStudentId())
                 .name(student.getName())
@@ -81,7 +94,9 @@ public class WaypointService {
                 .grade(student.getGrade())
                 .notes(student.getNotes())
                 .imagePath(student.getImagePath())
+                .attendanceStatus(attendance.getAttendanceStatus())
                 .groupId(student.getGroup().getId())
+                .waypointId(student.getWaypoint().getId())
                 .build();
     }
 }
