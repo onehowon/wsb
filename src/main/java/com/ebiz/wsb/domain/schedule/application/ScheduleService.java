@@ -4,8 +4,8 @@ import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
+import com.ebiz.wsb.domain.guardian.dto.GuardianSummaryDTO;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
-import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
 import com.ebiz.wsb.domain.schedule.dto.*;
 import com.ebiz.wsb.domain.schedule.entity.Schedule;
@@ -14,9 +14,7 @@ import com.ebiz.wsb.domain.schedule.exception.ScheduleAccessException;
 import com.ebiz.wsb.domain.schedule.exception.ScheduleNotFoundException;
 import com.ebiz.wsb.domain.schedule.repository.ScheduleRepository;
 import com.ebiz.wsb.domain.schedule.repository.ScheduleTypeRepository;
-import com.ebiz.wsb.domain.student.dto.StudentDTO;
-import com.ebiz.wsb.global.service.S3Service;
-import java.nio.file.AccessDeniedException;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -26,10 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.security.Guard;
 import java.time.LocalDateTime;
 
 @Service
@@ -42,8 +37,6 @@ public class ScheduleService {
     private final UserDetailsServiceImpl userDetailsService;
     private final ScheduleTypeRepository scheduleTypeRepository;
     private final GroupRepository groupRepository;
-
-    private static final String FILE_UPLOAD_DIRECTORY = "/uploads";
 
     @Transactional
     public ScheduleDTO createSchedule(ScheduleDTO scheduleDTO) {
@@ -74,7 +67,6 @@ public class ScheduleService {
             throw new ScheduleAccessException("해당 그룹의 스케줄에 접근할 권한이 없습니다.");
         }
 
-        // 하루의 시작과 끝 시간 구하기
         LocalTime startOfDay = LocalTime.of(0, 0, 0);
         LocalTime endOfDay = LocalTime.of(23, 59, 59);
 
@@ -134,11 +126,11 @@ public class ScheduleService {
                         .type(schedule.getScheduleType().getName())
                         .time(schedule.getTime().toString())
                         .guardianList(schedule.getGroup().getGuardians().stream()
-                                .map(guardian -> GuardianDTO.builder()
-                                        .name(guardian.getName())
-                                        .imagePath(guardian.getImagePath() != null ? guardian.getImagePath() : "")
-                                        .build())
-                                .collect(Collectors.toList()))
+                                .map(guardian -> GuardianSummaryDTO.builder()
+                                        .name(guardian.getName())  // name만 설정
+                                        .imagePath(guardian.getImagePath() != null ? guardian.getImagePath() : "")  // imagePath 설정, null 처리
+                                        .build())  // GuardianSummaryDTO 생성
+                                .collect(Collectors.toList()))  // GuardianSummaryDTO 리스트로 반환
                         .build())
                 .collect(Collectors.toList());
 
@@ -155,11 +147,9 @@ public class ScheduleService {
 
 
 
-
-
     private ScheduleDTO convertScheduleToDTO(Schedule schedule) {
-        List<GuardianDTO> guardianList = schedule.getGroup().getGuardians().stream()
-                .map(guardian -> GuardianDTO.builder()
+        List<GuardianSummaryDTO> guardianList = schedule.getGroup().getGuardians().stream()
+                .map(guardian -> GuardianSummaryDTO.builder()
                         .name(guardian.getName())  // name 필드만 반환
                         .imagePath(guardian.getImagePath())  // imagePath만 반환
                         .build())

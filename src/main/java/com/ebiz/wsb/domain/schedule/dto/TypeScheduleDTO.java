@@ -1,6 +1,7 @@
 package com.ebiz.wsb.domain.schedule.dto;
 
 import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
+import com.ebiz.wsb.domain.guardian.dto.GuardianSummaryDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,5 +16,5 @@ import java.util.List;
 public class TypeScheduleDTO {
     private String type;
     private String time;
-    private List<GuardianDTO> guardianList;
+    private List<GuardianSummaryDTO> guardianList;
 }
