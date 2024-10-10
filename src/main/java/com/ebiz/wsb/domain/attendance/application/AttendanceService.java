@@ -8,6 +8,7 @@ import com.ebiz.wsb.domain.student.exception.StudentNotFoundException;
 import com.ebiz.wsb.domain.student.repository.StudentRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -18,9 +19,10 @@ public class AttendanceService {
 
     private final StudentRepository studentRepository;
     private final AttendanceRepository attendanceRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
-    public void updateAttendance(Long studentId, AttendanceStatus newStatus) {
+    public void updateAttendance(Long studentId, Long groupId, AttendanceStatus newStatus) {
         LocalDate today = LocalDate.now();
 
         // 학생 정보 조회
@@ -42,5 +44,13 @@ public class AttendanceService {
                 .build();
 
         attendanceRepository.save(updatedAttendance);
+
+        // 출석 상태 업데이트 웹소캣으로 인솔자들에게 알림
+        sendAttendanceUpdateNotification(updatedAttendance, groupId);
+    }
+
+    private void sendAttendanceUpdateNotification(Attendance updatedAttendance, Long groupId) {
+        // 변경된 출석 정보를 WebSocket 채널로 전송
+        messagingTemplate.convertAndSend("/sub/group/" + groupId, updatedAttendance);
     }
 }
