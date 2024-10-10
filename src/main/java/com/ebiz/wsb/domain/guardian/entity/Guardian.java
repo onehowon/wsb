@@ -1,6 +1,7 @@
 package com.ebiz.wsb.domain.guardian.entity;
 
 import com.ebiz.wsb.domain.group.entity.Group;
+import com.ebiz.wsb.domain.schedule.entity.Schedule;
 import com.ebiz.wsb.domain.student.entity.Student;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -9,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicInsert;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -48,6 +50,10 @@ public class Guardian {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")
     private Group group;
+
+
+    @OneToMany(mappedBy = "guardian", fetch = FetchType.LAZY)
+    private List<Schedule> schedules = new ArrayList<>();
 
 
 }

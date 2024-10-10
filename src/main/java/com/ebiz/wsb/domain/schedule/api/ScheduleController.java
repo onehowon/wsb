@@ -3,8 +3,12 @@ package com.ebiz.wsb.domain.schedule.api;
 import com.amazonaws.Response;
 import com.ebiz.wsb.domain.schedule.application.ScheduleService;
 import com.ebiz.wsb.domain.schedule.dto.ScheduleDTO;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.ebiz.wsb.domain.schedule.dto.ScheduleResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -19,39 +23,25 @@ public class ScheduleController {
     private final ScheduleService scheduleService;
 
     @PostMapping
-    public ResponseEntity<ScheduleDTO> createSchedule(
-            @ModelAttribute ScheduleDTO scheduleDTO,
-            @RequestParam("file") MultipartFile file){
-        ScheduleDTO createdSchedule = scheduleService.createSchedule(scheduleDTO,file);
+    public ResponseEntity<ScheduleDTO> createSchedule(@RequestBody ScheduleDTO scheduleDTO) {
+        ScheduleDTO createdSchedule = scheduleService.createSchedule(scheduleDTO);
         return ResponseEntity.ok(createdSchedule);
     }
 
-    @GetMapping("/{scheduleId}")
-    public ResponseEntity<List<ScheduleDTO>> getMySchedules(){
-        List<ScheduleDTO> mySchedules = scheduleService.getScheduleForCurrentUser();
-        return ResponseEntity.ok(mySchedules);
-    }
-
-    @GetMapping("/date")
-    public ResponseEntity<List<ScheduleDTO>> getSchedulesByDateRange(
-            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate){
-        List<ScheduleDTO> schedules = scheduleService.getScheduleByDateRange(startDate, endDate);
-        return ResponseEntity.ok(schedules);
-    }
-
+    // 그룹별 일별 스케줄 조회
     @GetMapping("/group/{groupId}/date")
-    public ResponseEntity<List<ScheduleDTO>> getGroupScheduleByDate(
+    public ResponseEntity<ScheduleResponseDTO> getGroupScheduleByDate(
             @PathVariable Long groupId,
-            @RequestParam("specificDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime specificDate) {
-        List<ScheduleDTO> groupSchedules = scheduleService.getGroupScheduleByDate(groupId, specificDate);
+            @RequestParam("specificDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate specificDate) {
+        ScheduleResponseDTO groupSchedules = scheduleService.getGroupScheduleByDate(groupId, specificDate);
         return ResponseEntity.ok(groupSchedules);
     }
 
+    // 사용자 월별 스케줄 조회
     @GetMapping("/month")
     public ResponseEntity<List<ScheduleDTO>> getMySchedulesByMonth(
             @RequestParam("year") int year,
-            @RequestParam("month") int month){
+            @RequestParam("month") int month) {
         List<ScheduleDTO> myMonthlySchedules = scheduleService.getScheduleByMonth(year, month);
         return ResponseEntity.ok(myMonthlySchedules);
     }
@@ -59,14 +49,13 @@ public class ScheduleController {
     @PutMapping("/{scheduleId}")
     public ResponseEntity<ScheduleDTO> updateSchedule(
             @PathVariable Long scheduleId,
-            @ModelAttribute ScheduleDTO scheduleDTO,
-            @RequestParam("file") MultipartFile file){
-        ScheduleDTO updatedSchedule = scheduleService.updateSchedule(scheduleId, scheduleDTO, file);
+            @RequestBody ScheduleDTO scheduleDTO) {
+        ScheduleDTO updatedSchedule = scheduleService.updateSchedule(scheduleId, scheduleDTO);
         return ResponseEntity.ok(updatedSchedule);
     }
 
     @DeleteMapping("/{scheduleId}")
-    public ResponseEntity<Void> deleteSchedule(@PathVariable Long scheduleId){
+    public ResponseEntity<Void> deleteSchedule(@PathVariable Long scheduleId) {
         scheduleService.deleteSchedule(scheduleId);
         return ResponseEntity.noContent().build();
     }

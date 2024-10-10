@@ -1,11 +1,17 @@
 package com.ebiz.wsb.domain.schedule.dto;
 
+import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
+import com.ebiz.wsb.domain.student.dto.StudentDTO;
+import com.ebiz.wsb.domain.student.entity.Student;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -13,7 +19,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class ScheduleDTO {
     private Long scheduleId;
-    private Long guardianId;
-    private LocalDateTime registrationDate;
-    private String scheduleFile;
+    private Long groupId;
+    private List<GuardianDTO> guardianList;
+    private List<ScheduleTypeDTO> scheduleTypes;
+    private LocalDate day;
+    private LocalTime time;
 }

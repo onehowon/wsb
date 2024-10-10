@@ -1,16 +1,24 @@
 package com.ebiz.wsb.domain.schedule.application;
 
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
+import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.group.repository.GroupRepository;
+import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
+import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
-import com.ebiz.wsb.domain.schedule.dto.ScheduleDTO;
+import com.ebiz.wsb.domain.schedule.dto.*;
 import com.ebiz.wsb.domain.schedule.entity.Schedule;
+import com.ebiz.wsb.domain.schedule.entity.ScheduleType;
 import com.ebiz.wsb.domain.schedule.exception.ScheduleAccessException;
 import com.ebiz.wsb.domain.schedule.exception.ScheduleNotFoundException;
 import com.ebiz.wsb.domain.schedule.repository.ScheduleRepository;
+import com.ebiz.wsb.domain.schedule.repository.ScheduleTypeRepository;
+import com.ebiz.wsb.domain.student.dto.StudentDTO;
 import com.ebiz.wsb.global.service.S3Service;
 import java.nio.file.AccessDeniedException;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Builder;
@@ -31,142 +39,84 @@ public class ScheduleService {
 
     private final ScheduleRepository scheduleRepository;
     private final GuardianRepository guardianRepository;
-    private final S3Service s3Service;
     private final UserDetailsServiceImpl userDetailsService;
+    private final ScheduleTypeRepository scheduleTypeRepository;
     private final GroupRepository groupRepository;
 
     private static final String FILE_UPLOAD_DIRECTORY = "/uploads";
 
     @Transactional
-    public ScheduleDTO createSchedule(ScheduleDTO scheduleDTO, MultipartFile scheduleFile) {
+    public ScheduleDTO createSchedule(ScheduleDTO scheduleDTO) {
+        Group group = groupRepository.findById(scheduleDTO.getGroupId())
+                .orElseThrow(() -> new IllegalArgumentException("유효한 그룹 ID를 제공해야 합니다."));
 
-
-        Guardian guardian = findCurrentGuardian();
-        if (guardian == null) {
-            throw new IllegalArgumentException("현재 로그인된 사용자로부터 Guardian 정보를 찾을 수 없습니다.");
-        }
-
-        String scheduleFileUrl = null;
-        if (scheduleFile != null && !scheduleFile.isEmpty()) {
-            try {
-
-                scheduleFileUrl = s3Service.uploadScheduleFile(scheduleFile, "walkingschoolbus-bucket");
-            } catch (IOException e) {
-                throw new RuntimeException("파일 업로드 중 오류가 발생했습니다.", e);
-            }
-        }
-
-
-        if (scheduleDTO.getRegistrationDate() == null) {
-            scheduleDTO.setRegistrationDate(LocalDateTime.now());
-        }
-
+        ScheduleType scheduleType = scheduleTypeRepository.findById(scheduleDTO.getScheduleTypes().get(0).getId())
+                .orElseThrow(() -> new IllegalArgumentException("유효한 스케줄 유형 ID가 아닙니다."));
 
         Schedule schedule = Schedule.builder()
-                .guardian(guardian)
-                .registrationDate(scheduleDTO.getRegistrationDate())
-                .scheduleFile(scheduleFileUrl)
+                .group(group)
+                .scheduleType(scheduleType)
+                .time(scheduleDTO.getTime())
                 .build();
 
         schedule = scheduleRepository.save(schedule);
 
-        return convertToDTO(schedule);
+        return convertScheduleToDTO(schedule);
     }
 
+    // 1. 일별 스케줄 조회
     @Transactional(readOnly = true)
-    public List<ScheduleDTO> getScheduleForCurrentUser() {
-        Guardian currentGuardian = (Guardian) userDetailsService.getUserByContextHolder();
-
-        List<Schedule> schedules = scheduleRepository.findByGuardian(currentGuardian);
-
-        return schedules.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<ScheduleDTO> getScheduleByDateRange(LocalDateTime startDate, LocalDateTime endDate){
-        Guardian currentGuardian = (Guardian) userDetailsService.getUserByContextHolder();
-
-        List<Schedule> schedules = scheduleRepository.findByGuardianAndRegistrationDateBetween(
-                currentGuardian, startDate, endDate
-        );
-
-        return schedules.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<ScheduleDTO> getGroupScheduleByDate(Long groupId, LocalDateTime specificDate) {
-        Guardian currentGuardian = (Guardian) userDetailsService.getUserByContextHolder();
+    public ScheduleResponseDTO getGroupScheduleByDate(Long groupId, LocalDate specificDate) {
+        Guardian currentGuardian = findCurrentGuardian();
 
         boolean isMember = groupRepository.isUserInGroupForGuardian(currentGuardian.getId(), groupId);
         if (!isMember) {
             throw new ScheduleAccessException("해당 그룹의 스케줄에 접근할 권한이 없습니다.");
         }
 
-        LocalDateTime startOfDay = specificDate.toLocalDate().atStartOfDay();
-        LocalDateTime endOfDay = specificDate.toLocalDate().atTime(23, 59, 59);
+        // 하루의 시작과 끝 시간 구하기
+        LocalTime startOfDay = LocalTime.of(0, 0, 0);
+        LocalTime endOfDay = LocalTime.of(23, 59, 59);
 
-        List<Schedule> schedules = scheduleRepository.findByGroupIdAndRegistrationDateBetween(
-                groupId, startOfDay, endOfDay
-        );
+        List<Schedule> schedules = scheduleRepository.findByGroupIdAndTimeBetween(groupId, startOfDay, endOfDay);
 
-        return schedules.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return convertToResponseDTO(schedules, specificDate);
     }
-
     @Transactional(readOnly = true)
-    public List<ScheduleDTO> getScheduleByMonth(int year, int month){
+    public List<ScheduleDTO> getScheduleByMonth(int year, int month) {
         Guardian currentGuardian = (Guardian) userDetailsService.getUserByContextHolder();
 
-        LocalDateTime startOfMonth = LocalDateTime.of(year, month, 1, 0, 0);
+        LocalDateTime startOfMonth = LocalDateTime.of(year, month, 1, 0, 0);  // 해당 월의 첫째 날
         LocalDateTime endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.toLocalDate().lengthOfMonth())
-                .withHour(23).withMinute(59).withSecond(59);
+                .withHour(23).withMinute(59).withSecond(59);  // 마지막 날
 
-        List<Schedule> schedules = scheduleRepository.findByGuardianAndRegistrationDateBetween(
+        List<Schedule> schedules = scheduleRepository.findByGuardianAndTimeBetween(
                 currentGuardian, startOfMonth, endOfMonth
         );
 
         return schedules.stream()
-                .map(this::convertToDTO)
+                .map(this::convertScheduleToDTO)
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public ScheduleDTO updateSchedule(Long scheduleId, ScheduleDTO scheduleDTO, MultipartFile scheduleFile) {
+    public ScheduleDTO updateSchedule(Long scheduleId, ScheduleDTO scheduleDTO) {
         Schedule existingSchedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new ScheduleNotFoundException("스케줄을 찾을 수 없습니다."));
 
-        String scheduleFileUrl = existingSchedule.getScheduleFile();
-        if (scheduleFile != null && !scheduleFile.isEmpty()) {
-            try {
-                scheduleFileUrl = s3Service.uploadScheduleFile(scheduleFile, "walkingschoolbus-bucket");
-            } catch (IOException e) {
-                throw new RuntimeException("파일 업로드 중 오류가 발생했습니다.", e);
-            }
-        }
+        ScheduleType scheduleType = scheduleTypeRepository.findById(scheduleDTO.getScheduleTypes().get(0).getId())
+                .orElseThrow(() -> new IllegalArgumentException("유효한 스케줄 유형 ID가 아닙니다."));
 
-
-        LocalDateTime registrationDate = scheduleDTO.getRegistrationDate() != null
-                ? scheduleDTO.getRegistrationDate()
-                : existingSchedule.getRegistrationDate() != null ? existingSchedule.getRegistrationDate() : LocalDateTime.now();
-
-        Guardian guardian = guardianRepository.findById(scheduleDTO.getGuardianId())
-                .orElseThrow(() -> new IllegalArgumentException("해당 인솔자를 찾을 수 없습니다."));
-
-        existingSchedule = Schedule.builder()
+        Schedule updatedSchedule = Schedule.builder()
                 .scheduleId(existingSchedule.getScheduleId())
-                .guardian(guardian)
-                .registrationDate(registrationDate)
-                .scheduleFile(scheduleFileUrl != null ? scheduleFileUrl : existingSchedule.getScheduleFile())
+                .group(existingSchedule.getGroup())
+                .scheduleType(scheduleType)
+                .time(scheduleDTO.getTime())
                 .build();
 
-        scheduleRepository.save(existingSchedule);
+        updatedSchedule = scheduleRepository.save(updatedSchedule);
 
-        return convertToDTO(existingSchedule);
+        return convertScheduleToDTO(updatedSchedule);
     }
 
 
@@ -178,27 +128,62 @@ public class ScheduleService {
         scheduleRepository.deleteById(scheduleId);
     }
 
-    private void validateScheduleDTO(ScheduleDTO scheduleDTO) {
-        if (scheduleDTO.getRegistrationDate() == null) {
-            throw new IllegalArgumentException("등록일자는 필수입니다.");
-        }
-    }
+    private ScheduleResponseDTO convertToResponseDTO(List<Schedule> schedules, LocalDate date) {
+        List<TypeScheduleDTO> typeSchedules = schedules.stream()
+                .map(schedule -> TypeScheduleDTO.builder()
+                        .type(schedule.getScheduleType().getName())
+                        .time(schedule.getTime().toString())
+                        .guardianList(schedule.getGroup().getGuardians().stream()
+                                .map(guardian -> GuardianDTO.builder()
+                                        .name(guardian.getName())
+                                        .imagePath(guardian.getImagePath() != null ? guardian.getImagePath() : "")
+                                        .build())
+                                .collect(Collectors.toList()))
+                        .build())
+                .collect(Collectors.toList());
 
-    private ScheduleDTO convertToDTO(Schedule schedule) {
-        return ScheduleDTO.builder()
-                .scheduleId(schedule.getScheduleId())
-                .guardianId(schedule.getGuardian().getId())
-                .registrationDate(schedule.getRegistrationDate())
-                .scheduleFile(schedule.getScheduleFile()) // scheduleFile 추가
+        return ScheduleResponseDTO.builder()
+                .scheduleBasicInfo(ScheduleBasicInfoDTO.builder()
+                        .groupId(schedules.get(0).getGroup().getId())
+                        .scheduleId(schedules.get(0).getScheduleId())
+                        .day(date)
+                        .build())
+                .typeSchedules(typeSchedules)
                 .build();
     }
 
+
+
+
+
+
+    private ScheduleDTO convertScheduleToDTO(Schedule schedule) {
+        List<GuardianDTO> guardianList = schedule.getGroup().getGuardians().stream()
+                .map(guardian -> GuardianDTO.builder()
+                        .name(guardian.getName())  // name 필드만 반환
+                        .imagePath(guardian.getImagePath())  // imagePath만 반환
+                        .build())
+                .collect(Collectors.toList());
+
+        ScheduleTypeDTO scheduleTypeDTO = ScheduleTypeDTO.builder()
+                .id(schedule.getScheduleType().getId())
+                .name(schedule.getScheduleType().getName())
+                .build();
+
+        return ScheduleDTO.builder()
+                .scheduleId(schedule.getScheduleId())
+                .groupId(schedule.getGroup().getId())
+                .time(schedule.getTime())
+                .guardianList(guardianList)  // 필터링된 guardianList
+                .scheduleTypes(List.of(scheduleTypeDTO))
+                .build();
+    }
+
+
+
     private Guardian findCurrentGuardian() {
-
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-
-
         return guardianRepository.findGuardianByEmail(currentEmail)
-                .orElseThrow(() -> new IllegalArgumentException("현재 사용자에 대한 Guardian을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("현재 사용자에 대한 인솔자를 찾을 수 없습니다."));
     }
 }
