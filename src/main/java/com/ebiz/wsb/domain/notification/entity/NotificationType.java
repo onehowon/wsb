@@ -23,4 +23,7 @@ public class NotificationType {
 
     @Column(name = "name")
     private String name;
+
+    @Column(name = "target")
+    private String target;
 }

@@ -12,9 +12,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class GuardianNotificationDTO {
-    private Long notificationId;
-    private Long guardianId;
-    private String guardianEmail;
     private String content;
     private String type;
     private LocalDateTime createdAt;

@@ -12,9 +12,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ParentNotificationDTO {
-    private Long notificationId;
-    private Long parentId;
-    private String parentEmail;
     private String content;
     private String type;
     private LocalDateTime createdAt;

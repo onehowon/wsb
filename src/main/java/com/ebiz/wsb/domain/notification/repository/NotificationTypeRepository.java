@@ -8,5 +8,5 @@ import java.util.Optional;
 
 @Repository
 public interface NotificationTypeRepository extends JpaRepository<NotificationType, Long> {
-    Optional<NotificationType> findByName(String name);
+    Optional<NotificationType> findByNameAndTarget(String name, String target);
 }
