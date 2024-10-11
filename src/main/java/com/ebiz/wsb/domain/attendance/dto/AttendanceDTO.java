@@ -1,21 +1,22 @@
 package com.ebiz.wsb.domain.attendance.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import com.ebiz.wsb.domain.attendance.entity.AttendanceStatus;
+import lombok.*;
 
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 public class AttendanceDTO {
     private Long attendanceId;
     private Long studentId;
-    private String status;
-    private LocalDateTime attendanceDate;
-    private Timestamp checkTime;
+    private Long waypointId;
+    private AttendanceStatus attendanceStatus;
+    private LocalDate attendanceDate;
+    private Boolean parentNoticeAbsence;
 }

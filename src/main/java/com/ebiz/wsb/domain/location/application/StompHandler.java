@@ -31,24 +31,26 @@ public class StompHandler implements ChannelInterceptor {
 
         }
 
-        if (StompCommand.SEND.equals(accessor.getCommand())) {
-            String latitude = accessor.getFirstNativeHeader("latitude");
-            String longitude = accessor.getFirstNativeHeader("longitude");
-
-            if (latitude == null || longitude == null) {
-                throw new InvalidLocationDataException("위도와 경도 값이 필요합니다.");
-            }
-
-            // 위치 데이터 검증 (예: 값 범위 검증)
-            log.info("수신 받은 위경도값: Latitude={}, Longitude={}", latitude, longitude);
-
-            // 토큰 검증
-            String accessToken = accessor.getFirstNativeHeader("accessToken");
-            if (accessToken == null || !jwtProvider.validateToken(accessToken)) {
-                throw new InvalidTokenException("유효하지 않은 토큰");
-            }
-        }
+//        if (StompCommand.SEND.equals(accessor.getCommand())) {
+//            String latitude = accessor.getFirstNativeHeader("latitude");
+//            String longitude = accessor.getFirstNativeHeader("longitude");
+//
+//            if (latitude == null || longitude == null) {
+//                throw new InvalidLocationDataException("위도와 경도 값이 필요합니다.");
+//            }
+//
+//            // 위치 데이터 검증 (예: 값 범위 검증)
+//            log.info("수신 받은 위경도값: Latitude={}, Longitude={}", latitude, longitude);
+//
+//            // 토큰 검증
+//            String accessToken = accessor.getFirstNativeHeader("accessToken");
+//            if (accessToken == null || !jwtProvider.validateToken(accessToken)) {
+//                throw new InvalidTokenException("유효하지 않은 토큰");
+//            }
+//        }
 
         return message;
     }
+
+
 }

@@ -1,13 +1,10 @@
 package com.ebiz.wsb.domain.attendance.entity;
 
-
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.DynamicInsert;
 
+@Getter
+@AllArgsConstructor
 public enum AttendanceStatus {
     UNCONFIRMED,  // 미인증
     PRESENT,      // 출석 완료

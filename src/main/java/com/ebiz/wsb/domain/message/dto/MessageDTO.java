@@ -1,7 +1,6 @@
 package com.ebiz.wsb.domain.message.dto;
 
 import com.ebiz.wsb.domain.group.dto.GroupDTO;
-import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
 import com.ebiz.wsb.domain.parent.dto.ParentDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

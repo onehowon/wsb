@@ -2,6 +2,8 @@ package com.ebiz.wsb.domain.waypoint.entity;
 
 import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.student.entity.Student;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
