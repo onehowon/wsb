@@ -39,6 +39,9 @@ public class Student {
     @Column(name = "image_path")
     private String imagePath;
 
+    @Column(name = "parent_phone")
+    private String ParentPhone;
+
     @ManyToOne
     @JoinColumn(name = "group_id")
     private Group group;

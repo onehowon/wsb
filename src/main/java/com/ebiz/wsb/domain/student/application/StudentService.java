@@ -47,6 +47,7 @@ public class StudentService {
                 .grade(studentCreateRequestDTO.getGrade())
                 .notes(studentCreateRequestDTO.getNotes())
                 .imagePath(imageUrl)
+                .ParentPhone(studentCreateRequestDTO.getParentPhone())
                 .build();
 
         student = studentRepository.save(student);
@@ -85,6 +86,7 @@ public class StudentService {
                 .grade(studentCreateRequestDTO.getGrade())
                 .notes(studentCreateRequestDTO.getNotes())
                 .imagePath(imageUrl)
+                .ParentPhone(studentCreateRequestDTO.getParentPhone())
                 .build();
 
         studentRepository.save(existingStudent);
@@ -113,6 +115,7 @@ public class StudentService {
                 .imagePath(existingStudent.getImagePath())
                 .group(group)
                 .waypoint(waypoint)
+                .ParentPhone(existingStudent.getParentPhone())
                 .build();
 
         studentRepository.save(updatedStudent);
@@ -134,6 +137,7 @@ public class StudentService {
                 .grade(student.getGrade())
                 .notes(student.getNotes())
                 .imagePath(student.getImagePath())
+                .ParentPhone(student.getParentPhone())
                 .build();
     }
 
@@ -145,9 +149,10 @@ public class StudentService {
                 .grade(student.getGrade())
                 .notes(student.getNotes())
                 .imagePath(student.getImagePath())
-                .groupId(student.getGroup() != null ? student.getGroup().getId() : null)  // 그룹 정보
-                .waypointId(student.getWaypoint() != null ? student.getWaypoint().getId() : null)  // 경유지 정보
+                .groupId(student.getGroup() != null ? student.getGroup().getId() : null)
+                .waypointId(student.getWaypoint() != null ? student.getWaypoint().getId() : null)
                 .waypointName(student.getWaypoint() != null ? student.getWaypoint().getWaypointName() : null)
+                .ParentPhone(student.getParentPhone())
                 .build();
     }
 
