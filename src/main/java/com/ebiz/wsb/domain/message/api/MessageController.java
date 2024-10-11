@@ -17,30 +17,26 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class MessageController {
-
     private final MessageService messageService;
-
     @PostMapping("/send/{parentId}")
     public ResponseEntity<MessageDTO> sendMessage(
             @PathVariable Long parentId,
-            @RequestBody MessageDTO messageDTO) {
-
-        MessageDTO message = messageService.sendMessage(parentId, messageDTO.getContent());
-        return ResponseEntity.ok(message);
-
-
+            @RequestParam String content) {
+        // 메시지 전송 처리
+        MessageDTO messageDTO = messageService.sendMessage(parentId, content);
+        return ResponseEntity.ok(messageDTO);
     }
-
     @GetMapping("/received/{guardianId}")
     public ResponseEntity<?> getMessagesForGuardian(@PathVariable Long guardianId) {
-        List<MessageDTO> messagesForGuardian = messageService.getMessagesForGuardian(guardianId);
-        if(messagesForGuardian.isEmpty()){
-            return ResponseEntity.ok(BaseResponse.builder()
-                    .message("받은 메시지가 존재하지 않습니다.")
-                    .build());
+        try {
+            List<MessageDTO> messagesForGuardian = messageService.getMessagesForGuardian(guardianId);
+            // 메시지가 없는 경우 처리
+            if (messagesForGuardian.isEmpty()) {
+                return ResponseEntity.ok("받은 메시지가 없습니다.");
+            }
+            return ResponseEntity.ok(messagesForGuardian);
+        } catch (GuardianNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
-        return ResponseEntity.ok(BaseResponse.builder()
-                .data(messagesForGuardian)
-                .build());
     }
 }

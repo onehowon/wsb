@@ -1,13 +1,14 @@
 package com.ebiz.wsb.domain.attendance.dto;
 
 import com.ebiz.wsb.domain.attendance.entity.AttendanceStatus;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
 @Getter
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
+@ToString
+
 public class AttendanceUpdateRequest {
 
     private Long studentId;

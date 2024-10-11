@@ -4,6 +4,7 @@ import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
