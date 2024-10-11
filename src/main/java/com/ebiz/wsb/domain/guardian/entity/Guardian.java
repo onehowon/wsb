@@ -51,9 +51,7 @@ public class Guardian {
     @JoinColumn(name = "group_id")
     private Group group;
 
-
-    @OneToMany(mappedBy = "guardian", fetch = FetchType.LAZY)
-    private List<Schedule> schedules = new ArrayList<>();
-
+    @ManyToMany(mappedBy = "guardians")
+    private List<Schedule> schedules;
 
 }

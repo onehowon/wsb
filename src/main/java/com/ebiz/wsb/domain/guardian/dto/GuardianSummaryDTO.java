@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class GuardianSummaryDTO {
+    private Long id;
     private String name;
     private String imagePath;
 }

@@ -47,9 +47,17 @@ public class ScheduleService {
         ScheduleType scheduleType = scheduleTypeRepository.findById(scheduleDTO.getScheduleTypes().get(0).getId())
                 .orElseThrow(() -> new IllegalArgumentException("유효한 스케줄 유형 ID가 아닙니다."));
 
+        List<Guardian> guardians = guardianRepository.findAllById(
+                scheduleDTO.getGuardianList().stream()
+                        .map(GuardianSummaryDTO::getId)
+                        .collect(Collectors.toList())
+        );
+
         Schedule schedule = Schedule.builder()
                 .group(group)
                 .scheduleType(scheduleType)
+                .guardians(guardians)
+                .day(scheduleDTO.getDay())
                 .time(scheduleDTO.getTime())
                 .build();
 
@@ -61,17 +69,7 @@ public class ScheduleService {
     // 1. 일별 스케줄 조회
     @Transactional(readOnly = true)
     public ScheduleResponseDTO getGroupScheduleByDate(Long groupId, LocalDate specificDate) {
-        Guardian currentGuardian = findCurrentGuardian();
-
-        boolean isMember = groupRepository.isUserInGroupForGuardian(currentGuardian.getId(), groupId);
-        if (!isMember) {
-            throw new ScheduleAccessException("해당 그룹의 스케줄에 접근할 권한이 없습니다.");
-        }
-
-        LocalTime startOfDay = LocalTime.of(0, 0, 0);
-        LocalTime endOfDay = LocalTime.of(23, 59, 59);
-
-        List<Schedule> schedules = scheduleRepository.findByGroupIdAndTimeBetween(groupId, startOfDay, endOfDay);
+        List<Schedule> schedules = scheduleRepository.findByGroupIdAndDay(groupId, specificDate);
 
         return convertToResponseDTO(schedules, specificDate);
     }
@@ -82,16 +80,13 @@ public class ScheduleService {
         LocalDate startOfMonth = LocalDate.of(year, month, 1);
         LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
 
-        LocalDateTime startOfDay = startOfMonth.atStartOfDay();
-        LocalDateTime endOfDay = endOfMonth.atTime(23, 59, 59);
-
-        List<Schedule> schedules = scheduleRepository.findByGuardianAndTimeBetween(
-                currentGuardian, startOfDay, endOfDay
+        List<Schedule> schedules = scheduleRepository.findByGuardiansAndDayBetween(
+                currentGuardian, startOfMonth, endOfMonth
         );
 
         Map<LocalDate, List<String>> schedulesByDay = schedules.stream()
                 .collect(Collectors.groupingBy(
-                        schedule -> schedule.getTime().toLocalDate(),  // LocalDateTime에서 날짜만 추출
+                        Schedule::getDay,
                         Collectors.mapping(schedule -> schedule.getScheduleType().getName(), Collectors.toList())
                 ));
 
@@ -120,6 +115,7 @@ public class ScheduleService {
                 .scheduleId(existingSchedule.getScheduleId())
                 .group(existingSchedule.getGroup())
                 .scheduleType(scheduleType)
+                .day(scheduleDTO.getDay())
                 .time(scheduleDTO.getTime())
                 .build();
 
@@ -138,14 +134,26 @@ public class ScheduleService {
     }
 
     private ScheduleResponseDTO convertToResponseDTO(List<Schedule> schedules, LocalDate date) {
+        if (schedules.isEmpty()) {
+            return ScheduleResponseDTO.builder()
+                    .scheduleBasicInfo(ScheduleBasicInfoDTO.builder()
+                            .groupId(null)
+                            .scheduleId(null)
+                            .day(date)
+                            .build())
+                    .typeSchedules(List.of())
+                    .build();
+        }
+
+
         List<TypeScheduleDTO> typeSchedules = schedules.stream()
                 .map(schedule -> TypeScheduleDTO.builder()
                         .type(schedule.getScheduleType().getName())
                         .time(schedule.getTime().toString())
-                        .guardianList(schedule.getGroup().getGuardians().stream()
+                        .guardianList(schedule.getGuardians().stream()
                                 .map(guardian -> GuardianSummaryDTO.builder()
                                         .name(guardian.getName())
-                                        .imagePath(guardian.getImagePath() != null ? guardian.getImagePath() : "")  // imagePath 설정, null 처리
+                                        .imagePath(guardian.getImagePath())
                                         .build())
                                 .collect(Collectors.toList()))
                         .build())
@@ -161,14 +169,11 @@ public class ScheduleService {
                 .build();
     }
 
-
-
-
     private ScheduleDTO convertScheduleToDTO(Schedule schedule) {
-        List<GuardianSummaryDTO> guardianList = schedule.getGroup().getGuardians().stream()
+        List<GuardianSummaryDTO> guardianList = schedule.getGuardians().stream()
                 .map(guardian -> GuardianSummaryDTO.builder()
-                        .name(guardian.getName())  // name 필드만 반환
-                        .imagePath(guardian.getImagePath())  // imagePath만 반환
+                        .name(guardian.getName())
+                        .imagePath(guardian.getImagePath())
                         .build())
                 .collect(Collectors.toList());
 
@@ -180,8 +185,9 @@ public class ScheduleService {
         return ScheduleDTO.builder()
                 .scheduleId(schedule.getScheduleId())
                 .groupId(schedule.getGroup().getId())
+                .day(schedule.getDay())
                 .time(schedule.getTime())
-                .guardianList(guardianList)  // 필터링된 guardianList
+                .guardianList(guardianList)
                 .scheduleTypes(List.of(scheduleTypeDTO))
                 .build();
     }

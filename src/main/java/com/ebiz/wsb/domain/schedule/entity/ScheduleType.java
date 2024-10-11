@@ -13,7 +13,7 @@ import org.hibernate.annotations.DynamicInsert;
 @AllArgsConstructor
 @NoArgsConstructor
 @DynamicInsert
-@Table(name = "Schedule_Type")
+@Table(name = "ScheduleType")
 public class ScheduleType {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

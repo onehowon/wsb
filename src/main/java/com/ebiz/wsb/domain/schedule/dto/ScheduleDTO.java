@@ -24,5 +24,5 @@ public class ScheduleDTO {
     private List<GuardianSummaryDTO> guardianList;
     private List<ScheduleTypeDTO> scheduleTypes;
     private LocalDate day;
-    private LocalDateTime time;
+    private LocalTime time;
 }

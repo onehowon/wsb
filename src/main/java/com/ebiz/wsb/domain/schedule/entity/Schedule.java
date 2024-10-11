@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicInsert;
 
+import java.security.Guard;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -37,14 +38,17 @@ public class Schedule {
     @JoinColumn(name = "schedule_type_id")
     private ScheduleType scheduleType;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "guardian_id")
-    private Guardian guardian;
+    @ManyToMany
+    @JoinTable(
+            name = "schedule_guardian",
+            joinColumns = @JoinColumn(name = "schedule_id"),
+            inverseJoinColumns = @JoinColumn(name = "guardian_id")
+    )
+    private List<Guardian> guardians;
+
+    @Column(name = "day")
+    private LocalDate day;
 
     @Column(name = "time")
-    private LocalDateTime time;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "student_id")
-    private Student student;
+    private LocalTime time;
 }
