@@ -18,4 +18,6 @@ public class GroupNoticeDTO {
     private NoticeTypeDTO noticeType;
     private String content;
     private String photo;
+    private Integer likes;
+    private LocalDateTime createdAt;
 }

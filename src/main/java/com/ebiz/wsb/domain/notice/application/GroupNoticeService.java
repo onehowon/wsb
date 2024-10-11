@@ -18,6 +18,8 @@ import com.ebiz.wsb.domain.notice.repository.NoticeTypeRepository;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.global.service.S3Service;
 import java.nio.file.AccessDeniedException;
+
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -109,6 +111,7 @@ public class GroupNoticeService {
     }
 
 
+    @Transactional
     public GroupNoticeDTO updateGroupNotice(Long groupNoticeId, String content, MultipartFile imageFile) {
         return groupNoticeRepository.findById(groupNoticeId)
                 .map(existingGroupNotice -> {
@@ -142,6 +145,8 @@ public class GroupNoticeService {
                         .build())
                 .content(groupNotice.getContent())
                 .photo(groupNotice.getPhoto())  // S3 URL
+                .likes(groupNotice.getLikes())
+                .createdAt(groupNotice.getCreatedAt())
                 .build();
     }
 

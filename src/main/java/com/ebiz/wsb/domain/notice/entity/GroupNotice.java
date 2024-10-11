@@ -27,7 +27,7 @@ public class GroupNotice {
     @Column(name = "group_notice_id")
     private Long groupNoticeId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "notice_type_id", nullable = false)
     private NoticeType noticeType;
 
