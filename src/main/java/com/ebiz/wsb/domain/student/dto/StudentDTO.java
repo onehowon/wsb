@@ -13,13 +13,12 @@ import org.springframework.web.multipart.MultipartFile;
 @NoArgsConstructor
 public class StudentDTO {
     private Long studentId;
-    private String name;
     private Long groupId;
-    private Long waypointId;
+    private String name;
     private String schoolName;
     private String grade;
     private String notes;
     private String imagePath;
-    private AttendanceStatus attendanceStatus;
+    private Long waypointId;
     private String waypointName;
 }

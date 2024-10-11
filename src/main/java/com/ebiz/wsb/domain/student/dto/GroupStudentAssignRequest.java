@@ -9,4 +9,5 @@ import lombok.*;
 public class GroupStudentAssignRequest {
     private Long studentId;
     private Long groupId;
+    private Long waypointId;
 }

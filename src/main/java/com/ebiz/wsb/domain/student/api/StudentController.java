@@ -1,8 +1,9 @@
 package com.ebiz.wsb.domain.student.api;
 
+import com.ebiz.wsb.domain.student.dto.GroupStudentAssignRequest;
 import com.ebiz.wsb.domain.student.dto.StudentCreateRequestDTO;
 import com.ebiz.wsb.domain.student.dto.StudentDTO;
-import com.ebiz.wsb.domain.student.service.StudentService;
+import com.ebiz.wsb.domain.student.application.StudentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,8 +21,6 @@ public class StudentController {
     @PostMapping
     public ResponseEntity<StudentDTO> createStudent(
             @RequestParam("name") String name,
-            @RequestParam("groupId") Long groupId,
-            @RequestParam("waypointId") Long waypointId,
             @RequestParam("schoolName") String schoolName,
             @RequestParam("grade") String grade,
             @RequestParam("notes") String notes,
@@ -29,8 +28,6 @@ public class StudentController {
 
         StudentCreateRequestDTO studentCreateRequestDTO = StudentCreateRequestDTO.builder()
                 .name(name)
-                .groupId(groupId)
-                .waypointId(waypointId)
                 .schoolName(schoolName)
                 .grade(grade)
                 .notes(notes)
@@ -56,8 +53,6 @@ public class StudentController {
     public ResponseEntity<StudentDTO> updateStudent(
             @PathVariable Long studentId,
             @RequestParam("name") String name,
-            @RequestParam("groupId") Long groupId,
-            @RequestParam("waypointId") Long waypointId,
             @RequestParam("schoolName") String schoolName,
             @RequestParam("grade") String grade,
             @RequestParam("notes") String notes,
@@ -65,8 +60,6 @@ public class StudentController {
 
         StudentCreateRequestDTO studentCreateRequestDTO = StudentCreateRequestDTO.builder()
                 .name(name)
-                .groupId(groupId)
-                .waypointId(waypointId)
                 .schoolName(schoolName)
                 .grade(grade)
                 .notes(notes)
@@ -80,5 +73,14 @@ public class StudentController {
     public ResponseEntity<Void> deleteStudent(@PathVariable Long studentId){
         studentService.deleteStudent(studentId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/assign/{studentId}")
+    public ResponseEntity<StudentDTO> assignStudentToGroup(
+            @PathVariable Long studentId,
+            @RequestBody GroupStudentAssignRequest request) {
+
+        StudentDTO assignedStudent = studentService.assignGroupAndWaypoint(studentId, request);
+        return ResponseEntity.ok(assignedStudent);
     }
 }

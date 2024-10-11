@@ -94,7 +94,6 @@ public class WaypointService {
                 .grade(student.getGrade())
                 .notes(student.getNotes())
                 .imagePath(student.getImagePath())
-                .attendanceStatus(attendance.getAttendanceStatus())
                 .groupId(student.getGroup().getId())
                 .waypointId(student.getWaypoint().getId())
                 .build();

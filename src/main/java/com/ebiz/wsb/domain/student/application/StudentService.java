@@ -1,11 +1,8 @@
-package com.ebiz.wsb.domain.student.service;
+package com.ebiz.wsb.domain.student.application;
 
 import com.ebiz.wsb.domain.group.entity.Group;
-import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
 import com.ebiz.wsb.domain.group.repository.GroupRepository;
-import com.ebiz.wsb.domain.guardian.entity.Guardian;
-import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
-import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
+import com.ebiz.wsb.domain.student.dto.GroupStudentAssignRequest;
 import com.ebiz.wsb.domain.student.dto.StudentCreateRequestDTO;
 import com.ebiz.wsb.domain.student.dto.StudentDTO;
 import com.ebiz.wsb.domain.student.entity.Student;
@@ -13,7 +10,6 @@ import com.ebiz.wsb.domain.student.exception.ImageUploadException;
 import com.ebiz.wsb.domain.student.exception.StudentNotFoundException;
 import com.ebiz.wsb.domain.student.repository.StudentRepository;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
-import com.ebiz.wsb.domain.waypoint.exception.WaypointNotFoundException;
 import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
 import com.ebiz.wsb.global.service.S3Service;
 import lombok.RequiredArgsConstructor;
@@ -29,14 +25,12 @@ import java.util.List;
 public class StudentService {
 
     private final StudentRepository studentRepository;
-    private final GuardianRepository guardianRepository;
-    private final GroupRepository groupRepository;
     private final S3Service s3Service;
+    private final GroupRepository groupRepository;
     private final WaypointRepository waypointRepository;
 
     @Transactional
     public StudentDTO createStudent(StudentCreateRequestDTO studentCreateRequestDTO, MultipartFile imageFile) {
-        validateStudentDTO(studentCreateRequestDTO);
 
         String imageUrl = null;
         if (imageFile != null && !imageFile.isEmpty()) {
@@ -47,15 +41,8 @@ public class StudentService {
             }
         }
 
-        Group group = groupRepository.findById(studentCreateRequestDTO.getGroupId())
-                .orElseThrow(() -> new GroupNotFoundException("그룹 정보를 찾을 수 없습니다."));
-        Waypoint waypoint = waypointRepository.findById(studentCreateRequestDTO.getWaypointId())
-                .orElseThrow(() -> new WaypointNotFoundException("해당 경유지를 찾을 수 없습니다."));
-
         Student student = Student.builder()
                 .name(studentCreateRequestDTO.getName())
-                .group(group)
-                .waypoint(waypoint)
                 .schoolName(studentCreateRequestDTO.getSchoolName())
                 .grade(studentCreateRequestDTO.getGrade())
                 .notes(studentCreateRequestDTO.getNotes())
@@ -64,19 +51,21 @@ public class StudentService {
 
         student = studentRepository.save(student);
 
-        return convertToDTO(student);
+        return convertToDTOWithoutGroupAndWaypoint(student);
     }
 
 
     public List<StudentDTO> getAllStudents() {
         List<Student> students = studentRepository.findAll();
-        return students.stream().map(this::convertToDTO).toList();
+        return students.stream().map(this::convertToDTOWithGroupAndWaypoint).toList();
     }
+
 
     public StudentDTO getStudentById(Long studentId) {
         Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new StudentNotFoundException("학생 정보를 찾을 수 없습니다."));
-        return convertToDTO(student);
+                .orElseThrow(() -> new StudentNotFoundException("학생을 찾을 수 없습니다."));
+
+        return convertToDTOWithGroupAndWaypoint(student);
     }
 
     @Transactional
@@ -89,16 +78,9 @@ public class StudentService {
             imageUrl = uploadImage(imageFile);
         }
 
-        Group group = groupRepository.findById(studentCreateRequestDTO.getGroupId())
-                .orElseThrow(() -> new GroupNotFoundException("그룹 정보를 찾을 수 없습니다."));
-        Waypoint waypoint = waypointRepository.findById(studentCreateRequestDTO.getWaypointId())
-                .orElseThrow(() -> new WaypointNotFoundException("해당 경유지를 찾을 수 없습니다."));
-
         existingStudent = Student.builder()
                 .studentId(existingStudent.getStudentId())
                 .name(studentCreateRequestDTO.getName())
-                .group(group)
-                .waypoint(waypoint)
                 .schoolName(studentCreateRequestDTO.getSchoolName())
                 .grade(studentCreateRequestDTO.getGrade())
                 .notes(studentCreateRequestDTO.getNotes())
@@ -107,36 +89,68 @@ public class StudentService {
 
         studentRepository.save(existingStudent);
 
-        return convertToDTO(existingStudent);
+        return convertToDTOWithoutGroupAndWaypoint(existingStudent);
     }
+
+    @Transactional
+    public StudentDTO assignGroupAndWaypoint(Long studentId, GroupStudentAssignRequest request) {
+
+        Student existingStudent = studentRepository.findById(studentId)
+                .orElseThrow(() -> new StudentNotFoundException("학생을 찾을 수 없습니다."));
+
+        Group group = groupRepository.findById(request.getGroupId())
+                .orElseThrow(() -> new RuntimeException("그룹을 찾을 수 없습니다."));
+
+        Waypoint waypoint = waypointRepository.findById(request.getWaypointId())
+                .orElseThrow(() -> new RuntimeException("경유지를 찾을 수 없습니다."));
+
+        Student updatedStudent = Student.builder()
+                .studentId(existingStudent.getStudentId())
+                .name(existingStudent.getName())
+                .schoolName(existingStudent.getSchoolName())
+                .grade(existingStudent.getGrade())
+                .notes(existingStudent.getNotes())
+                .imagePath(existingStudent.getImagePath())
+                .group(group)
+                .waypoint(waypoint)
+                .build();
+
+        studentRepository.save(updatedStudent);
+        return convertToDTOWithGroupAndWaypoint(updatedStudent);
+    }
+
+
 
     @Transactional
     public void deleteStudent(Long studentId) {
         studentRepository.deleteById(studentId);
     }
 
-    private StudentDTO convertToDTO(Student student) {
+    private StudentDTO convertToDTOWithoutGroupAndWaypoint(Student student) {
         return StudentDTO.builder()
                 .studentId(student.getStudentId())
-                .schoolName(student.getSchoolName())
-                .imagePath(student.getImagePath())
-                .grade(student.getGrade())
                 .name(student.getName())
-                .waypointName(student.getWaypoint().getWaypointName())
-                .groupId(student.getGroup().getId())
-                .waypointId(student.getWaypoint().getId())
+                .schoolName(student.getSchoolName())
+                .grade(student.getGrade())
                 .notes(student.getNotes())
+                .imagePath(student.getImagePath())
                 .build();
     }
 
-    private void validateStudentDTO(StudentCreateRequestDTO studentDTO) {
-        if (studentDTO.getName() == null || studentDTO.getName().isEmpty()) {
-            throw new IllegalArgumentException("학생 이름은 필수 항목입니다.");
-        }
-        if (studentDTO.getGroupId() == null) {
-            throw new IllegalArgumentException("Group ID는 필수 항목입니다.");
-        }
+    private StudentDTO convertToDTOWithGroupAndWaypoint(Student student) {
+        return StudentDTO.builder()
+                .studentId(student.getStudentId())
+                .name(student.getName())
+                .schoolName(student.getSchoolName())
+                .grade(student.getGrade())
+                .notes(student.getNotes())
+                .imagePath(student.getImagePath())
+                .groupId(student.getGroup() != null ? student.getGroup().getId() : null)  // 그룹 정보
+                .waypointId(student.getWaypoint() != null ? student.getWaypoint().getId() : null)  // 경유지 정보
+                .waypointName(student.getWaypoint() != null ? student.getWaypoint().getWaypointName() : null)
+                .build();
     }
+
 
     private String uploadImage(MultipartFile imageFile) {
         try {
