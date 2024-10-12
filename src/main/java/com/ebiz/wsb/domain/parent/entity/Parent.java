@@ -1,12 +1,16 @@
 package com.ebiz.wsb.domain.parent.entity;
 
 import com.ebiz.wsb.domain.group.entity.Group;
+import com.ebiz.wsb.domain.student.entity.Student;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicInsert;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -43,4 +47,7 @@ public class Parent {
 
     @Column(name = "image_path")
     private String imagePath;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Student> students = new ArrayList<>();
 }
