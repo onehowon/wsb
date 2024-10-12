@@ -57,10 +57,7 @@ public class AttendanceService {
                 .attendanceStatus(save.getAttendanceStatus())
                 .build();
 
-        log.info(attendanceDTO.toString());
-        log.info(groupId.toString());
-
-        template.convertAndSend("/sub/group/1", attendanceDTO);
+        template.convertAndSend("/sub/group/" + groupId, attendanceDTO);
 
 
     }
