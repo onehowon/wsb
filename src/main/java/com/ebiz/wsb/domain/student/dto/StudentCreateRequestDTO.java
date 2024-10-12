@@ -14,5 +14,5 @@ public class StudentCreateRequestDTO {
     private String schoolName;
     private String grade;
     private String notes;
-    private String ParentPhone;
+    private Long parentId;
 }

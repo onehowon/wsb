@@ -2,6 +2,7 @@ package com.ebiz.wsb.domain.student.entity;
 
 import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
+import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
@@ -50,4 +51,8 @@ public class Student {
     @ManyToOne
     @JoinColumn(name = "waypoint_id")
     private Waypoint waypoint;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "parent_id")
+    private Parent parent;
 }

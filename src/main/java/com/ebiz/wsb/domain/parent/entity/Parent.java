@@ -1,7 +1,6 @@
 package com.ebiz.wsb.domain.parent.entity;
 
 import com.ebiz.wsb.domain.group.entity.Group;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

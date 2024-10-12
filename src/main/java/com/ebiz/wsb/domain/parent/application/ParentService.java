@@ -16,9 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,59 +30,62 @@ public class ParentService {
     private final S3Service s3Service;
 
     public List<ParentDTO> getAllParents() {
-        List<ParentDTO> parentListDTO = new ArrayList<>();
-        List<Parent> parentList = parentRepository.findAll();
-        for (Parent parent : parentList) {
-            ParentDTO parentDTO = ParentDTO.builder()
-                    .id(parent.getId())
-                    .name(parent.getName())
-                    .email(parent.getEmail())
-                    .phone(parent.getPhone())
-                    .address(parent.getAddress())
-                    .imagePath(parent.getImagePath())
-                    .password(parent.getPassword())
-                    .build();
-            parentListDTO.add(parentDTO);
-        }
-        return parentListDTO;
-    }
-
-    public ParentDTO getParentById(Long parentId) {
-        Parent parent = parentRepository.findById(parentId)
-                .orElseThrow(() -> new ParentNotFoundException(PARENT_NOT_FOUND_MESSAGE));
-        ParentDTO parentDTO = ParentDTO.builder()
-                .id(parent.getId())
-                .name(parent.getName())
-                .email(parent.getEmail())
-                .phone(parent.getPhone())
-                .address(parent.getAddress())
-                .imagePath(parent.getImagePath())
-                .build();
-        return parentDTO;
+        return parentRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     @Transactional
-    public ParentDTO updateParentImage(Long parentId, MultipartFile imagePath) {
+    public ParentDTO getParentById(Long parentId) {
+        Parent parent = parentRepository.findById(parentId)
+                .orElseThrow(() -> new ParentNotFoundException(PARENT_NOT_FOUND_MESSAGE));
+
+        List<StudentDTO> studentDTOs = parent.getStudents().stream()
+                .map(student -> StudentDTO.builder()
+                        .studentId(student.getStudentId())
+                        .name(student.getName())
+                        .schoolName(student.getSchoolName())
+                        .grade(student.getGrade())
+                        .notes(student.getNotes())
+                        .imagePath(student.getImagePath())
+                        .build())
+                .collect(Collectors.toList());
+
+        return ParentDTO.builder()
+                .id(parent.getId())
+                .name(parent.getName())
+                .phone(parent.getPhone())
+                .address(parent.getAddress())
+                .imagePath(parent.getImagePath())
+                .students(studentDTOs)
+                .build();
+    }
+
+    @Transactional
+    public ParentDTO updateParent(Long parentId, ParentDTO parentDTO, MultipartFile imageFile) {
         Parent existingParent = parentRepository.findById(parentId)
                 .orElseThrow(() -> new ParentNotFoundException(PARENT_NOT_FOUND_MESSAGE));
 
+        String email = existingParent.getEmail();
+        String password = existingParent.getPassword();
+
         String imageUrl = existingParent.getImagePath();
-        if(!imagePath.isEmpty() && imagePath != null) {
-            imageUrl = uploadImage(imagePath);
+        if (imageFile != null && !imageFile.isEmpty()) {
+            imageUrl = uploadImage(imageFile);
         }
 
         existingParent = Parent.builder()
                 .id(existingParent.getId())
                 .name(existingParent.getName())
-                .email(existingParent.getEmail())
-                .phone(existingParent.getPhone())
-                .address(existingParent.getAddress())
+                .phone(parentDTO.getPhone())
+                .address(parentDTO.getAddress())
+                .email(email)
                 .imagePath(imageUrl)
-                .password(existingParent.getPassword())
+                .password(password)
                 .build();
 
-        Parent saveParent = parentRepository.save(existingParent);
-        return convertToDTO(saveParent);
+        Parent savedParent = parentRepository.save(existingParent);
+        return convertToDTO(savedParent);
     }
 
     public void deleteParent(Long parentsId) {
@@ -94,7 +96,6 @@ public class ParentService {
         return ParentDTO.builder()
                 .id(parent.getId())
                 .name(parent.getName())
-                .email(parent.getEmail())
                 .phone(parent.getPhone())
                 .address(parent.getAddress())
                 .imagePath(parent.getImagePath())
@@ -109,24 +110,6 @@ public class ParentService {
         } catch (IOException e) {
             throw new ImageUploadException("이미지 업로드 실패", e);
         }
-    }
-
-    public ParentDTO updateParentAddress(Long parentId, ParentDTO parentDTO) {
-        Parent existingParent = parentRepository.findById(parentId)
-                .orElseThrow(() -> new ParentNotFoundException(PARENT_NOT_FOUND_MESSAGE));
-
-        Parent parent = Parent.builder()
-                .id(existingParent.getId())
-                .name(existingParent.getName())
-                .email(existingParent.getEmail())
-                .phone(existingParent.getPhone())
-                .password(existingParent.getPassword())
-                .address(parentDTO.getAddress())
-                .imagePath(existingParent.getImagePath())
-                .build();
-
-        Parent saveParent = parentRepository.save(parent);
-        return convertToDTO(saveParent);
     }
 }
 

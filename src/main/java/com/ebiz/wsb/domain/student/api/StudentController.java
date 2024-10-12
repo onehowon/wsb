@@ -24,16 +24,17 @@ public class StudentController {
             @RequestParam("schoolName") String schoolName,
             @RequestParam("grade") String grade,
             @RequestParam("notes") String notes,
-            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
-            @RequestParam("ParentPhone") String ParentPhone)
+            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile)
     {
+
+        Long parentId = studentService.getLoggedInParentId();
 
         StudentCreateRequestDTO studentCreateRequestDTO = StudentCreateRequestDTO.builder()
                 .name(name)
                 .schoolName(schoolName)
                 .grade(grade)
                 .notes(notes)
-                .ParentPhone(ParentPhone)
+                .parentId(parentId)
                 .build();
 
         StudentDTO createdStudent = studentService.createStudent(studentCreateRequestDTO, imageFile);
@@ -59,15 +60,16 @@ public class StudentController {
             @RequestParam("schoolName") String schoolName,
             @RequestParam("grade") String grade,
             @RequestParam("notes") String notes,
-            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
-            @RequestParam("ParentPhone") String ParentPhone) {
+            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile) {
+
+        Long parentId = studentService.getLoggedInParentId();
 
         StudentCreateRequestDTO studentCreateRequestDTO = StudentCreateRequestDTO.builder()
                 .name(name)
                 .schoolName(schoolName)
                 .grade(grade)
                 .notes(notes)
-                .ParentPhone(ParentPhone)
+                .parentId(parentId)
                 .build();
 
         StudentDTO updatedStudent = studentService.updateStudent(studentId, studentCreateRequestDTO, imageFile);

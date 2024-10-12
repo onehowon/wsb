@@ -1,7 +1,11 @@
 package com.ebiz.wsb.domain.student.application;
 
+import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.group.repository.GroupRepository;
+import com.ebiz.wsb.domain.parent.entity.Parent;
+import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
+import com.ebiz.wsb.domain.parent.repository.ParentRepository;
 import com.ebiz.wsb.domain.student.dto.GroupStudentAssignRequest;
 import com.ebiz.wsb.domain.student.dto.StudentCreateRequestDTO;
 import com.ebiz.wsb.domain.student.dto.StudentDTO;
@@ -13,6 +17,8 @@ import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
 import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
 import com.ebiz.wsb.global.service.S3Service;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,11 +34,14 @@ public class StudentService {
     private final S3Service s3Service;
     private final GroupRepository groupRepository;
     private final WaypointRepository waypointRepository;
+    private final ParentRepository parentRepository;
+    private final UserDetailsServiceImpl userDetailsService;
 
     @Transactional
     public StudentDTO createStudent(StudentCreateRequestDTO studentCreateRequestDTO, MultipartFile imageFile) {
 
         String imageUrl = null;
+
         if (imageFile != null && !imageFile.isEmpty()) {
             try {
                 imageUrl = s3Service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
@@ -41,13 +50,18 @@ public class StudentService {
             }
         }
 
+        Long parentId = getLoggedInParentId();
+
+        Parent parent = parentRepository.findById(parentId)
+                .orElseThrow(() -> new ParentNotFoundException("부모 정보를 찾을 수 없습니다."));
+
         Student student = Student.builder()
                 .name(studentCreateRequestDTO.getName())
                 .schoolName(studentCreateRequestDTO.getSchoolName())
                 .grade(studentCreateRequestDTO.getGrade())
                 .notes(studentCreateRequestDTO.getNotes())
                 .imagePath(imageUrl)
-                .ParentPhone(studentCreateRequestDTO.getParentPhone())
+                .parent(parent)
                 .build();
 
         student = studentRepository.save(student);
@@ -56,12 +70,14 @@ public class StudentService {
     }
 
 
+
     public List<StudentDTO> getAllStudents() {
         List<Student> students = studentRepository.findAll();
         return students.stream().map(this::convertToDTOWithGroupAndWaypoint).toList();
     }
 
 
+    @Transactional
     public StudentDTO getStudentById(Long studentId) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException("학생을 찾을 수 없습니다."));
@@ -86,7 +102,6 @@ public class StudentService {
                 .grade(studentCreateRequestDTO.getGrade())
                 .notes(studentCreateRequestDTO.getNotes())
                 .imagePath(imageUrl)
-                .ParentPhone(studentCreateRequestDTO.getParentPhone())
                 .build();
 
         studentRepository.save(existingStudent);
@@ -137,7 +152,8 @@ public class StudentService {
                 .grade(student.getGrade())
                 .notes(student.getNotes())
                 .imagePath(student.getImagePath())
-                .ParentPhone(student.getParentPhone())
+                .parentId(student.getParent().getId())
+                .parentPhone(student.getParent().getPhone())
                 .build();
     }
 
@@ -152,8 +168,14 @@ public class StudentService {
                 .groupId(student.getGroup() != null ? student.getGroup().getId() : null)
                 .waypointId(student.getWaypoint() != null ? student.getWaypoint().getId() : null)
                 .waypointName(student.getWaypoint() != null ? student.getWaypoint().getWaypointName() : null)
-                .ParentPhone(student.getParentPhone())
+                .parentId(student.getParent().getId())
+                .parentPhone(student.getParent().getPhone())
                 .build();
+    }
+
+    public Long getLoggedInParentId() {
+        Parent parent = (Parent) userDetailsService.getUserByContextHolder();
+        return parent.getId();
     }
 
 

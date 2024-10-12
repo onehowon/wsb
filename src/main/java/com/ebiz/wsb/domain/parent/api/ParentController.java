@@ -31,26 +31,13 @@ public class ParentController {
         return ResponseEntity.ok(parentDTO);
     }
 
-    @PutMapping("/address/{parentsId}")
-    public ResponseEntity<ParentDTO> updateParentAddress(
+    @PutMapping("/{parentsId}")
+    public ResponseEntity<ParentDTO> updateParent(
             @PathVariable Long parentsId,
-            @RequestParam("address") String address) {
+            @RequestBody ParentDTO parentDTO,
+            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile) {
 
-        ParentDTO parentDTO = ParentDTO.builder()
-                .id(parentsId)
-                .address(address)
-                .build();
-
-        ParentDTO updatedParentDTO = parentService.updateParentAddress(parentsId, parentDTO);
-        return ResponseEntity.ok(updatedParentDTO);
-    }
-
-    @PutMapping("/image/{parentsId}")
-    public ResponseEntity<ParentDTO> updateParentImage(
-            @PathVariable Long parentsId,
-            @RequestParam(value = "imagePath",required = false) MultipartFile imagePath) {
-
-        ParentDTO updatedParentDTO = parentService.updateParentImage(parentsId, imagePath);
+        ParentDTO updatedParentDTO = parentService.updateParent(parentsId, parentDTO, imageFile);
         return ResponseEntity.ok(updatedParentDTO);
     }
 
@@ -59,6 +46,4 @@ public class ParentController {
         parentService.deleteParent(parentsId);
         return ResponseEntity.ok(BaseResponse.builder().message("부모 정보가 삭제되었습니다.").build());
     }
-
-
 }
