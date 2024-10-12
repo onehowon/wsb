@@ -26,16 +26,12 @@ public class AttendanceService {
 
     @Transactional
     public void updateAttendance(Long studentId, AttendanceStatus attendanceStatus, Long groupId) {
+
         LocalDate today = LocalDate.now();
-        log.info(studentId.toString());
-        log.info(attendanceStatus.toString());
-        log.info(groupId.toString());
 
         // 학생 정보 조회
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException("학생 정보를 찾을 수 없습니다"));
-
-        log.info(student.toString());
 
         // 오늘 날짜에 해당하는 출석 정보 조회
         Attendance attendance = attendanceRepository.findByStudentAndAttendanceDate(student, today)
@@ -50,7 +46,6 @@ public class AttendanceService {
         Attendance updatedAttendance = attendance.toBuilder()
                 .attendanceStatus(attendanceStatus)
                 .build();
-        log.info(updatedAttendance.toString());
 
         Attendance save = attendanceRepository.save(updatedAttendance);
 
@@ -63,8 +58,10 @@ public class AttendanceService {
                 .build();
 
         log.info(attendanceDTO.toString());
+        log.info(groupId.toString());
 
-        // 출석 상태 업데이트 웹소캣으로 인솔자들에게 알림
-        template.convertAndSend("/sub/group/" + groupId, attendanceDTO);
+        template.convertAndSend("/sub/group/1", attendanceDTO);
+
+
     }
 }

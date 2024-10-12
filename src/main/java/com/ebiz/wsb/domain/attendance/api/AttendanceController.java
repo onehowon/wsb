@@ -4,14 +4,10 @@ import com.ebiz.wsb.domain.attendance.application.AttendanceService;
 import com.ebiz.wsb.domain.attendance.dto.AttendanceUpdateRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,8 +18,6 @@ public class AttendanceController {
 
     @MessageMapping("/group/{groupId}")
     public void updateAttendance(@Payload AttendanceUpdateRequest request, @DestinationVariable Long groupId) {
-        log.info(request.toString());
         attendanceService.updateAttendance(request.getStudentId(), request.getAttendanceStatus(), groupId);
     }
-
 }
