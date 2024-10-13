@@ -2,16 +2,16 @@ package com.ebiz.wsb.domain.attendance.api;
 
 import com.ebiz.wsb.domain.attendance.application.AttendanceService;
 import com.ebiz.wsb.domain.attendance.dto.AttendanceUpdateRequest;
+import com.ebiz.wsb.global.dto.BaseResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,8 +26,16 @@ public class AttendanceController {
     }
 
     @PostMapping("/{waypointId}/complete")
-    public ResponseEntity<Void>  completeAttendance(@PathVariable Long waypointId) {
-        attendanceService.completeAttendance(waypointId);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<BaseResponse>  completeAttendance(@PathVariable Long waypointId) {
+        BaseResponse baseResponse = attendanceService.completeAttendance(waypointId);
+        return ResponseEntity.ok(baseResponse);
+    }
+
+    @PostMapping("/{studentId}/preabsent")
+    public ResponseEntity<BaseResponse> preAbsent(@PathVariable Long studentId, @RequestParam("date") String date) {
+        // 날짜를 파싱하여 LocalDate로 변환
+        LocalDate absenceDate = LocalDate.parse(date);
+        BaseResponse baseResponse = attendanceService.markPreAbsent(studentId, absenceDate);
+        return ResponseEntity.ok(baseResponse);
     }
 }
