@@ -4,12 +4,17 @@ import com.ebiz.wsb.domain.attendance.dto.AttendanceDTO;
 import com.ebiz.wsb.domain.attendance.entity.Attendance;
 import com.ebiz.wsb.domain.attendance.entity.AttendanceStatus;
 import com.ebiz.wsb.domain.attendance.repository.AttendanceRepository;
+import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
+import com.ebiz.wsb.domain.parent.entity.Parent;
+import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
 import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.student.exception.StudentNotFoundException;
 import com.ebiz.wsb.domain.student.repository.StudentRepository;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
 import com.ebiz.wsb.domain.waypoint.exception.WaypointNotFoundException;
 import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
+import com.ebiz.wsb.global.dto.BaseResponse;
+import com.fasterxml.jackson.databind.ser.Serializers;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +34,7 @@ public class AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final SimpMessagingTemplate template;
     private final WaypointRepository waypointRepository;
+    private final UserDetailsServiceImpl userDetailsService;
 
     @Transactional
     public void updateAttendance(Long studentId, AttendanceStatus attendanceStatus, Long groupId) {
@@ -90,7 +96,7 @@ public class AttendanceService {
     }
 
     @Transactional
-    public void completeAttendance(Long waypointId) {
+    public BaseResponse completeAttendance(Long waypointId) {
         // 경유지 정보 조회
         Waypoint waypoint = waypointRepository.findById(waypointId)
                 .orElseThrow(() -> new WaypointNotFoundException("해당 경유지를 찾을 수 없습니다"));
@@ -130,5 +136,44 @@ public class AttendanceService {
 
         // 출석 여부를 변경한 경유지 자체를 업데이트 및 저장
         waypointRepository.save(updatedWaypoint);
+        return BaseResponse.builder()
+                .message("해당 경유지의 출석을 완료하였습니다")
+                .build();
+    }
+
+    @Transactional
+    public BaseResponse markPreAbsent(Long studentId, LocalDate absenceDate) {
+        // 현재 사용자 정보(인증 객체)로 학부모 여부 확인
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+
+        if (!(userByContextHolder instanceof Parent)) {
+            throw new ParentNotFoundException("해당 기능은 학부모만 사용할 수 있습니다.");
+        }
+
+        Parent parent = (Parent) userByContextHolder;
+
+        // 학부모가 신청하는 자녀가 맞는지 검증
+        Student findStudent = studentRepository.findById(studentId)
+                .filter(student -> student.getParent().getId().equals(parent.getId())) // 학부모의 자녀인지 확인
+                .orElseThrow(() -> new StudentNotFoundException("학생 정보를 찾을 수 없거나 자녀가 아닙니다."));
+
+        // 신청한 날짜에 해당하는 출석 정보 조회, 없으면 새로 생성
+        Attendance attendance = attendanceRepository.findByStudentAndAttendanceDate(findStudent, absenceDate)
+                .orElseGet(() -> Attendance.builder()
+                        .student(findStudent)
+                        .waypoint(findStudent.getWaypoint())
+                        .attendanceDate(absenceDate)  // 신청한 날짜로 설정
+                        .attendanceStatus(AttendanceStatus.UNCONFIRMED) // 기본 상태 설정
+                        .build());
+
+        // 출석 상태를 "사전 결석"으로 업데이트
+        Attendance updatedAttendance = attendance.toBuilder()
+                .attendanceStatus(AttendanceStatus.PREABSENT)
+                .build();
+
+        attendanceRepository.save(updatedAttendance);
+        return BaseResponse.builder()
+                .message("사전 결석 신청이 완료되었습니다")
+                .build();
     }
 }
