@@ -18,4 +18,5 @@ public class GuardianDTO {
     private String experience;
     private String phone;
     private String imagePath;
+    private Long groupId;
 }

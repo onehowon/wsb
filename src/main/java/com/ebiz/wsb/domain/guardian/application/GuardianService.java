@@ -77,6 +77,7 @@ public class GuardianService {
     }
 
     private GuardianDTO convertToDTO(Guardian guardian) {
+        Long groupId = guardian.getGroup() != null ? guardian.getGroup().getId() : null;
         return GuardianDTO.builder()
                 .id(guardian.getId())
                 .name(guardian.getName())
@@ -84,7 +85,8 @@ public class GuardianService {
                 .phone(guardian.getPhone())
                 .bio(guardian.getBio())
                 .experience(guardian.getExperience())
-                .imagePath(guardian.getImagePath())  // S3에서 받아온 전체 경로
+                .imagePath(guardian.getImagePath())
+                .groupId(groupId)
                 .build();
     }
 
