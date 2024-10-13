@@ -41,6 +41,7 @@ public class WaypointService {
                     .collect(Collectors.toList());
         } else {
             return Collections.emptyList();
+
         }
     }
 
