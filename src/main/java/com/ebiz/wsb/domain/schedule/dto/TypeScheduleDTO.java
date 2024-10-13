@@ -14,6 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TypeScheduleDTO {
+    private Long id;
     private String type;
     private String time;
     private List<GuardianSummaryDTO> guardianList;

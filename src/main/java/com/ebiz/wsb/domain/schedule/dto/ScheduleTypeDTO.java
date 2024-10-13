@@ -13,7 +13,5 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ScheduleTypeDTO {
-
-    private Long id;
     private String name;
 }

@@ -20,9 +20,8 @@ import java.util.List;
 @NoArgsConstructor
 public class ScheduleDTO {
     private Long scheduleId;
-    private Long groupId;
     private List<GuardianSummaryDTO> guardianList;
-    private List<ScheduleTypeDTO> scheduleTypes;
+    private List<TypeScheduleDTO> scheduleTypes;
     private LocalDate day;
     private LocalTime time;
 }

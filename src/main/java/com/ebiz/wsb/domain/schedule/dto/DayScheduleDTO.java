@@ -12,5 +12,6 @@ import java.util.List;
 @AllArgsConstructor
 public class DayScheduleDTO {
     private final LocalDate day;
-    private final List<String> scheduleTypes;
+    private final String time;
+    private final String scheduleType;
 }
