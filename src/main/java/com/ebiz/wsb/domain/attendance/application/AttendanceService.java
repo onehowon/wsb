@@ -48,6 +48,13 @@ public class AttendanceService {
                         .attendanceStatus(AttendanceStatus.UNCONFIRMED)
                         .build());
 
+        // 이미 출석 상태가 동일한 경우 중복 처리를 방지
+        if (attendance.getAttendanceStatus() == attendanceStatus) {
+            // 상태가 동일하다면 아무 작업도 하지 않고 반환
+            log.info("중복된 출석 상태 업데이트 요청이 감지되었습니다. 처리하지 않습니다.");
+            return;
+        }
+
         // 경유지에도 현재 "출석완료"인 학생 수 반영
         Waypoint waypoint = waypointRepository.findById(attendance.getWaypoint().getId())
                 .orElseThrow(() -> new WaypointNotFoundException("해당 경유지를 찾을 수 없습니다"));
