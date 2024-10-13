@@ -59,6 +59,5 @@ public class GuardianController {
     public ResponseEntity<GroupDTO> getGuardianGroup() {
         GroupDTO group = guardianService.getGuardianGroup();
         return new ResponseEntity<>(group, HttpStatus.OK);
-
     }
 }

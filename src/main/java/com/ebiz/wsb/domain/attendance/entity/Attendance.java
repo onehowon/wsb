@@ -43,6 +43,8 @@ public class Attendance {
     @Column(name = "attendance_status")
     private AttendanceStatus attendanceStatus;
 
-    @Column(name = "parent_notice_absence")
-    private boolean parentNoticeAbsence;
+    @Column(name = "parent_notice_absence", nullable = false)
+    private boolean parentNoticeAbsence = false;
+
+
 }

@@ -16,7 +16,7 @@ import java.util.List;
 
 @Entity
 @Getter
-@Builder
+@Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor
 @DynamicInsert
@@ -39,6 +39,12 @@ public class Waypoint {
 
     @Column(name = "waypoint_order")
     private Integer waypointOrder;
+
+    @Column(name = "attendance_complete", nullable = false)
+    private Boolean attendanceComplete = false;
+
+    @Column(name = "current_count")
+    private int currentCount = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")

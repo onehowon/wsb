@@ -53,7 +53,9 @@ public class WaypointService {
                 waypoint.getLongitude(),
                 waypoint.getWaypointOrder(),
                 waypoint.getGroup().getId(),
-                waypoint.getStudents().size()
+                waypoint.getStudents().size(),
+                waypoint.getAttendanceComplete(),
+                waypoint.getCurrentCount()
         );
     }
 
@@ -69,8 +71,25 @@ public class WaypointService {
             for (Waypoint waypoint : waypoints) {
                 if (waypoint.getId().equals(waypointId)) {
                     List<Student> students = waypointRepository.findStudentsByWaypointId(waypointId);
+
                     return students.stream()
-                            .map(this::convertToStudentDTO)
+                            .map(student -> {
+                                // 출석 정보를 확인하여 없으면 생성
+                                LocalDate today = LocalDate.now();
+                                Attendance attendance = attendanceRepository.findByStudentAndAttendanceDate(student, today)
+                                        .orElseGet(() -> {
+                                            Attendance newAttendance = Attendance.builder()
+                                                    .student(student)
+                                                    .waypoint(student.getWaypoint())
+                                                    .attendanceDate(today)
+                                                    .attendanceStatus(AttendanceStatus.UNCONFIRMED) // 기본 상태 설정
+                                                    .build();
+                                            return attendanceRepository.save(newAttendance); // 저장 후 반환
+                                        });
+
+                                // 출석 정보와 학생을 DTO로 변환
+                                return convertToStudentDTO(student, attendance);
+                            })
                             .collect(Collectors.toList());
                 }
             }
@@ -79,14 +98,8 @@ public class WaypointService {
         throw new WaypointWithoutStudentsException("해당 경유지에 배정된 학생을 찾을 수가 없습니다.");
     }
 
-    private StudentDTO convertToStudentDTO(Student student) {
-        // 오늘 날짜의 출석 상태를 가져옴
-        LocalDate today = LocalDate.now();
-        Attendance attendance = attendanceRepository.findByStudentAndAttendanceDate(student, today)
-                .orElse(Attendance.builder()
-                        .attendanceStatus(AttendanceStatus.UNCONFIRMED)
-                        .build());
-
+    // DTO 변환 로직만을 처리하는 메서드
+    private StudentDTO convertToStudentDTO(Student student, Attendance attendance) {
         return StudentDTO.builder()
                 .studentId(student.getStudentId())
                 .name(student.getName())
@@ -99,4 +112,5 @@ public class WaypointService {
                 .attendanceStatus(attendance.getAttendanceStatus())
                 .build();
     }
+
 }

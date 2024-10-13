@@ -5,10 +5,7 @@ import com.ebiz.wsb.domain.waypoint.application.WaypointService;
 import com.ebiz.wsb.domain.waypoint.dto.WaypointDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +28,7 @@ public class WaypointController {
     public ResponseEntity<List<StudentDTO>> getStudentsByWaypoint(@PathVariable Long waypointId) {
         List<StudentDTO> students = waypointService.getStudentByWaypoint(waypointId);
         return ResponseEntity.ok(students);
-
-
     }
+
+
 }

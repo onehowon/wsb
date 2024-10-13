@@ -18,6 +18,8 @@ public class WaypointDTO {
     private Integer waypointOrder;
     private Long groupId;
     private int studentCount;
+    private Boolean attendanceComplete;
+    private Integer currentCount;
 
 
 }
