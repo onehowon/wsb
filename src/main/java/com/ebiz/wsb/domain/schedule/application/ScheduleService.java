@@ -69,7 +69,6 @@ public class ScheduleService {
         return convertScheduleToDTO(schedule);
     }
 
-    // 1. 일별 스케줄 조회
     @Transactional(readOnly = true)
     public ScheduleResponseDTO getGroupScheduleByDate(LocalDate specificDate) {
         Guardian currentGuardian = findCurrentGuardian();
@@ -79,6 +78,8 @@ public class ScheduleService {
 
         return convertToResponseDTO(schedules, specificDate);
     }
+
+
 
     @Transactional(readOnly = true)
     public ScheduleByMonthResponseDTO getMyScheduleByMonth(int year, int month) {
@@ -95,7 +96,9 @@ public class ScheduleService {
                 .map(schedule -> DayScheduleDTO.builder()
                         .day(schedule.getDay())
                         .time(schedule.getTime().toString())
-                        .scheduleType(schedule.getScheduleType().getName())
+                        .scheduleType(schedule.getScheduleType() != null ? schedule.getScheduleType().getName() : "N/A")
+                        .scheduleId(schedule.getScheduleId())
+                        .groupId(schedule.getGroup() != null ? schedule.getGroup().getId() : null)
                         .build())
                 .collect(Collectors.toList());
 
@@ -133,6 +136,7 @@ public class ScheduleService {
 
     private ScheduleResponseDTO convertToResponseDTO(List<Schedule> schedules, LocalDate date) {
         if (schedules.isEmpty()) {
+            System.out.println("No schedules found for date: " + date);
             return ScheduleResponseDTO.builder()
                     .scheduleBasicInfo(ScheduleBasicInfoDTO.builder()
                             .groupId(null)
@@ -143,9 +147,16 @@ public class ScheduleService {
                     .build();
         }
 
+        // 첫 번째 스케줄 정보를 확인하는 로그 추가
+        Schedule firstSchedule = schedules.get(0);
+        System.out.println("First schedule found: " + firstSchedule);
+
+        Long groupId = firstSchedule.getGroup() != null ? firstSchedule.getGroup().getId() : null;
+        Long scheduleId = firstSchedule.getScheduleId();
+
         List<TypeScheduleDTO> typeSchedules = schedules.stream()
                 .map(schedule -> TypeScheduleDTO.builder()
-                        .type(schedule.getScheduleType() != null ? schedule.getScheduleType().getName() : "ScheduleType 존재하지 않음")
+                        .type(schedule.getScheduleType() != null ? schedule.getScheduleType().getName() : "N/A")
                         .time(schedule.getTime().toString())
                         .guardianList(schedule.getGuardians().stream()
                                 .map(guardian -> GuardianSummaryDTO.builder()
@@ -158,11 +169,11 @@ public class ScheduleService {
 
         return ScheduleResponseDTO.builder()
                 .scheduleBasicInfo(ScheduleBasicInfoDTO.builder()
-                        .groupId(schedules.get(0).getGroup().getId())
-                        .scheduleId(schedules.get(0).getScheduleId())
+                        .groupId(groupId)
+                        .scheduleId(scheduleId)
                         .day(date)
                         .build())
-                .typeSchedules(typeSchedules)  // 복원된 타입 스케줄 리스트 반환
+                .typeSchedules(typeSchedules)
                 .build();
     }
 
@@ -176,8 +187,8 @@ public class ScheduleService {
                 .collect(Collectors.toList());
 
         TypeScheduleDTO scheduleTypeDTO = TypeScheduleDTO.builder()
-                .id(schedule.getScheduleType().getId())
-                .type(schedule.getScheduleType().getName())
+                .id(schedule.getScheduleType() != null ? schedule.getScheduleType().getId() : null)  // 스케줄 타입이 없을 경우 처리
+                .type(schedule.getScheduleType() != null ? schedule.getScheduleType().getName() : "N/A")
                 .time(schedule.getTime().toString())
                 .guardianList(guardianList)
                 .build();
@@ -195,7 +206,16 @@ public class ScheduleService {
 
     private Guardian findCurrentGuardian() {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        return guardianRepository.findGuardianByEmail(currentEmail)
+        Guardian guardian = guardianRepository.findGuardianByEmail(currentEmail)
                 .orElseThrow(() -> new IllegalArgumentException("현재 사용자에 대한 인솔자를 찾을 수 없습니다."));
+
+        // group_id 로그로 출력
+        if (guardian.getGroup() != null) {
+            System.out.println("Group ID: " + guardian.getGroup().getId());
+        } else {
+            System.out.println("Guardian has no associated group.");
+        }
+
+        return guardian;
     }
 }

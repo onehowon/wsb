@@ -14,4 +14,6 @@ public class DayScheduleDTO {
     private final LocalDate day;
     private final String time;
     private final String scheduleType;
+    private final Long scheduleId;
+    private final Long groupId;
 }
