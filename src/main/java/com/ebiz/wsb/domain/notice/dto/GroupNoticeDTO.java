@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class GroupNoticeDTO {
-    private NoticeTypeDTO noticeType;
+    private Long groupNoticeId;
     private String content;
     private String photo;
     private Integer likes;

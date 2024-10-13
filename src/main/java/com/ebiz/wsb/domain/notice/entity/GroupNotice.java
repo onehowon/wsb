@@ -27,10 +27,6 @@ public class GroupNotice {
     @Column(name = "group_notice_id")
     private Long groupNoticeId;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "notice_type_id", nullable = false)
-    private NoticeType noticeType;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guardian_id", nullable = false)
     private Guardian guardian;

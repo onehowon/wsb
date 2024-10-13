@@ -1,23 +1,17 @@
 package com.ebiz.wsb.domain.notice.application;
 
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
+import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.group.repository.GroupRepository;
-import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.notice.dto.GroupNoticeDTO;
-import com.ebiz.wsb.domain.notice.dto.NoticeTypeDTO;
 import com.ebiz.wsb.domain.notice.entity.GroupNotice;
-import com.ebiz.wsb.domain.notice.entity.NoticeType;
-import com.ebiz.wsb.domain.notice.entity.NoticeTypeEnum;
-import com.ebiz.wsb.domain.notice.exception.CustomInvalidNoticeTypeException;
 import com.ebiz.wsb.domain.notice.exception.NoticeAccessDeniedException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
 import com.ebiz.wsb.domain.notice.repository.GroupNoticeRepository;
-import com.ebiz.wsb.domain.notice.repository.NoticeTypeRepository;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.global.service.S3Service;
-import java.nio.file.AccessDeniedException;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -30,8 +24,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +33,6 @@ public class GroupNoticeService {
     private final GroupNoticeRepository groupNoticeRepository;
     private final S3Service s3service;
     private final UserDetailsServiceImpl userDetailsService;
-    private final NoticeTypeRepository noticeTypeRepository;
     private final GroupRepository groupRepository;
 
     public Page<GroupNoticeDTO> getAllGroupNotices(Pageable pageable) {
@@ -88,18 +79,17 @@ public class GroupNoticeService {
     }
 
 
-    public GroupNoticeDTO createGroupNotice(String noticeType, String content, MultipartFile imageFile, Authentication authentication) {
-
-        NoticeType existingNoticeType = noticeTypeRepository.findByName(NoticeTypeEnum.valueOf(noticeType))
-                .orElseThrow(() -> new CustomInvalidNoticeTypeException("유효하지 않은 공지 타입: " + noticeType));
+    public GroupNoticeDTO createGroupNotice(String content, MultipartFile imageFile, Authentication authentication) {
 
         Guardian guardian = (Guardian) userDetailsService.getUserByContextHolder();
+
+        Group group = guardian.getGroup();
 
         String photoUrl = imageFile != null ? uploadImage(imageFile) : null;
 
         GroupNotice groupNotice = GroupNotice.builder()
-                .noticeType(existingNoticeType)
                 .guardian(guardian)
+                .group(group)
                 .content(content)
                 .photo(photoUrl)
                 .likes(0)
@@ -119,7 +109,6 @@ public class GroupNoticeService {
 
                     GroupNotice updatedGroupNotice = GroupNotice.builder()
                             .groupNoticeId(existingGroupNotice.getGroupNoticeId())
-                            .noticeType(existingGroupNotice.getNoticeType())
                             .guardian(existingGroupNotice.getGuardian())
                             .content(content)
                             .photo(updatedPhotoUrl)
@@ -139,12 +128,9 @@ public class GroupNoticeService {
 
     private GroupNoticeDTO convertToDTO(GroupNotice groupNotice) {
         return GroupNoticeDTO.builder()
-                .noticeType(NoticeTypeDTO.builder()
-                        .id(groupNotice.getNoticeType().getId())
-                        .name(groupNotice.getNoticeType().getName().name())
-                        .build())
+                .groupNoticeId(groupNotice.getGroupNoticeId())
                 .content(groupNotice.getContent())
-                .photo(groupNotice.getPhoto())  // S3 URL
+                .photo(groupNotice.getPhoto())
                 .likes(groupNotice.getLikes())
                 .createdAt(groupNotice.getCreatedAt())
                 .build();
