@@ -104,6 +104,7 @@ public class GuardianService {
             return GroupDTO.builder()
                     .groupName(group.getGroupName())
                     .schoolName(group.getSchoolName())
+                    .id(group.getId())
                     .build();
         } else {
             throw new GroupNotFoundException("배정된 그룹을 찾을 수 없습니다.");

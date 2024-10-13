@@ -2,6 +2,7 @@ package com.ebiz.wsb.domain.group.dto;
 
 import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
 import com.ebiz.wsb.domain.parent.dto.ParentDTO;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +19,5 @@ public class GroupDTO {
     private Long id;
     private String groupName;
     private String schoolName;
-    private List<GuardianDTO> guardians;
-    private List<ParentDTO> parents;
 
 }
