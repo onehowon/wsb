@@ -166,6 +166,7 @@ public class StudentService {
                 .notes(student.getNotes())
                 .imagePath(student.getImagePath())
                 .groupId(student.getGroup() != null ? student.getGroup().getId() : null)
+                .groupName(student.getGroup() != null ? student.getGroup().getGroupName() : null)
                 .waypointId(student.getWaypoint() != null ? student.getWaypoint().getId() : null)
                 .waypointName(student.getWaypoint() != null ? student.getWaypoint().getWaypointName() : null)
                 .parentId(student.getParent().getId())

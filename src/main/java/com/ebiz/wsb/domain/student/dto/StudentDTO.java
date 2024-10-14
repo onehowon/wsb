@@ -24,4 +24,5 @@ public class StudentDTO {
     private AttendanceStatus attendanceStatus;
     private Long parentId;
     private String parentPhone;
+    private String groupName;
 }
