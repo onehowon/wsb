@@ -106,9 +106,14 @@ public class AttendanceService {
 
     @Transactional
     public BaseResponse completeAttendance(Long waypointId) {
+        // 해당 경유지의 전체 출석 여부가 출석 완료 상태면, 변경 하지 못하게 막음
         // 경유지 정보 조회
         Waypoint waypoint = waypointRepository.findById(waypointId)
                 .orElseThrow(() -> new WaypointNotFoundException("해당 경유지를 찾을 수 없습니다"));
+
+        if(waypoint.getAttendanceComplete()) {
+            throw new WaypointAttendanceCompletionException("출석 완료 상태로, 변경이 불가능합니다");
+        }
 
         // 해당 경유지의 오늘자 출석 정보 조회
         List<Attendance> attendances = attendanceRepository.findByWaypoint_IdAndAttendanceDate(waypoint.getId(), LocalDate.now());
@@ -152,15 +157,6 @@ public class AttendanceService {
 
     @Transactional
     public BaseResponse markPreAbsent(Long studentId, LocalDate absenceDate) {
-        // 해당 경유지의 전체 출석 여부가 출석 완료 상태면, 변경 하지 못하게 막음
-        Student checkStudent = studentRepository.findById(studentId)
-                .orElseThrow(() -> new StudentNotFoundException("학생 정보를 찾을 수 없습니다"));
-
-        if(checkStudent.getWaypoint().getAttendanceComplete()) {
-            throw new WaypointAttendanceCompletionException("출석 완료 상태로, 변경이 불가능합니다");
-        }
-
-
         // 현재 사용자 정보(인증 객체)로 학부모 여부 확인
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
 
