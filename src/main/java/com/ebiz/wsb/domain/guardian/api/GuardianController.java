@@ -28,18 +28,11 @@ public class GuardianController {
     @PutMapping("/{id}")
     public ResponseEntity<GuardianDTO> updateGuardian(
             @PathVariable Long id,
-            @RequestParam("name") String name,
-            @RequestParam("email") String email,
-            @RequestParam("phone") String phone,
-            @RequestParam("bio") String bio,
-            @RequestParam("experience") String experience,
-            @RequestPart(value = "file", required = false) MultipartFile file) throws IOException {
-
+            @RequestParam(value = "bio", required = false) String bio,
+            @RequestParam(value = "experience", required = false) String experience,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
 
         GuardianDTO guardianDTO = GuardianDTO.builder()
-                .name(name)
-                .email(email)
-                .phone(phone)
                 .bio(bio)
                 .experience(experience)
                 .build();
@@ -47,6 +40,7 @@ public class GuardianController {
         GuardianDTO updatedGuardian = guardianService.updateGuardian(id, guardianDTO, file);
         return new ResponseEntity<>(updatedGuardian, HttpStatus.OK);
     }
+
 
 
     @DeleteMapping("{id}")

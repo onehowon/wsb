@@ -4,6 +4,7 @@ import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.group.dto.GroupDTO;
 import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
+import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
@@ -31,6 +32,7 @@ public class GuardianService {
     private final GuardianRepository guardianRepository;
     private final S3Service s3service;
     private final UserDetailsServiceImpl userDetailsService;
+    private final GroupRepository groupRepository;
 
     public GuardianDTO getGuardianById(Long guardianId) {
         Guardian guardian = guardianRepository.findById(guardianId)
@@ -43,22 +45,31 @@ public class GuardianService {
         Guardian existingGuardian = guardianRepository.findById(guardianId)
                 .orElseThrow(() -> new GuardianNotFoundException("인솔자 정보를 찾을 수 없습니다."));
 
+        Group group = existingGuardian.getGroup();
+
+        if (guardianDTO.getGroupId() != null) {
+            group = groupRepository.findById(guardianDTO.getGroupId())
+                    .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다."));
+        }
+
         String imageUrl = existingGuardian.getImagePath();
         if (imageFile != null && !imageFile.isEmpty()) {
             imageUrl = uploadImage(imageFile);
+        } else {
+            imageUrl = existingGuardian.getImagePath();
         }
 
         Guardian updatedGuardian = Guardian.builder()
                 .id(existingGuardian.getId())
-                .name(guardianDTO.getName() != null ? guardianDTO.getName() : existingGuardian.getName())
-                .email(guardianDTO.getEmail() != null ? guardianDTO.getEmail() : existingGuardian.getEmail())
-                .phone(guardianDTO.getPhone() != null ? guardianDTO.getPhone() : existingGuardian.getPhone())
-                .bio(guardianDTO.getBio() != null ? guardianDTO.getBio() : existingGuardian.getBio())
-                .experience(guardianDTO.getExperience() != null ? guardianDTO.getExperience() : existingGuardian.getExperience())
-                .imagePath(imageUrl != null ? imageUrl : existingGuardian.getImagePath())
+                .name(existingGuardian.getName())
+                .phone(existingGuardian.getPhone())
+                .bio(guardianDTO.getBio() != null ? guardianDTO.getBio() : existingGuardian.getBio())  // bio 업데이트
+                .experience(guardianDTO.getExperience() != null ? guardianDTO.getExperience() : existingGuardian.getExperience())  // experience 업데이트
+                .imagePath(imageUrl)
+                .email(existingGuardian.getEmail())
                 .password(existingGuardian.getPassword())
+                .group(group)
                 .build();
-
         guardianRepository.save(updatedGuardian);
 
         return convertToDTO(updatedGuardian);
@@ -81,7 +92,6 @@ public class GuardianService {
         return GuardianDTO.builder()
                 .id(guardian.getId())
                 .name(guardian.getName())
-                .email(guardian.getEmail())
                 .phone(guardian.getPhone())
                 .bio(guardian.getBio())
                 .experience(guardian.getExperience())
