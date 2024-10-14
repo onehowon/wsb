@@ -12,6 +12,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.DynamicInsert;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -34,9 +36,6 @@ public class GroupNotice {
     @Column(name = "content")
     private String content;
 
-    @Column(name = "photo")
-    private String photo;
-
     @Column(name = "likes")
     private Integer likes;
 
@@ -48,5 +47,7 @@ public class GroupNotice {
     @JoinColumn(name = "group_id", referencedColumnName = "group_id")
     private Group group;
 
+    @OneToMany(mappedBy = "groupNotice", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<GroupNoticePhoto> photos = new ArrayList<>();
 
 }

@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/group-notices")
 @AllArgsConstructor
@@ -37,10 +39,10 @@ public class GroupNoticeController {
     @PostMapping
     public ResponseEntity<GroupNoticeDTO> createGroupNotice(
             @RequestParam("content") String content,
-            @RequestPart(value = "photo", required = false) MultipartFile photo,
+            @RequestPart(value = "photos", required = false) List<MultipartFile> photos,
             Authentication authentication
     ) {
-        GroupNoticeDTO createdGroupNotice = groupNoticeService.createGroupNotice(content, photo, authentication);
+        GroupNoticeDTO createdGroupNotice = groupNoticeService.createGroupNotice(content, photos, authentication);
         return new ResponseEntity<>(createdGroupNotice, HttpStatus.CREATED);
     }
 
@@ -48,9 +50,9 @@ public class GroupNoticeController {
     public ResponseEntity<GroupNoticeDTO> updateGroupNotice(
             @PathVariable Long groupNoticeId,
             @RequestParam("content") String content,
-            @RequestPart(value = "photo", required = false) MultipartFile photo
+            @RequestPart(value = "photos", required = false) List<MultipartFile> photos
     ) {
-        GroupNoticeDTO updatedNotice = groupNoticeService.updateGroupNotice(groupNoticeId, content, photo);
+        GroupNoticeDTO updatedNotice = groupNoticeService.updateGroupNotice(groupNoticeId, content, photos);
         return ResponseEntity.ok(updatedNotice);
     }
 

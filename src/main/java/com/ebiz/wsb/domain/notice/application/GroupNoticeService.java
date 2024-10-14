@@ -2,11 +2,14 @@ package com.ebiz.wsb.domain.notice.application;
 
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.group.entity.Group;
+import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
 import com.ebiz.wsb.domain.group.repository.GroupRepository;
+import com.ebiz.wsb.domain.guardian.dto.GuardianSummaryDTO;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.notice.dto.GroupNoticeDTO;
 import com.ebiz.wsb.domain.notice.entity.GroupNotice;
+import com.ebiz.wsb.domain.notice.entity.GroupNoticePhoto;
 import com.ebiz.wsb.domain.notice.exception.NoticeAccessDeniedException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
 import com.ebiz.wsb.domain.notice.repository.GroupNoticeRepository;
@@ -24,6 +27,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.ebiz.wsb.domain.notice.entity.QGroupNotice.groupNotice;
 
 @Service
 @RequiredArgsConstructor
@@ -79,39 +87,77 @@ public class GroupNoticeService {
     }
 
 
-    public GroupNoticeDTO createGroupNotice(String content, MultipartFile imageFile, Authentication authentication) {
+    public GroupNoticeDTO createGroupNotice(String content, List<MultipartFile> imageFiles, Authentication authentication) {
 
         Guardian guardian = (Guardian) userDetailsService.getUserByContextHolder();
-
         Group group = guardian.getGroup();
 
-        String photoUrl = imageFile != null ? uploadImage(imageFile) : null;
+        if (group == null) {
+            throw new GroupNotFoundException("인솔자가 그룹에 속해 있지 않습니다.");
+        }
 
         GroupNotice groupNotice = GroupNotice.builder()
                 .guardian(guardian)
                 .group(group)
                 .content(content)
-                .photo(photoUrl)
                 .likes(0)
                 .createdAt(LocalDateTime.now())
+                .photos(new ArrayList<>())
                 .build();
 
         GroupNotice savedGroupNotice = groupNoticeRepository.save(groupNotice);
+
+        List<GroupNoticePhoto> photoEntities = new ArrayList<>();
+        if (imageFiles != null && !imageFiles.isEmpty()) {
+            for (MultipartFile file : imageFiles) {
+                if (!file.isEmpty()) {
+                    String photoUrl = uploadImage(file);
+                    photoEntities.add(GroupNoticePhoto.builder()
+                            .photoUrl(photoUrl)
+                            .groupNotice(savedGroupNotice)
+                            .build());
+                }
+            }
+        }
+
+        savedGroupNotice.getPhotos().addAll(photoEntities);
+
+        groupNoticeRepository.save(savedGroupNotice);
+
         return convertToDTO(savedGroupNotice);
     }
 
 
     @Transactional
-    public GroupNoticeDTO updateGroupNotice(Long groupNoticeId, String content, MultipartFile imageFile) {
+    public GroupNoticeDTO updateGroupNotice(Long groupNoticeId, String content, List<MultipartFile> imageFiles) {
+        Guardian currentGuardian = (Guardian) userDetailsService.getUserByContextHolder();
+
         return groupNoticeRepository.findById(groupNoticeId)
                 .map(existingGroupNotice -> {
-                    String updatedPhotoUrl = imageFile != null ? uploadImage(imageFile) : existingGroupNotice.getPhoto();
+                    if (!existingGroupNotice.getGuardian().getId().equals(currentGuardian.getId())) {
+                        throw new NoticeAccessDeniedException("공지사항을 수정할 권한이 없습니다.");
+                    }
+
+                    List<GroupNoticePhoto> updatedPhotoEntities = new ArrayList<>();
+
+                    if (imageFiles != null && !imageFiles.isEmpty()) {
+                        for (MultipartFile file : imageFiles) {
+                            if (!file.isEmpty()) {
+                                String photoUrl = uploadImage(file);
+                                updatedPhotoEntities.add(GroupNoticePhoto.builder()
+                                        .photoUrl(photoUrl)
+                                        .groupNotice(existingGroupNotice)
+                                        .build());
+                            }
+                        }
+                    }
 
                     GroupNotice updatedGroupNotice = GroupNotice.builder()
                             .groupNoticeId(existingGroupNotice.getGroupNoticeId())
                             .guardian(existingGroupNotice.getGuardian())
+                            .group(existingGroupNotice.getGroup())
                             .content(content)
-                            .photo(updatedPhotoUrl)
+                            .photos(updatedPhotoEntities)
                             .likes(existingGroupNotice.getLikes())
                             .createdAt(existingGroupNotice.getCreatedAt())
                             .build();
@@ -123,16 +169,38 @@ public class GroupNoticeService {
     }
 
     public void deleteGroupNotice(Long groupNoticeId) {
+        Guardian currentGuardian = (Guardian) userDetailsService.getUserByContextHolder();
+
+        GroupNotice groupNotice = groupNoticeRepository.findById(groupNoticeId)
+                .orElseThrow(() -> new NoticeNotFoundException(groupNoticeId));
+
+        if (!groupNotice.getGuardian().getId().equals(currentGuardian.getId())) {
+            throw new NoticeAccessDeniedException("공지사항을 삭제할 권한이 없습니다.");
+        }
+
         groupNoticeRepository.deleteById(groupNoticeId);
     }
 
     private GroupNoticeDTO convertToDTO(GroupNotice groupNotice) {
+
+        List<String> photoUrls = groupNotice.getPhotos().stream()
+                .map(GroupNoticePhoto::getPhotoUrl)
+                .collect(Collectors.toList());
+
+        Guardian guardian = groupNotice.getGuardian();
+        GuardianSummaryDTO guardianSummaryDTO = GuardianSummaryDTO.builder()
+                .id(guardian.getId())
+                .name(guardian.getName())
+                .imagePath(guardian.getImagePath())
+                .build();
+
         return GroupNoticeDTO.builder()
                 .groupNoticeId(groupNotice.getGroupNoticeId())
                 .content(groupNotice.getContent())
-                .photo(groupNotice.getPhoto())
+                .photos(photoUrls)
                 .likes(groupNotice.getLikes())
                 .createdAt(groupNotice.getCreatedAt())
+                .guardian(guardianSummaryDTO)
                 .build();
     }
 
