@@ -11,6 +11,8 @@ import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.student.exception.StudentNotFoundException;
 import com.ebiz.wsb.domain.waypoint.dto.WaypointDTO;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
+import com.ebiz.wsb.domain.waypoint.exception.WaypointAttendanceCompletionException;
+import com.ebiz.wsb.domain.waypoint.exception.WaypointNotFoundException;
 import com.ebiz.wsb.domain.waypoint.exception.WaypointWithoutStudentsException;
 import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
 import lombok.RequiredArgsConstructor;

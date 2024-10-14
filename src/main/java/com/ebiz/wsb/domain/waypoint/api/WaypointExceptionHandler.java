@@ -1,6 +1,7 @@
 package com.ebiz.wsb.domain.waypoint.api;
 
 import com.ebiz.wsb.domain.auth.exception.DuplicatedSignUpException;
+import com.ebiz.wsb.domain.waypoint.exception.WaypointAttendanceCompletionException;
 import com.ebiz.wsb.domain.waypoint.exception.WaypointWithoutStudentsException;
 import com.ebiz.wsb.global.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
@@ -15,5 +16,11 @@ public class WaypointExceptionHandler {
     public ResponseEntity<?> handleWaypointWithoutStudentsException(WaypointWithoutStudentsException e) {
         ErrorResponse errorResponse = ErrorResponse.builder().message(e.getMessage()).build();
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(WaypointAttendanceCompletionException.class)
+    public ResponseEntity<?> handleWaypointAttendanceCompletionException(WaypointAttendanceCompletionException e) {
+        ErrorResponse errorResponse = ErrorResponse.builder().message(e.getMessage()).build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 }
