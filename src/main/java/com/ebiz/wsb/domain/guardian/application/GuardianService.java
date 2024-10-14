@@ -63,8 +63,8 @@ public class GuardianService {
                 .id(existingGuardian.getId())
                 .name(existingGuardian.getName())
                 .phone(existingGuardian.getPhone())
-                .bio(guardianDTO.getBio() != null ? guardianDTO.getBio() : existingGuardian.getBio())  // bio 업데이트
-                .experience(guardianDTO.getExperience() != null ? guardianDTO.getExperience() : existingGuardian.getExperience())  // experience 업데이트
+                .bio(guardianDTO.getBio() != null ? guardianDTO.getBio() : existingGuardian.getBio())
+                .experience(guardianDTO.getExperience() != null ? guardianDTO.getExperience() : existingGuardian.getExperience())
                 .imagePath(imageUrl)
                 .email(existingGuardian.getEmail())
                 .password(existingGuardian.getPassword())

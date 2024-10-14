@@ -85,6 +85,7 @@ public class NotificationService {
                 .orElseThrow(() -> new ParentNotFoundException("인증된 부모 정보를 찾을 수 없습니다."));
     }
 
+    // 아래부터 나중에 쓸 수도 있어서 삭제 XX
     private GuardianNotificationDTO convertToGuardianNotificationDTO(GuardianNotification notification) {
         return GuardianNotificationDTO.builder()
                 .content(notification.getContent())

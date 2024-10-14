@@ -22,7 +22,7 @@ public class MessageController {
     public ResponseEntity<MessageDTO> sendMessage(
             @PathVariable Long parentId,
             @RequestParam String content) {
-        // 메시지 전송 처리
+
         MessageDTO messageDTO = messageService.sendMessage(parentId, content);
         return ResponseEntity.ok(messageDTO);
     }
@@ -30,7 +30,7 @@ public class MessageController {
     public ResponseEntity<?> getMessagesForGuardian(@PathVariable Long guardianId) {
         try {
             List<MessageDTO> messagesForGuardian = messageService.getMessagesForGuardian(guardianId);
-            // 메시지가 없는 경우 처리
+
             if (messagesForGuardian.isEmpty()) {
                 return ResponseEntity.ok("받은 메시지가 없습니다.");
             }

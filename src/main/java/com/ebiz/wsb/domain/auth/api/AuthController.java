@@ -17,8 +17,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 @RequestMapping("/auth")
 public class AuthController {
-
-    private static final String SIGN_IN_SUCCESS_MESSAGE = "로그인 성공";
     private static final String SIGN_UP_SUCCESS_MESSAGE = "회원가입 성공";
     private static final String RESET_PASSWORD_MESSAGE = "비밀번호가 변경되었습니다.";
 

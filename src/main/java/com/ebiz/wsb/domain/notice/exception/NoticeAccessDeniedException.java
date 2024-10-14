@@ -9,8 +9,4 @@ public class NoticeAccessDeniedException extends RuntimeException{
     public NoticeAccessDeniedException(String message){
         super(message);
     }
-
-    public NoticeAccessDeniedException(String message, Throwable cause){
-        super(message, cause);
-    }
 }

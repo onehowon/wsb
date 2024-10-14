@@ -10,6 +10,7 @@ import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
 import com.ebiz.wsb.domain.schedule.dto.*;
 import com.ebiz.wsb.domain.schedule.entity.Schedule;
 import com.ebiz.wsb.domain.schedule.entity.ScheduleType;
+import com.ebiz.wsb.domain.schedule.exception.ScheduleAccessException;
 import com.ebiz.wsb.domain.schedule.exception.ScheduleNotFoundException;
 import com.ebiz.wsb.domain.schedule.repository.ScheduleRepository;
 
@@ -136,7 +137,7 @@ public class ScheduleService {
 
     private ScheduleResponseDTO convertToResponseDTO(List<Schedule> schedules, LocalDate date) {
         if (schedules.isEmpty()) {
-            System.out.println("No schedules found for date: " + date);
+            System.out.println("해당 일에 지정된 스케줄이 없습니다.: " + date);
             return ScheduleResponseDTO.builder()
                     .scheduleBasicInfo(ScheduleBasicInfoDTO.builder()
                             .groupId(null)
@@ -149,7 +150,7 @@ public class ScheduleService {
 
         // 첫 번째 스케줄 정보를 확인하는 로그 추가
         Schedule firstSchedule = schedules.get(0);
-        System.out.println("First schedule found: " + firstSchedule);
+        System.out.println("첫 번째 스케줄: " + firstSchedule);
 
         Long groupId = firstSchedule.getGroup() != null ? firstSchedule.getGroup().getId() : null;
         Long scheduleId = firstSchedule.getScheduleId();
@@ -187,7 +188,7 @@ public class ScheduleService {
                 .collect(Collectors.toList());
 
         TypeScheduleDTO scheduleTypeDTO = TypeScheduleDTO.builder()
-                .id(schedule.getScheduleType() != null ? schedule.getScheduleType().getId() : null)  // 스케줄 타입이 없을 경우 처리
+                .id(schedule.getScheduleType() != null ? schedule.getScheduleType().getId() : null)
                 .type(schedule.getScheduleType() != null ? schedule.getScheduleType().getName() : "N/A")
                 .time(schedule.getTime().toString())
                 .guardianList(guardianList)
@@ -209,11 +210,8 @@ public class ScheduleService {
         Guardian guardian = guardianRepository.findGuardianByEmail(currentEmail)
                 .orElseThrow(() -> new IllegalArgumentException("현재 사용자에 대한 인솔자를 찾을 수 없습니다."));
 
-        // group_id 로그로 출력
-        if (guardian.getGroup() != null) {
-            System.out.println("Group ID: " + guardian.getGroup().getId());
-        } else {
-            System.out.println("Guardian has no associated group.");
+        if (guardian.getGroup() == null) {
+            throw new ScheduleAccessException("해당 인솔자는 그룹에 속해 있지 않습니다.");
         }
 
         return guardian;
