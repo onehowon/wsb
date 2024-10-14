@@ -11,6 +11,7 @@ import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.student.exception.StudentNotFoundException;
 import com.ebiz.wsb.domain.student.repository.StudentRepository;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
+import com.ebiz.wsb.domain.waypoint.exception.WaypointAttendanceCompletionException;
 import com.ebiz.wsb.domain.waypoint.exception.WaypointNotFoundException;
 import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
 import com.ebiz.wsb.global.dto.BaseResponse;
@@ -38,6 +39,14 @@ public class AttendanceService {
 
     @Transactional
     public void updateAttendance(Long studentId, AttendanceStatus attendanceStatus, Long groupId) {
+        // 해당 경유지의 전체 출석 여부가 출석 완료 상태면, 변경 하지 못하게 막음
+        Student checkStudent = studentRepository.findById(studentId)
+                .orElseThrow(() -> new StudentNotFoundException("학생 정보를 찾을 수 없습니다"));
+
+        if(checkStudent.getWaypoint().getAttendanceComplete()) {
+            throw new WaypointAttendanceCompletionException("출석 완료 상태로, 변경이 불가능합니다");
+        }
+
 
         LocalDate today = LocalDate.now();
 
