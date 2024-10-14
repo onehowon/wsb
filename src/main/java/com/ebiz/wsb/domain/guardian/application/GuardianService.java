@@ -42,6 +42,9 @@ public class GuardianService {
 
     @Transactional
     public GuardianDTO updateGuardian(Long guardianId, GuardianDTO guardianDTO, MultipartFile imageFile) {
+
+        checkGuardianOwnership(guardianId);
+
         Guardian existingGuardian = guardianRepository.findById(guardianId)
                 .orElseThrow(() -> new GuardianNotFoundException("인솔자 정보를 찾을 수 없습니다."));
 
@@ -77,11 +80,18 @@ public class GuardianService {
 
     @Transactional
     public void deleteGuardian(Long guardianId) {
+
+        checkGuardianOwnership(guardianId);
+
         Guardian guardian = guardianRepository.findById(guardianId)
                 .orElseThrow(() -> new GuardianNotFoundException("인솔자 정보를 찾을 수 없습니다."));
 
         if (guardian.getImagePath() != null) {
-            s3service.deleteImage(guardian.getImagePath(), "walkingschoolbus-bucket");
+            try {
+                s3service.deleteImage(guardian.getImagePath(), "walkingschoolbus-bucket");
+            } catch (Exception e) {
+                log.error("이미지 삭제 실패 - 경로: {}, 에러 메시지: {}", guardian.getImagePath(), e.getMessage());
+            }
         }
 
         guardianRepository.deleteById(guardianId);
@@ -104,22 +114,38 @@ public class GuardianService {
         try {
             return s3service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
         } catch (IOException e) {
+            log.error("S3 업로드 실패 - 파일: {}, 에러 메시지: {}", imageFile.getOriginalFilename(), e.getMessage());
             throw new FileUploadException("이미지 업로드 실패", e);
+        } catch (Exception e) {
+            log.error("S3 서비스 오류 발생 - 파일: {}, 에러 메시지: {}", imageFile.getOriginalFilename(), e.getMessage());
+            throw new FileUploadException("알 수 없는 오류로 이미지 업로드에 실패했습니다.", e);
         }
     }
 
     public GroupDTO getGuardianGroup() {
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
-        if (userByContextHolder instanceof Guardian) {
-            Guardian guardian = (Guardian) userByContextHolder;
-            Group group = guardian.getGroup();
-            return GroupDTO.builder()
-                    .groupName(group.getGroupName())
-                    .schoolName(group.getSchoolName())
-                    .id(group.getId())
-                    .build();
-        } else {
+        if (!(userByContextHolder instanceof Guardian)) {
+            throw new GuardianNotFoundException("인솔자 정보를 찾을 수 없습니다.");
+        }
+
+        Guardian guardian = (Guardian) userByContextHolder;
+        Group group = guardian.getGroup();
+        if (group == null) {
             throw new GroupNotFoundException("배정된 그룹을 찾을 수 없습니다.");
         }
+
+        return GroupDTO.builder()
+                .groupName(group.getGroupName())
+                .schoolName(group.getSchoolName())
+                .id(group.getId())
+                .build();
     }
+
+    private void checkGuardianOwnership(Long guardianId) {
+        Guardian loggedInGuardian = (Guardian) userDetailsService.getUserByContextHolder();
+        if (!loggedInGuardian.getId().equals(guardianId)) {
+            throw new SecurityException("해당 인솔자의 데이터를 수정할 권한이 없습니다.");
+        }
+    }
+
 }
