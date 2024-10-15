@@ -19,5 +19,6 @@ public class GroupDTO {
     private Long id;
     private String groupName;
     private String schoolName;
-
+    private Boolean isGuideActive;
+    private Long dutyGuardianId;
 }

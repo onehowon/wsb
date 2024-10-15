@@ -2,9 +2,12 @@ package com.ebiz.wsb.domain.attendance.application;
 
 import com.ebiz.wsb.domain.attendance.dto.AttendanceDTO;
 import com.ebiz.wsb.domain.attendance.entity.Attendance;
+import com.ebiz.wsb.domain.attendance.entity.AttendanceMessageType;
 import com.ebiz.wsb.domain.attendance.entity.AttendanceStatus;
 import com.ebiz.wsb.domain.attendance.repository.AttendanceRepository;
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
+import com.ebiz.wsb.domain.guardian.entity.Guardian;
+import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
 import com.ebiz.wsb.domain.student.entity.Student;
@@ -46,7 +49,6 @@ public class AttendanceService {
         if(checkStudent.getWaypoint().getAttendanceComplete()) {
             throw new WaypointAttendanceCompletionException("출석 완료 상태로, 변경이 불가능합니다");
         }
-
 
         LocalDate today = LocalDate.now();
 
@@ -91,13 +93,13 @@ public class AttendanceService {
 
         Attendance save = attendanceRepository.save(updatedAttendance);
 
-
         AttendanceDTO attendanceDTO = AttendanceDTO.builder()
                 .attendanceId(save.getAttendanceId())
                 .studentId(save.getStudent().getStudentId())
                 .waypointId(save.getWaypoint().getId())
                 .attendanceDate(save.getAttendanceDate())
                 .attendanceStatus(save.getAttendanceStatus())
+                .messageType(AttendanceMessageType.ATTENDANCE_CHANGE)
                 .build();
 
 
@@ -107,7 +109,6 @@ public class AttendanceService {
     @Transactional
     public BaseResponse completeAttendance(Long waypointId) {
         // 해당 경유지의 전체 출석 여부가 출석 완료 상태면, 변경 하지 못하게 막음
-        // 경유지 정보 조회
         Waypoint waypoint = waypointRepository.findById(waypointId)
                 .orElseThrow(() -> new WaypointNotFoundException("해당 경유지를 찾을 수 없습니다"));
 
@@ -117,8 +118,6 @@ public class AttendanceService {
 
         // 해당 경유지의 오늘자 출석 정보 조회
         List<Attendance> attendances = attendanceRepository.findByWaypoint_IdAndAttendanceDate(waypoint.getId(), LocalDate.now());
-        System.out.println("AttendanceService.completeAttendance");
-        log.info(attendances.toString());
 
         // 출석완료 버튼을 누르면, "미인증"인 학생을 "결석"으로 처리
         List<Attendance> updatedAttendances = attendances.stream()
@@ -150,6 +149,23 @@ public class AttendanceService {
 
         // 출석 여부를 변경한 경유지 자체를 업데이트 및 저장
         waypointRepository.save(updatedWaypoint);
+
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        if (!(userByContextHolder instanceof Guardian)) {
+            throw new GuardianNotFoundException("해당 인솔자를 찾을 수 없습니다");
+        }
+        Guardian guardian = (Guardian) userByContextHolder;
+
+        // "출석완료" 했다는 것을 모든 인솔자에게 공지하기 위해 웹소캣으로 전송
+        Long groupId = guardian.getGroup().getId();
+
+        AttendanceDTO attendanceDTO = AttendanceDTO.builder()
+                .messageType(AttendanceMessageType.ATTENDANCE_COMPLETE)
+                .message(guardian.getName() + " 지도사님이" + waypoint.getWaypointName() + " 경유지의 출석을 완료했어요!")
+                .build();
+
+        template.convertAndSend("/sub/group/" + groupId, attendanceDTO);
+
         return BaseResponse.builder()
                 .message("해당 경유지의 출석을 완료하였습니다")
                 .build();

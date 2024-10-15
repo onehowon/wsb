@@ -16,7 +16,7 @@ import java.util.List;
 
 @Entity
 @Getter
-@Builder
+@Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor
 @DynamicInsert
@@ -32,6 +32,12 @@ public class Group {
 
     @Column(name = "group_name")
     private String groupName;
+
+    @Column(name = "is_guide_active", nullable = false)
+    private Boolean isGuideActive = false;
+
+    @Column(name = "duty_guardian_id")
+    private Long dutyGuardianId;
 
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
     private List<Guardian> guardians = new ArrayList<>();
