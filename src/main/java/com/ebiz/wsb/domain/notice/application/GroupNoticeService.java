@@ -10,6 +10,7 @@ import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.notice.dto.GroupNoticeDTO;
 import com.ebiz.wsb.domain.notice.entity.GroupNotice;
 import com.ebiz.wsb.domain.notice.entity.GroupNoticePhoto;
+import com.ebiz.wsb.domain.notice.exception.LikesNumberException;
 import com.ebiz.wsb.domain.notice.exception.NoticeAccessDeniedException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
 import com.ebiz.wsb.domain.notice.repository.GroupNoticeRepository;
@@ -43,11 +44,13 @@ public class GroupNoticeService {
     private final UserDetailsServiceImpl userDetailsService;
     private final GroupRepository groupRepository;
 
+    @Transactional
     public Page<GroupNoticeDTO> getAllGroupNotices(Pageable pageable) {
-        return groupNoticeRepository.findAll(pageable)
-                .map(this::convertToDTO);
+        Page<GroupNotice> notices = groupNoticeRepository.findAllByOrderByCreatedAtDesc(pageable);
+        return notices.map(this::convertToDTO);
     }
 
+    @Transactional
     public GroupNoticeDTO getGroupNoticeById(Long groupNoticeId) {
         GroupNotice groupNotice = groupNoticeRepository.findById(groupNoticeId)
                 .orElseThrow(() -> new NoticeNotFoundException(groupNoticeId));
@@ -209,6 +212,48 @@ public class GroupNoticeService {
             return s3service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
         } catch (IOException e) {
             throw new FileUploadException("이미지 업로드 실패", e);
+        }
+    }
+
+    @Transactional
+    public String addLike(Long groupNoticeId) {
+        GroupNotice groupNotice = groupNoticeRepository.findById(groupNoticeId)
+                .orElseThrow(() -> new NoticeNotFoundException(groupNoticeId));
+
+        GroupNotice updatedGroupNotice = GroupNotice.builder()
+                .groupNoticeId(groupNotice.getGroupNoticeId())
+                .guardian(groupNotice.getGuardian())
+                .group(groupNotice.getGroup())
+                .content(groupNotice.getContent())
+                .photos(groupNotice.getPhotos())
+                .likes(groupNotice.getLikes() + 1)
+                .createdAt(groupNotice.getCreatedAt())
+                .build();
+
+        groupNoticeRepository.save(updatedGroupNotice);
+        return "좋아요 +1";
+    }
+
+    @Transactional
+    public String removeLike(Long groupNoticeId) {
+        GroupNotice groupNotice = groupNoticeRepository.findById(groupNoticeId)
+                .orElseThrow(() -> new NoticeNotFoundException(groupNoticeId));
+
+        if (groupNotice.getLikes() > 0) {
+            GroupNotice updatedGroupNotice = GroupNotice.builder()
+                    .groupNoticeId(groupNotice.getGroupNoticeId())
+                    .guardian(groupNotice.getGuardian())
+                    .group(groupNotice.getGroup())
+                    .content(groupNotice.getContent())
+                    .photos(groupNotice.getPhotos())
+                    .likes(groupNotice.getLikes() - 1)
+                    .createdAt(groupNotice.getCreatedAt())
+                    .build();
+
+            groupNoticeRepository.save(updatedGroupNotice);
+            return "좋아요 -1";
+        } else {
+            throw new LikesNumberException("좋아요는 0보다 작을 수 없습니다.");
         }
     }
 }

@@ -47,7 +47,17 @@ public class GroupNotice {
     @JoinColumn(name = "group_id", referencedColumnName = "group_id")
     private Group group;
 
-    @OneToMany(mappedBy = "groupNotice", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "groupNotice", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<GroupNoticePhoto> photos = new ArrayList<>();
+
+    public void incrementLikes(){
+        this.likes++;
+    }
+
+    public void decrementLikes(){
+        if(this.likes > 0){
+            this.likes--;
+        }
+    }
 
 }

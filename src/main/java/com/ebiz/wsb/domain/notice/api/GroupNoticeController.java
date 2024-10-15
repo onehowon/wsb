@@ -61,4 +61,16 @@ public class GroupNoticeController {
         groupNoticeService.deleteGroupNotice(groupNoticeId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+
+    @PostMapping("/{groupNoticeId}/like")
+    public ResponseEntity<String> addLike(@PathVariable Long groupNoticeId) {
+        String message = groupNoticeService.addLike(groupNoticeId);
+        return ResponseEntity.ok(message);
+    }
+
+    @DeleteMapping("/{groupNoticeId}/like")
+    public ResponseEntity<String> removeLike(@PathVariable Long groupNoticeId) {
+        String message = groupNoticeService.removeLike(groupNoticeId);
+        return ResponseEntity.ok(message);
+    }
 }

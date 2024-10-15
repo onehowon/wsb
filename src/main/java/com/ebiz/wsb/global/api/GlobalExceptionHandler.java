@@ -4,6 +4,7 @@ import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.location.exception.InvalidLocationDataException;
 import com.ebiz.wsb.domain.mail.exception.InvalidMailException;
+import com.ebiz.wsb.domain.notice.exception.LikesNumberException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
 import com.ebiz.wsb.domain.schedule.exception.ScheduleAccessException;
 import com.ebiz.wsb.domain.token.exception.InvalidTokenException;
@@ -122,5 +123,10 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public String handleScheduleAccessException(ScheduleAccessException ex) {
         return ex.getMessage();
+    }
+
+    @ExceptionHandler(LikesNumberException.class)
+    public ResponseEntity<String> handleLikesNumberException(LikesNumberException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 }
