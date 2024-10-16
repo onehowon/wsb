@@ -16,12 +16,14 @@ import java.time.LocalDateTime;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AttendanceDTO {
     private AttendanceMessageType messageType;
-    private String message;
     private Long attendanceId;
     private Long studentId;
     private Long waypointId;
     private AttendanceStatus attendanceStatus;
     private LocalDate attendanceDate;
     private Boolean parentNoticeAbsence;
+    private Long guardianId;
+    private String guardianName;
+    private String waypointName;
 
 }
