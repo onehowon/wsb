@@ -161,7 +161,9 @@ public class AttendanceService {
 
         AttendanceDTO attendanceDTO = AttendanceDTO.builder()
                 .messageType(AttendanceMessageType.ATTENDANCE_COMPLETE)
-                .message(guardian.getName() + " 지도사님이" + waypoint.getWaypointName() + " 경유지의 출석을 완료했어요!")
+                .guardianId(guardian.getId())
+                .guardianName(guardian.getName())
+                .waypointName(updatedWaypoint.getWaypointName())
                 .build();
 
         template.convertAndSend("/sub/group/" + groupId, attendanceDTO);
