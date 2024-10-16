@@ -164,6 +164,7 @@ public class AttendanceService {
                 .guardianId(guardian.getId())
                 .guardianName(guardian.getName())
                 .waypointName(updatedWaypoint.getWaypointName())
+                .waypointId(updatedWaypoint.getId())
                 .build();
 
         template.convertAndSend("/sub/group/" + groupId, attendanceDTO);
