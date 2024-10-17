@@ -70,7 +70,7 @@ public class MessageService {
     public List<MessageDTO> getMessagesForGuardian(Long guardianId) {
         // Guardian 존재 여부 확인
         Guardian guardian = guardianRepository.findById(guardianId)
-                .orElseThrow(() -> new GuardianNotFoundException("인솔자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new GuardianNotFoundException("지도사를 찾을 수 없습니다."));
         List<MessageRecipient> recipients = messageRecipientRepository.findByGuardianId(guardianId);
         // 메시지가 없는 경우 빈 리스트 반환
         if (recipients.isEmpty()) {

@@ -52,10 +52,10 @@ public class GuardianService {
             Parent loggedInParent = (Parent) currentUser;
 
             if (guardian.getGroup() == null || !guardian.getGroup().getId().equals(loggedInParent.getGroup().getId())) {
-                throw new GuardianNotAccessException("해당 그룹의 인솔자 정보를 조회할 수 없습니다.");
+                throw new GuardianNotAccessException("해당 그룹의 지도사 정보를 조회할 수 없습니다.");
             }
         } else {
-            throw new GuardianNotAccessException("해당 인솔자 정보를 조회할 권한이 없습니다.");
+            throw new GuardianNotAccessException("해당 지도사 정보를 조회할 권한이 없습니다.");
         }
 
         return convertToDTO(guardian);

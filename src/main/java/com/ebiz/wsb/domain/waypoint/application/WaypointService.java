@@ -39,7 +39,7 @@ public class WaypointService {
             Guardian guardian = (Guardian) userByContextHolder;
             Group group = guardian.getGroup();
             if (group == null) {
-                throw new GroupNotFoundException("해당 인솔자는 어떤 그룹에도 속해 있지 않습니다.");
+                throw new GroupNotFoundException("해당 지도사는 어떤 그룹에도 속해 있지 않습니다.");
             }
 
             List<Waypoint> waypoints = waypointRepository.findByGroup_Id(group.getId());
@@ -79,7 +79,7 @@ public class WaypointService {
             Guardian guardian = (Guardian) userByContextHolder;
             Group group = guardian.getGroup();
             if (group == null) {
-                throw new GroupNotFoundException("해당 인솔자는 그룹에 속해 있지 않습니다.");
+                throw new GroupNotFoundException("해당 지도는 그룹에 속해 있지 않습니다.");
             }
 
             List<Waypoint> waypoints = waypointRepository.findByGroup_Id(group.getId());

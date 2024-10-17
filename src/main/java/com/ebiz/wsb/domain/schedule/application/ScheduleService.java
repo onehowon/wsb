@@ -45,7 +45,7 @@ public class ScheduleService {
         Group group = guardian.getGroup();
 
         if (group == null) {
-            throw new GroupNotFoundException("인솔자에게 그룹이 할당되어 있지 않습니다.");
+            throw new GroupNotFoundException("지도사에게 그룹이 할당되어 있지 않습니다.");
         }
 
         List<Guardian> guardians = guardianRepository.findAllById(
@@ -219,10 +219,10 @@ public class ScheduleService {
     private Guardian findCurrentGuardian() {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         Guardian guardian = guardianRepository.findGuardianByEmail(currentEmail)
-                .orElseThrow(() -> new IllegalArgumentException("현재 사용자에 대한 인솔자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("현재 사용자에 대한 지도사를 찾을 수 없습니다."));
 
         if (guardian.getGroup() == null) {
-            throw new ScheduleAccessException("해당 인솔자는 그룹에 속해 있지 않습니다.");
+            throw new ScheduleAccessException("해당 지도사는 그룹에 속해 있지 않습니다.");
         }
 
         return guardian;

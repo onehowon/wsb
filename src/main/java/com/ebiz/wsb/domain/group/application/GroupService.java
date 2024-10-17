@@ -67,7 +67,7 @@ public class GroupService {
 
             return groupDTO;
         } else {
-            throw new GuardianNotFoundException("해당 인솔자를 찾을 수 없습니다");
+            throw new GuardianNotFoundException("해당 지도사를 찾을 수 없습니다");
         }
     }
 
@@ -103,10 +103,10 @@ public class GroupService {
 
                 return groupDTO;
             }else {
-                throw new GuideNotOnDutyException("해당 인솔자는 퇴근하기의 권한이 없습니다");
+                throw new GuideNotOnDutyException("해당 지도사는 퇴근하기의 권한이 없습니다");
             }
         } else {
-            throw new GuardianNotFoundException("해당 인솔자를 찾을 수 없습니다");
+            throw new GuardianNotFoundException("해당 지도사를 찾을 수 없습니다");
         }
     }
 }
