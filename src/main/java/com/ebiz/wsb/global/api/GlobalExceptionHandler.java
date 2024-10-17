@@ -1,5 +1,7 @@
 package com.ebiz.wsb.global.api;
 
+import com.ebiz.wsb.domain.auth.exception.DuplicatedSignUpException;
+import com.ebiz.wsb.domain.group.exception.GuideNotStartedException;
 import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.location.exception.InvalidLocationDataException;
@@ -128,5 +130,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(LikesNumberException.class)
     public ResponseEntity<String> handleLikesNumberException(LikesNumberException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(GuideNotStartedException.class)
+    public ResponseEntity<?> handleGuideNotStartedException(GuideNotStartedException e) {
+        ErrorResponse errorResponse = ErrorResponse.builder().message(e.getMessage()).build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 }
