@@ -2,14 +2,18 @@ package com.ebiz.wsb.global.api;
 
 import com.ebiz.wsb.domain.group.exception.GuideNotStartedException;
 import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
+import com.ebiz.wsb.domain.guardian.exception.GuardianNotAccessException;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.location.exception.InvalidLocationDataException;
 import com.ebiz.wsb.domain.mail.exception.InvalidMailException;
 import com.ebiz.wsb.domain.notice.exception.LikesNumberException;
 import com.ebiz.wsb.domain.notice.exception.NoticeAccessDeniedException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
+import com.ebiz.wsb.domain.parent.exception.ParentAccessException;
 import com.ebiz.wsb.domain.schedule.exception.ScheduleAccessException;
+import com.ebiz.wsb.domain.student.exception.StudentNotAccessException;
 import com.ebiz.wsb.domain.token.exception.InvalidTokenException;
+import com.ebiz.wsb.domain.waypoint.exception.WaypointNotFoundException;
 import com.ebiz.wsb.global.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -143,5 +147,41 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleNoticeAccessDeniedException(NoticeAccessDeniedException e) {
         ErrorResponse errorResponse = ErrorResponse.builder().message(e.getMessage()).build();
         return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(WaypointNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleWaypointNotFoundException(WaypointNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.builder()
+                        .message(ex.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(StudentNotAccessException.class)
+    public ResponseEntity<ErrorResponse> handleStudentNotAccessException(StudentNotAccessException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.builder()
+                        .message(ex.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(ParentAccessException.class)
+    public ResponseEntity<ErrorResponse> handleParentAccessException(ParentAccessException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.builder()
+                        .message(ex.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(GuardianNotAccessException.class)
+    public ResponseEntity<ErrorResponse> handleGuardianNotAccessException(GuardianNotAccessException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.builder()
+                        .message(ex.getMessage())
+                        .build());
     }
 }
