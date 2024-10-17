@@ -5,6 +5,7 @@ import com.ebiz.wsb.domain.attendance.entity.AttendanceStatus;
 import com.ebiz.wsb.domain.attendance.repository.AttendanceRepository;
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.group.entity.Group;
+import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.student.dto.StudentDTO;
 import com.ebiz.wsb.domain.student.entity.Student;
@@ -12,6 +13,7 @@ import com.ebiz.wsb.domain.student.exception.StudentNotFoundException;
 import com.ebiz.wsb.domain.waypoint.dto.WaypointDTO;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
 import com.ebiz.wsb.domain.waypoint.exception.WaypointAttendanceCompletionException;
+import com.ebiz.wsb.domain.waypoint.exception.WaypointNotAccessException;
 import com.ebiz.wsb.domain.waypoint.exception.WaypointNotFoundException;
 import com.ebiz.wsb.domain.waypoint.exception.WaypointWithoutStudentsException;
 import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
@@ -36,13 +38,20 @@ public class WaypointService {
         if (userByContextHolder instanceof Guardian) {
             Guardian guardian = (Guardian) userByContextHolder;
             Group group = guardian.getGroup();
+            if (group == null) {
+                throw new GroupNotFoundException("해당 인솔자는 어떤 그룹에도 속해 있지 않습니다.");
+            }
+
             List<Waypoint> waypoints = waypointRepository.findByGroup_Id(group.getId());
+            if (waypoints.isEmpty()) {
+                throw new WaypointNotFoundException("해당 그룹에 등록된 경유지가 없습니다.");
+            }
 
             return waypoints.stream()
                     .map(this::convertToDTOWithStudentCount)
                     .collect(Collectors.toList());
         } else {
-            return Collections.emptyList();
+            throw new WaypointNotAccessException("인증되지 않은 사용자는 경유지를 조회할 수 없습니다.");
 
         }
     }
@@ -69,11 +78,21 @@ public class WaypointService {
         if (userByContextHolder instanceof Guardian) {
             Guardian guardian = (Guardian) userByContextHolder;
             Group group = guardian.getGroup();
+            if (group == null) {
+                throw new GroupNotFoundException("해당 인솔자는 그룹에 속해 있지 않습니다.");
+            }
+
             List<Waypoint> waypoints = waypointRepository.findByGroup_Id(group.getId());
+            if (waypoints.isEmpty()) {
+                throw new WaypointWithoutStudentsException("해당 그룹에 등록된 경유지가 없습니다.");
+            }
 
             for (Waypoint waypoint : waypoints) {
                 if (waypoint.getId().equals(waypointId)) {
                     List<Student> students = waypointRepository.findStudentsByWaypointId(waypointId);
+                    if (students.isEmpty()) {
+                        throw new WaypointWithoutStudentsException("해당 경유지에 배정된 학생을 찾을 수 없습니다.");
+                    }
 
                     return students.stream()
                             .map(student -> {
@@ -98,7 +117,7 @@ public class WaypointService {
             }
         }
 
-        throw new WaypointWithoutStudentsException("해당 경유지에 배정된 학생을 찾을 수가 없습니다.");
+        throw new WaypointNotAccessException("해당 경유지에 접근할 권한이 없습니다.");
     }
 
     // DTO 변환 로직만을 처리하는 메서드

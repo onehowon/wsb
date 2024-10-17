@@ -1,8 +1,10 @@
 package com.ebiz.wsb.domain.parent.application;
 
+import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.parent.dto.ParentDTO;
 import com.ebiz.wsb.domain.parent.entity.Parent;
+import com.ebiz.wsb.domain.parent.exception.ParentAccessException;
 import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
 import com.ebiz.wsb.domain.parent.repository.ParentRepository;
 import com.ebiz.wsb.domain.student.dto.StudentDTO;
@@ -28,7 +30,9 @@ public class ParentService {
 
     private final ParentRepository parentRepository;
     private final S3Service s3Service;
+    private final UserDetailsServiceImpl userDetailsService;
 
+    // 모든 부모를 조회하는 경우는 어떨 때 있는지 ..?
     public List<ParentDTO> getAllParents() {
         return parentRepository.findAll().stream()
                 .map(this::convertToDTO)
@@ -37,6 +41,102 @@ public class ParentService {
 
     @Transactional
     public ParentDTO getParentById(Long parentId) {
+        Object currentUser = userDetailsService.getUserByContextHolder();
+
+        if (currentUser instanceof Parent) {
+            Parent loggedInParent = (Parent) currentUser;
+
+            if (!loggedInParent.getId().equals(parentId)) {
+                throw new ParentAccessException("본인의 정보만 조회할 수 있습니다.");
+            }
+
+            return retrieveParentInfo(parentId);
+        } else if (currentUser instanceof Guardian) {
+            Guardian guardian = (Guardian) currentUser;
+
+            Parent parentToView = parentRepository.findById(parentId)
+                    .orElseThrow(() -> new ParentNotFoundException(PARENT_NOT_FOUND_MESSAGE));
+
+            if (guardian.getGroup() == null || !guardian.getGroup().getId().equals(parentToView.getGroup().getId())) {
+                throw new ParentAccessException("해당 그룹의 부모 정보를 조회할 수 없습니다.");
+            }
+
+            return retrieveParentInfo(parentId);
+        } else {
+            throw new ParentAccessException("부모 정보를 조회할 권한이 없습니다.");
+        }
+    }
+
+    @Transactional
+    public ParentDTO updateParent(Long parentId, ParentDTO parentDTO, MultipartFile imageFile) {
+        Long loggedInParentId = getLoggedInParentId();
+
+        if (!loggedInParentId.equals(parentId)) {
+            throw new IllegalArgumentException("본인의 정보만 수정할 수 있습니다.");
+        }
+
+        Parent existingParent = parentRepository.findById(parentId)
+                .orElseThrow(() -> new ParentNotFoundException(PARENT_NOT_FOUND_MESSAGE));
+
+        String email = existingParent.getEmail();
+        String password = existingParent.getPassword();
+
+        String imageUrl = existingParent.getImagePath();
+        if (imageFile != null && !imageFile.isEmpty()) {
+            imageUrl = uploadImage(imageFile);
+        }
+
+        existingParent = Parent.builder()
+                .id(existingParent.getId())
+                .name(parentDTO.getName())
+                .phone(parentDTO.getPhone())
+                .address(parentDTO.getAddress())
+                .email(email)
+                .imagePath(imageUrl)
+                .password(password)
+                .build();
+
+        Parent savedParent = parentRepository.save(existingParent);
+        return convertToDTO(savedParent);
+    }
+
+    @Transactional
+    public void deleteParent(Long parentId) {
+        Long loggedInParentId = getLoggedInParentId();
+
+        if (!loggedInParentId.equals(parentId)) {
+            throw new ParentAccessException("본인의 계정만 삭제할 수 있습니다.");
+        }
+
+        parentRepository.deleteById(parentId);
+    }
+
+    private ParentDTO convertToDTO(Parent parent) {
+        return ParentDTO.builder()
+                .id(parent.getId())
+                .name(parent.getName())
+                .phone(parent.getPhone())
+                .address(parent.getAddress())
+                .imagePath(parent.getImagePath())
+                .build();
+    }
+
+    private String uploadImage(MultipartFile imageFile) {
+        try {
+            String imageUrl = s3Service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
+            System.out.println("Uploaded image URL: " + imageUrl);  // 이미지 URL 출력
+            return imageUrl;
+        } catch (IOException e) {
+            throw new ImageUploadException("이미지 업로드 실패", e);
+        }
+    }
+
+    public Long getLoggedInParentId() {
+        Parent parent = (Parent) userDetailsService.getUserByContextHolder();
+        return parent.getId();
+    }
+
+    private ParentDTO retrieveParentInfo(Long parentId) {
         Parent parent = parentRepository.findById(parentId)
                 .orElseThrow(() -> new ParentNotFoundException(PARENT_NOT_FOUND_MESSAGE));
 
@@ -59,57 +159,6 @@ public class ParentService {
                 .imagePath(parent.getImagePath())
                 .students(studentDTOs)
                 .build();
-    }
-
-    @Transactional
-    public ParentDTO updateParent(Long parentId, ParentDTO parentDTO, MultipartFile imageFile) {
-        Parent existingParent = parentRepository.findById(parentId)
-                .orElseThrow(() -> new ParentNotFoundException(PARENT_NOT_FOUND_MESSAGE));
-
-        String email = existingParent.getEmail();
-        String password = existingParent.getPassword();
-
-        String imageUrl = existingParent.getImagePath();
-        if (imageFile != null && !imageFile.isEmpty()) {
-            imageUrl = uploadImage(imageFile);
-        }
-
-        existingParent = Parent.builder()
-                .id(existingParent.getId())
-                .name(existingParent.getName())
-                .phone(parentDTO.getPhone())
-                .address(parentDTO.getAddress())
-                .email(email)
-                .imagePath(imageUrl)
-                .password(password)
-                .build();
-
-        Parent savedParent = parentRepository.save(existingParent);
-        return convertToDTO(savedParent);
-    }
-
-    public void deleteParent(Long parentsId) {
-        parentRepository.deleteById(parentsId);
-    }
-
-    private ParentDTO convertToDTO(Parent parent) {
-        return ParentDTO.builder()
-                .id(parent.getId())
-                .name(parent.getName())
-                .phone(parent.getPhone())
-                .address(parent.getAddress())
-                .imagePath(parent.getImagePath())
-                .build();
-    }
-
-    private String uploadImage(MultipartFile imageFile) {
-        try {
-            String imageUrl = s3Service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
-            System.out.println("Uploaded image URL: " + imageUrl);  // 이미지 URL 출력
-            return imageUrl;
-        } catch (IOException e) {
-            throw new ImageUploadException("이미지 업로드 실패", e);
-        }
     }
 }
 

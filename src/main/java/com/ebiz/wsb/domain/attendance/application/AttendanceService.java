@@ -174,7 +174,7 @@ public class AttendanceService {
 
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
         if (!(userByContextHolder instanceof Guardian)) {
-            throw new GuardianNotFoundException("해당 인솔자를 찾을 수 없습니다");
+            throw new GuardianNotFoundException("해당 지도사를 찾을 수 없습니다");
         }
         Guardian guardian = (Guardian) userByContextHolder;
 

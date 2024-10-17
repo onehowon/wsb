@@ -4,6 +4,7 @@ import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.group.dto.GroupDTO;
 import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.group.exception.GroupAlreadyActiveException;
+import com.ebiz.wsb.domain.group.exception.GroupNotAccessException;
 import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
 import com.ebiz.wsb.domain.group.exception.GuideNotOnDutyException;
 import com.ebiz.wsb.domain.group.repository.GroupRepository;
@@ -40,6 +41,14 @@ public class GroupService {
         if(userByContextHolder instanceof Guardian) {
             Guardian guardian = (Guardian) userByContextHolder;
 
+            if (guardian.getGroup() == null || !guardian.getGroup().getId().equals(groupId)) {
+                throw new GroupNotAccessException("해당 그룹의 출근 권한이 없습니다.");
+            }
+
+            if (group.getIsGuideActive()) {
+                throw new GroupAlreadyActiveException("해당 그룹은 이미 운행 중입니다");
+            }
+
             // 그룹에 운행 중임을 나타내는 값과 운행 위치를 제공하는 인솔자 ID 기입
             Group updateGroup = group.toBuilder()
                     .isGuideActive(true)
@@ -71,6 +80,11 @@ public class GroupService {
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
         if(userByContextHolder instanceof Guardian) {
             Guardian guardian = (Guardian) userByContextHolder;
+
+            if (guardian.getGroup() == null || !guardian.getGroup().getId().equals(groupId)) {
+                throw new GroupNotAccessException("해당 그룹의 퇴근 권한이 없습니다.");
+            }
+
             if(guardian.getId().equals(group.getDutyGuardianId())) {
                 Group updateGroup = group.toBuilder()
                         .isGuideActive(false)

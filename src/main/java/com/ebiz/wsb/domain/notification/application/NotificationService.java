@@ -76,7 +76,7 @@ public class NotificationService {
     private Guardian getAuthenticatedGuardian(Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         return guardianRepository.findGuardianByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new GuardianNotFoundException("인증된 인솔자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new GuardianNotFoundException("인증된 지도사 정보를 찾을 수 없습니다."));
     }
 
     private Parent getAuthenticatedParent(Authentication authentication) {

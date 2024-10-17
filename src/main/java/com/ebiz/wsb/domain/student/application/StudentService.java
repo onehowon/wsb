@@ -2,7 +2,9 @@ package com.ebiz.wsb.domain.student.application;
 
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.group.entity.Group;
+import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
 import com.ebiz.wsb.domain.group.repository.GroupRepository;
+import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
 import com.ebiz.wsb.domain.parent.repository.ParentRepository;
@@ -11,6 +13,7 @@ import com.ebiz.wsb.domain.student.dto.StudentCreateRequestDTO;
 import com.ebiz.wsb.domain.student.dto.StudentDTO;
 import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.student.exception.ImageUploadException;
+import com.ebiz.wsb.domain.student.exception.StudentNotAccessException;
 import com.ebiz.wsb.domain.student.exception.StudentNotFoundException;
 import com.ebiz.wsb.domain.student.repository.StudentRepository;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
@@ -40,8 +43,12 @@ public class StudentService {
     @Transactional
     public StudentDTO createStudent(StudentCreateRequestDTO studentCreateRequestDTO, MultipartFile imageFile) {
 
-        String imageUrl = null;
+        Long parentId = getLoggedInParentId();
 
+        Parent parent = parentRepository.findById(parentId)
+                .orElseThrow(() -> new ParentNotFoundException("부모 정보를 찾을 수 없습니다."));
+
+        String imageUrl = null;
         if (imageFile != null && !imageFile.isEmpty()) {
             try {
                 imageUrl = s3Service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
@@ -49,11 +56,6 @@ public class StudentService {
                 throw new ImageUploadException("이미지 업로드 중 오류가 발생했습니다.", e);
             }
         }
-
-        Long parentId = getLoggedInParentId();
-
-        Parent parent = parentRepository.findById(parentId)
-                .orElseThrow(() -> new ParentNotFoundException("부모 정보를 찾을 수 없습니다."));
 
         Student student = Student.builder()
                 .name(studentCreateRequestDTO.getName())
@@ -70,11 +72,31 @@ public class StudentService {
     }
 
 
-
     public List<StudentDTO> getAllStudents() {
-        List<Student> students = studentRepository.findAll();
+        Object currentUser = userDetailsService.getUserByContextHolder();
+
+        List<Student> students;
+
+        if (currentUser instanceof Parent) {
+            Parent currentParent = (Parent) currentUser;
+            students = studentRepository.findAllByParentId(currentParent.getId());
+
+        } else if (currentUser instanceof Guardian) {
+            Guardian currentGuardian = (Guardian) currentUser;
+
+            if (currentGuardian.getGroup() == null) {
+                throw new GroupNotFoundException("해당 지도사는 그룹에 속해 있지 않습니다.");
+            }
+
+            students = studentRepository.findAllByGroupId(currentGuardian.getGroup().getId());
+
+        } else {
+            throw new StudentNotAccessException("학생 정보를 조회할 권한이 없습니다.");
+        }
+
         return students.stream().map(this::convertToDTOWithGroupAndWaypoint).toList();
     }
+
 
 
     @Transactional
@@ -82,13 +104,39 @@ public class StudentService {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException("학생을 찾을 수 없습니다."));
 
-        return convertToDTOWithGroupAndWaypoint(student);
+        Object currentUser = userDetailsService.getUserByContextHolder();
+
+        if (currentUser instanceof Parent) {
+            Parent currentParent = (Parent) currentUser;
+
+            if (!student.getParent().getId().equals(currentParent.getId())) {
+                throw new StudentNotAccessException("본인의 자녀 정보만 조회할 수 있습니다.");
+            }
+
+            return convertToDTOWithGroupAndWaypoint(student);
+        }
+
+        if (currentUser instanceof Guardian) {
+            Guardian currentGuardian = (Guardian) currentUser;
+
+            if (student.getGroup() == null || !student.getGroup().getId().equals(currentGuardian.getGroup().getId())) {
+                throw new StudentNotAccessException("해당 그룹의 학생 정보를 조회할 권한이 없습니다.");
+            }
+
+            return convertToDTOWithGroupAndWaypoint(student);
+        }
+        throw new StudentNotAccessException("해당 학생 정보를 조회할 권한이 없습니다.");
     }
 
     @Transactional
     public StudentDTO updateStudent(Long studentId, StudentCreateRequestDTO studentCreateRequestDTO, MultipartFile imageFile) {
         Student existingStudent = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException("학생 정보를 찾을 수 없습니다."));
+
+        Long parentId = getLoggedInParentId();
+        if (!existingStudent.getParent().getId().equals(parentId)) {
+            throw new StudentNotAccessException("해당 학생을 수정할 권한이 없습니다.");
+        }
 
         String imageUrl = existingStudent.getImagePath();
         if (imageFile != null && !imageFile.isEmpty()) {
@@ -102,6 +150,7 @@ public class StudentService {
                 .grade(studentCreateRequestDTO.getGrade())
                 .notes(studentCreateRequestDTO.getNotes())
                 .imagePath(imageUrl)
+                .parent(existingStudent.getParent())
                 .build();
 
         studentRepository.save(existingStudent);
@@ -141,6 +190,14 @@ public class StudentService {
 
     @Transactional
     public void deleteStudent(Long studentId) {
+        Student existingStudent = studentRepository.findById(studentId)
+                .orElseThrow(() -> new StudentNotFoundException("학생을 찾을 수 없습니다."));
+
+        Long parentId = getLoggedInParentId();
+        if (!existingStudent.getParent().getId().equals(parentId)) {
+            throw new IllegalArgumentException("해당 학생을 삭제할 권한이 없습니다.");
+        }
+
         studentRepository.deleteById(studentId);
     }
 
@@ -175,8 +232,14 @@ public class StudentService {
     }
 
     public Long getLoggedInParentId() {
-        Parent parent = (Parent) userDetailsService.getUserByContextHolder();
-        return parent.getId();
+        Object currentUser = userDetailsService.getUserByContextHolder();
+
+        if (currentUser instanceof Parent) {
+            Parent parent = (Parent) currentUser;
+            return parent.getId();
+        } else {
+            throw new StudentNotAccessException("부모만 학생 정보를 수정할 수 있습니다.");
+        }
     }
 
 

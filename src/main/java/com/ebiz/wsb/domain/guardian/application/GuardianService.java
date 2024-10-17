@@ -8,8 +8,10 @@ import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
+import com.ebiz.wsb.domain.guardian.exception.GuardianNotAccessException;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
+import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
 import com.ebiz.wsb.global.service.S3Service;
 import jakarta.transaction.Transactional;
@@ -35,18 +37,36 @@ public class GuardianService {
     private final GroupRepository groupRepository;
 
     public GuardianDTO getGuardianById(Long guardianId) {
+        Object currentUser = userDetailsService.getUserByContextHolder();
+
         Guardian guardian = guardianRepository.findById(guardianId)
-                .orElseThrow(() -> new GuardianNotFoundException("인솔자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new GuardianNotFoundException("지도사 정보를 찾을 수 없습니다."));
+
+        if (currentUser instanceof Guardian) {
+            Guardian loggedInGuardian = (Guardian) currentUser;
+
+            if (!loggedInGuardian.getId().equals(guardianId)) {
+                throw new GuardianNotAccessException("본인의 정보만 조회할 수 있습니다.");
+            }
+        } else if (currentUser instanceof Parent) {
+            Parent loggedInParent = (Parent) currentUser;
+
+            if (guardian.getGroup() == null || !guardian.getGroup().getId().equals(loggedInParent.getGroup().getId())) {
+                throw new GuardianNotAccessException("해당 그룹의 인솔자 정보를 조회할 수 없습니다.");
+            }
+        } else {
+            throw new GuardianNotAccessException("해당 인솔자 정보를 조회할 권한이 없습니다.");
+        }
+
         return convertToDTO(guardian);
     }
 
     @Transactional
     public GuardianDTO updateGuardian(Long guardianId, GuardianDTO guardianDTO, MultipartFile imageFile) {
-
         checkGuardianOwnership(guardianId);
 
         Guardian existingGuardian = guardianRepository.findById(guardianId)
-                .orElseThrow(() -> new GuardianNotFoundException("인솔자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new GuardianNotFoundException("지도사 정보를 찾을 수 없습니다."));
 
         Group group = existingGuardian.getGroup();
 
@@ -58,8 +78,6 @@ public class GuardianService {
         String imageUrl = existingGuardian.getImagePath();
         if (imageFile != null && !imageFile.isEmpty()) {
             imageUrl = uploadImage(imageFile);
-        } else {
-            imageUrl = existingGuardian.getImagePath();
         }
 
         Guardian updatedGuardian = Guardian.builder()
@@ -73,6 +91,7 @@ public class GuardianService {
                 .password(existingGuardian.getPassword())
                 .group(group)
                 .build();
+
         guardianRepository.save(updatedGuardian);
 
         return convertToDTO(updatedGuardian);
@@ -84,7 +103,7 @@ public class GuardianService {
         checkGuardianOwnership(guardianId);
 
         Guardian guardian = guardianRepository.findById(guardianId)
-                .orElseThrow(() -> new GuardianNotFoundException("인솔자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new GuardianNotFoundException("지도사 정보를 찾을 수 없습니다."));
 
         if (guardian.getImagePath() != null) {
             try {
@@ -96,6 +115,7 @@ public class GuardianService {
 
         guardianRepository.deleteById(guardianId);
     }
+
 
     private GuardianDTO convertToDTO(Guardian guardian) {
         Long groupId = guardian.getGroup() != null ? guardian.getGroup().getId() : null;
@@ -125,7 +145,7 @@ public class GuardianService {
     public GroupDTO getGuardianGroup() {
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
         if (!(userByContextHolder instanceof Guardian)) {
-            throw new GuardianNotFoundException("인솔자 정보를 찾을 수 없습니다.");
+            throw new GuardianNotFoundException("지도사 정보를 찾을 수 없습니다.");
         }
 
         Guardian guardian = (Guardian) userByContextHolder;
@@ -143,9 +163,11 @@ public class GuardianService {
 
     private void checkGuardianOwnership(Long guardianId) {
         Guardian loggedInGuardian = (Guardian) userDetailsService.getUserByContextHolder();
+
         if (!loggedInGuardian.getId().equals(guardianId)) {
-            throw new SecurityException("해당 인솔자의 데이터를 수정할 권한이 없습니다.");
+            throw new GuardianNotAccessException("해당 지도사의 데이터를 수정할 권한이 없습니다.");
         }
     }
+
 
 }

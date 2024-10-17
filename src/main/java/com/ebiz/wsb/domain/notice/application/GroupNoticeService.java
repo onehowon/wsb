@@ -110,7 +110,7 @@ public class GroupNoticeService {
 
             if (guardian.getGroup() == null || guardian.getGroup().getId() == null) {
                 log.error("Guardian ID {}는 그룹에 속해 있지 않습니다.", guardian.getId());
-                throw new NoticeAccessDeniedException("해당 인솔자는 그룹에 속해 있지 않습니다.");
+                throw new NoticeAccessDeniedException("해당 지도사는 그룹에 속해 있지 않습니다.");
             }
 
             isMember = groupRepository.isUserInGroupForGuardian(guardian.getId(), groupId);
@@ -140,7 +140,7 @@ public class GroupNoticeService {
         Group group = guardian.getGroup();
 
         if (group == null) {
-            throw new GroupNotFoundException("인솔자가 그룹에 속해 있지 않습니다.");
+            throw new GroupNotFoundException("지도사가 그룹에 속해 있지 않습니다.");
         }
 
         GroupNotice groupNotice = GroupNotice.builder()

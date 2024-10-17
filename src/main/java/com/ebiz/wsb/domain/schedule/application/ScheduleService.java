@@ -111,8 +111,14 @@ public class ScheduleService {
 
     @Transactional
     public ScheduleDTO updateSchedule(Long scheduleId, ScheduleDTO scheduleDTO) {
+        Guardian currentGuardian = findCurrentGuardian();
+
         Schedule existingSchedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new ScheduleNotFoundException("스케줄을 찾을 수 없습니다."));
+
+        if (!existingSchedule.getGroup().getId().equals(currentGuardian.getGroup().getId())) {
+            throw new ScheduleAccessException("해당 스케줄을 수정할 권한이 없습니다.");
+        }
 
         Schedule updatedSchedule = Schedule.builder()
                 .scheduleId(existingSchedule.getScheduleId())
@@ -129,9 +135,15 @@ public class ScheduleService {
 
     @Transactional
     public void deleteSchedule(Long scheduleId){
-        if(!scheduleRepository.existsById(scheduleId)){
-            throw new ScheduleNotFoundException("스케줄을 찾을 수 없습니다.");
+        Guardian currentGuardian = findCurrentGuardian();
+
+        Schedule existingSchedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ScheduleNotFoundException("스케줄을 찾을 수 없습니다."));
+
+        if (!existingSchedule.getGroup().getId().equals(currentGuardian.getGroup().getId())) {
+            throw new ScheduleAccessException("해당 스케줄을 삭제할 권한이 없습니다.");
         }
+
         scheduleRepository.deleteById(scheduleId);
     }
 
@@ -148,7 +160,6 @@ public class ScheduleService {
                     .build();
         }
 
-        // 첫 번째 스케줄 정보를 확인하는 로그 추가
         Schedule firstSchedule = schedules.get(0);
         System.out.println("첫 번째 스케줄: " + firstSchedule);
 
