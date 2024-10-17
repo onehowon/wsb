@@ -6,6 +6,10 @@ import com.ebiz.wsb.domain.attendance.entity.AttendanceMessageType;
 import com.ebiz.wsb.domain.attendance.entity.AttendanceStatus;
 import com.ebiz.wsb.domain.attendance.repository.AttendanceRepository;
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
+import com.ebiz.wsb.domain.group.entity.Group;
+import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
+import com.ebiz.wsb.domain.group.exception.GuideNotStartedException;
+import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.parent.entity.Parent;
@@ -18,7 +22,6 @@ import com.ebiz.wsb.domain.waypoint.exception.WaypointAttendanceCompletionExcept
 import com.ebiz.wsb.domain.waypoint.exception.WaypointNotFoundException;
 import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
 import com.ebiz.wsb.global.dto.BaseResponse;
-import com.fasterxml.jackson.databind.ser.Serializers;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,10 +42,19 @@ public class AttendanceService {
     private final SimpMessagingTemplate template;
     private final WaypointRepository waypointRepository;
     private final UserDetailsServiceImpl userDetailsService;
+    private final GroupRepository groupRepository;
 
     @Transactional
     public void updateAttendance(Long studentId, AttendanceStatus attendanceStatus, Long groupId) {
-        // 해당 경유지의 전체 출석 여부가 출석 완료 상태면, 변경 하지 못하게 막음
+        // "출근하기"를 누르지 않았다면, 출결 변경하지 못하게 막기
+        Group checkGroup = groupRepository.findById(groupId)
+                .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다"));
+
+        if(!checkGroup.getIsGuideActive()) {
+            throw new GuideNotStartedException("출근하지 않았기 때문에 출결 변경 신청을 할 수 없습니다");
+        }
+
+        // 해당 경유지의 전체 출석 여부가 출석 완료 상태면, 변경 하지 못하게 막기
         Student checkStudent = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException("학생 정보를 찾을 수 없습니다"));
 
@@ -108,6 +120,16 @@ public class AttendanceService {
 
     @Transactional
     public BaseResponse completeAttendance(Long waypointId) {
+        // "출근하기"를 누르지 않았다면, 출석 완료 신청 못하게 막기
+        Waypoint checkWaypoint = waypointRepository.findById(waypointId)
+                .orElseThrow(() -> new WaypointNotFoundException("해당 경유지를 찾을 수 없습니다"));
+        Group checkGroup = groupRepository.findById(checkWaypoint.getGroup().getId())
+                .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다"));
+
+        if(!checkGroup.getIsGuideActive()) {
+            throw new GuideNotStartedException("출근하지 않았기 때문에 출석 완료 신청을 할 수 없습니다");
+        }
+
         // 해당 경유지의 전체 출석 여부가 출석 완료 상태면, 변경 하지 못하게 막음
         Waypoint waypoint = waypointRepository.findById(waypointId)
                 .orElseThrow(() -> new WaypointNotFoundException("해당 경유지를 찾을 수 없습니다"));
