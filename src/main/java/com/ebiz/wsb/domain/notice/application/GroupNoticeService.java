@@ -45,15 +45,14 @@ public class GroupNoticeService {
     private final GroupRepository groupRepository;
 
     @Transactional
-    public Page<GroupNoticeDTO> getAllGroupNotices(Pageable pageable, Long groupId) {
+    public Page<GroupNoticeDTO> getAllGroupNotices(Pageable pageable) {
         Object currentUser = userDetailsService.getUserByContextHolder();
 
         if (currentUser == null) {
             throw new NoticeAccessDeniedException("인증되지 않은 사용자입니다.");
         }
 
-        boolean isMember = false;
-
+        Long groupId = null;
         if (currentUser instanceof Guardian) {
             Guardian guardian = (Guardian) currentUser;
 
@@ -62,7 +61,7 @@ public class GroupNoticeService {
                 throw new NoticeAccessDeniedException("해당 지도사는 그룹에 속해 있지 않습니다.");
             }
 
-            isMember = groupRepository.isUserInGroupForGuardian(guardian.getId(), groupId);
+            groupId = guardian.getGroup().getId();
 
         } else if (currentUser instanceof Parent) {
             Parent parent = (Parent) currentUser;
@@ -72,11 +71,11 @@ public class GroupNoticeService {
                 throw new NoticeAccessDeniedException("해당 학부모는 그룹에 속해 있지 않습니다.");
             }
 
-            isMember = groupRepository.isUserInGroupForParent(parent.getId(), groupId);
+            groupId = parent.getGroup().getId();
         }
 
-        if (!isMember) {
-            throw new NoticeAccessDeniedException("공지사항 열람 권한이 없습니다.");
+        if (groupId == null) {
+            throw new NoticeAccessDeniedException("그룹 정보를 찾을 수 없습니다.");
         }
 
         Page<GroupNotice> notices = groupNoticeRepository.findAllByGroupIdOrderByCreatedAtDesc(groupId, pageable);
@@ -85,25 +84,10 @@ public class GroupNoticeService {
     }
 
     @Transactional
-    public GroupNoticeDTO getGroupNoticeByGroupIdAndNoticeId(Long groupId, Long groupNoticeId) {
-
-        Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new GroupNotFoundException("소속된 그룹을 찾을 수 없습니다."));
-
-        GroupNotice groupNotice = groupNoticeRepository.findById(groupNoticeId)
-                .orElseThrow(() -> new NoticeNotFoundException(groupNoticeId));
-
-        if (!groupNotice.getGroup().getId().equals(groupId)) {
-            throw new NoticeAccessDeniedException("해당 그룹에 속하지 않은 공지사항입니다.");
-        }
+    public GroupNoticeDTO getGroupNoticeByGroupNoticeId(Long groupNoticeId) {
 
         Object currentUser = userDetailsService.getUserByContextHolder();
-
-        if (currentUser == null) {
-            throw new NoticeAccessDeniedException("인증되지 않은 사용자입니다.");
-        }
-
-        boolean isMember = false;
+        Long groupId;
 
         if (currentUser instanceof Guardian) {
             Guardian guardian = (Guardian) currentUser;
@@ -113,21 +97,26 @@ public class GroupNoticeService {
                 throw new NoticeAccessDeniedException("해당 지도사는 그룹에 속해 있지 않습니다.");
             }
 
-            isMember = groupRepository.isUserInGroupForGuardian(guardian.getId(), groupId);
+            groupId = guardian.getGroup().getId();
 
         } else if (currentUser instanceof Parent) {
             Parent parent = (Parent) currentUser;
 
             if (parent.getGroup() == null || parent.getGroup().getId() == null) {
-                log.error("Parent ID {}는 그룹에 속해 있지 않습니다.", parent.getId());
+                log.error("부모 ID {}는 그룹에 속해 있지 않습니다.", parent.getId());
                 throw new NoticeAccessDeniedException("해당 학부모는 그룹에 속해 있지 않습니다.");
             }
 
-            isMember = groupRepository.isUserInGroupForParent(parent.getId(), groupId);
+            groupId = parent.getGroup().getId();
+        } else {
+            throw new NoticeAccessDeniedException("인증되지 않은 사용자입니다.");
         }
 
-        if (!isMember) {
-            throw new NoticeAccessDeniedException("공지사항 열람 권한이 없습니다.");
+        GroupNotice groupNotice = groupNoticeRepository.findById(groupNoticeId)
+                .orElseThrow(() -> new NoticeNotFoundException(groupNoticeId));
+
+        if (!groupNotice.getGroup().getId().equals(groupId)) {
+            throw new NoticeAccessDeniedException("해당 그룹에 속하지 않은 공지사항입니다.");
         }
 
         return convertToDTO(groupNotice);

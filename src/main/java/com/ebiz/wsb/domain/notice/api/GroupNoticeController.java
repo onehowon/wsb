@@ -20,23 +20,21 @@ import java.util.List;
 public class GroupNoticeController {
 
     private final GroupNoticeService groupNoticeService;
-    @GetMapping("/group/{groupId}")
-    public ResponseEntity<Page<GroupNoticeDTO>> getAllGroupNoticesByGroupId(
-            @PathVariable Long groupId,
+    @GetMapping("/group/notices")
+    public ResponseEntity<Page<GroupNoticeDTO>> getAllGroupNotices(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<GroupNoticeDTO> groupNotices = groupNoticeService.getAllGroupNotices(pageable, groupId);
+        Page<GroupNoticeDTO> groupNotices = groupNoticeService.getAllGroupNotices(pageable);
         return ResponseEntity.ok(groupNotices);
     }
 
-    @GetMapping("/group/{groupId}/notice/{groupNoticeId}")
-    public ResponseEntity<GroupNoticeDTO> getGroupNoticeByGroupIdAndNoticeId(
-            @PathVariable Long groupId,
+    @GetMapping("/group/notice/{groupNoticeId}")
+    public ResponseEntity<GroupNoticeDTO> getGroupNoticeByGroupNoticeId(
             @PathVariable Long groupNoticeId
     ) {
-        GroupNoticeDTO groupNotice = groupNoticeService.getGroupNoticeByGroupIdAndNoticeId(groupId, groupNoticeId);  // 수정된 메서드 호출
+        GroupNoticeDTO groupNotice = groupNoticeService.getGroupNoticeByGroupNoticeId(groupNoticeId);  // 수정된 메서드 호출
         return ResponseEntity.ok(groupNotice);
     }
 
