@@ -1,12 +1,12 @@
 package com.ebiz.wsb.global.api;
 
-import com.ebiz.wsb.domain.auth.exception.DuplicatedSignUpException;
 import com.ebiz.wsb.domain.group.exception.GuideNotStartedException;
 import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.location.exception.InvalidLocationDataException;
 import com.ebiz.wsb.domain.mail.exception.InvalidMailException;
 import com.ebiz.wsb.domain.notice.exception.LikesNumberException;
+import com.ebiz.wsb.domain.notice.exception.NoticeAccessDeniedException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
 import com.ebiz.wsb.domain.schedule.exception.ScheduleAccessException;
 import com.ebiz.wsb.domain.token.exception.InvalidTokenException;
@@ -19,6 +19,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.io.IOException;
@@ -136,5 +137,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleGuideNotStartedException(GuideNotStartedException e) {
         ErrorResponse errorResponse = ErrorResponse.builder().message(e.getMessage()).build();
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(NoticeAccessDeniedException.class)
+    public ResponseEntity<Object> handleNoticeAccessDeniedException(NoticeAccessDeniedException e) {
+        ErrorResponse errorResponse = ErrorResponse.builder().message(e.getMessage()).build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
     }
 }

@@ -14,4 +14,7 @@ import java.util.List;
 public interface GroupNoticeRepository extends JpaRepository<GroupNotice, Long> {
 
     Page<GroupNotice> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    Page<GroupNotice> findAllByGroupIdOrderByCreatedAtDesc(Long groupId, Pageable pageable);
+
 }

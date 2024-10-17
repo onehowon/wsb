@@ -45,44 +45,88 @@ public class GroupNoticeService {
     private final GroupRepository groupRepository;
 
     @Transactional
-    public Page<GroupNoticeDTO> getAllGroupNotices(Pageable pageable) {
-        Page<GroupNotice> notices = groupNoticeRepository.findAllByOrderByCreatedAtDesc(pageable);
-        return notices.map(this::convertToDTO);
-    }
-
-    @Transactional
-    public GroupNoticeDTO getGroupNoticeById(Long groupNoticeId) {
-        GroupNotice groupNotice = groupNoticeRepository.findById(groupNoticeId)
-                .orElseThrow(() -> new NoticeNotFoundException(groupNoticeId));
-
-        if(groupNotice.getGroup() == null){
-            throw new IllegalStateException("공지사항에 연결된 그룹이 없습니다.");
-        }
-
+    public Page<GroupNoticeDTO> getAllGroupNotices(Pageable pageable, Long groupId) {
         Object currentUser = userDetailsService.getUserByContextHolder();
 
+        if (currentUser == null) {
+            throw new NoticeAccessDeniedException("인증되지 않은 사용자입니다.");
+        }
+
         boolean isMember = false;
+
         if (currentUser instanceof Guardian) {
             Guardian guardian = (Guardian) currentUser;
 
-            if(guardian.getGroup().getId() == null){
-                log.error("Guardian ID {}는 그룹에 속해 있지 않습니다.", guardian.getId());
-                throw new NoticeAccessDeniedException("해당 인솔자는 그룹에 속해 있지 않습니다.");
+            if (guardian.getGroup() == null || guardian.getGroup().getId() == null) {
+                log.error("지도사 ID {}는 그룹에 속해 있지 않습니다.", guardian.getId());
+                throw new NoticeAccessDeniedException("해당 지도사는 그룹에 속해 있지 않습니다.");
             }
 
-            isMember = groupRepository.isUserInGroupForGuardian(guardian.getId(), groupNotice.getGroup().getId());
+            isMember = groupRepository.isUserInGroupForGuardian(guardian.getId(), groupId);
 
         } else if (currentUser instanceof Parent) {
             Parent parent = (Parent) currentUser;
 
-            if(parent.getGroup().getId() == null){
+            if (parent.getGroup() == null || parent.getGroup().getId() == null) {
+                log.error("학부모 ID {}는 그룹에 속해 있지 않습니다.", parent.getId());
+                throw new NoticeAccessDeniedException("해당 학부모는 그룹에 속해 있지 않습니다.");
+            }
+
+            isMember = groupRepository.isUserInGroupForParent(parent.getId(), groupId);
+        }
+
+        if (!isMember) {
+            throw new NoticeAccessDeniedException("공지사항 열람 권한이 없습니다.");
+        }
+
+        Page<GroupNotice> notices = groupNoticeRepository.findAllByGroupIdOrderByCreatedAtDesc(groupId, pageable);
+
+        return notices.map(this::convertToDTO);
+    }
+
+    @Transactional
+    public GroupNoticeDTO getGroupNoticeByGroupIdAndNoticeId(Long groupId, Long groupNoticeId) {
+
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new GroupNotFoundException("소속된 그룹을 찾을 수 없습니다."));
+
+        GroupNotice groupNotice = groupNoticeRepository.findById(groupNoticeId)
+                .orElseThrow(() -> new NoticeNotFoundException(groupNoticeId));
+
+        if (!groupNotice.getGroup().getId().equals(groupId)) {
+            throw new NoticeAccessDeniedException("해당 그룹에 속하지 않은 공지사항입니다.");
+        }
+
+        Object currentUser = userDetailsService.getUserByContextHolder();
+
+        if (currentUser == null) {
+            throw new NoticeAccessDeniedException("인증되지 않은 사용자입니다.");
+        }
+
+        boolean isMember = false;
+
+        if (currentUser instanceof Guardian) {
+            Guardian guardian = (Guardian) currentUser;
+
+            if (guardian.getGroup() == null || guardian.getGroup().getId() == null) {
+                log.error("Guardian ID {}는 그룹에 속해 있지 않습니다.", guardian.getId());
+                throw new NoticeAccessDeniedException("해당 인솔자는 그룹에 속해 있지 않습니다.");
+            }
+
+            isMember = groupRepository.isUserInGroupForGuardian(guardian.getId(), groupId);
+
+        } else if (currentUser instanceof Parent) {
+            Parent parent = (Parent) currentUser;
+
+            if (parent.getGroup() == null || parent.getGroup().getId() == null) {
                 log.error("Parent ID {}는 그룹에 속해 있지 않습니다.", parent.getId());
                 throw new NoticeAccessDeniedException("해당 학부모는 그룹에 속해 있지 않습니다.");
             }
-            isMember = groupRepository.isUserInGroupForParent(parent.getId(), groupNotice.getGroup().getId());
+
+            isMember = groupRepository.isUserInGroupForParent(parent.getId(), groupId);
         }
 
-        if(!isMember){
+        if (!isMember) {
             throw new NoticeAccessDeniedException("공지사항 열람 권한이 없습니다.");
         }
 
