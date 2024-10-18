@@ -11,6 +11,7 @@ import com.ebiz.wsb.domain.notice.dto.GroupNoticeDTO;
 import com.ebiz.wsb.domain.notice.entity.GroupNotice;
 import com.ebiz.wsb.domain.notice.entity.GroupNoticePhoto;
 import com.ebiz.wsb.domain.notice.exception.LikesNumberException;
+import com.ebiz.wsb.domain.notice.exception.NotNoticeInGroupException;
 import com.ebiz.wsb.domain.notice.exception.NoticeAccessDeniedException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
 import com.ebiz.wsb.domain.notice.repository.GroupNoticeRepository;
@@ -80,6 +81,11 @@ public class GroupNoticeService {
 
         Page<GroupNotice> notices = groupNoticeRepository.findAllByGroupIdOrderByCreatedAtDesc(groupId, pageable);
 
+        if (notices.isEmpty()) {
+            log.info("그룹 ID {}에 대한 공지사항이 없습니다.", groupId);
+            throw new NotNoticeInGroupException(groupId);
+        }
+
         return notices.map(this::convertToDTO);
     }
 
@@ -93,7 +99,7 @@ public class GroupNoticeService {
             Guardian guardian = (Guardian) currentUser;
 
             if (guardian.getGroup() == null || guardian.getGroup().getId() == null) {
-                log.error("Guardian ID {}는 그룹에 속해 있지 않습니다.", guardian.getId());
+                log.error("지도사 ID {}는 그룹에 속해 있지 않습니다.", guardian.getId());
                 throw new NoticeAccessDeniedException("해당 지도사는 그룹에 속해 있지 않습니다.");
             }
 
