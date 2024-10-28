@@ -1,106 +1,66 @@
 package com.ebiz.wsb.domain.notification.application;
 
+import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
-import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
-import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
-import com.ebiz.wsb.domain.notification.dto.GuardianNotificationDTO;
-import com.ebiz.wsb.domain.notification.dto.ParentNotificationDTO;
-import com.ebiz.wsb.domain.notification.entity.GuardianNotification;
+import com.ebiz.wsb.domain.notification.entity.FcmToken;
+import com.ebiz.wsb.domain.notification.entity.Notification;
 import com.ebiz.wsb.domain.notification.entity.NotificationType;
-import com.ebiz.wsb.domain.notification.entity.ParentNotification;
-import com.ebiz.wsb.domain.notification.exception.NotificationTypeNotFoundException;
-import com.ebiz.wsb.domain.notification.repository.GuardianNotificationRepository;
-import com.ebiz.wsb.domain.notification.repository.NotificationTypeRepository;
-import com.ebiz.wsb.domain.notification.repository.ParentNotificationRepository;
+import com.ebiz.wsb.domain.notification.entity.UserType;
+import com.ebiz.wsb.domain.notification.repository.FcmTokenRepository;
+import com.ebiz.wsb.domain.notification.repository.NotificationRepository;
 import com.ebiz.wsb.domain.parent.entity.Parent;
-import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
-import com.ebiz.wsb.domain.parent.repository.ParentRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationService {
 
-    private final GuardianNotificationRepository guardianNotificationRepository;
-    private final ParentNotificationRepository parentNotificationRepository;
-    private final NotificationTypeRepository notificationTypeRepository;
-    private final GuardianRepository guardianRepository;
-    private final ParentRepository parentRepository;
+    private final PushNotificationService pushNotificationService;
+    private final FcmTokenRepository fcmTokenRepository;
+    private final NotificationRepository notificationRepository;
+    private final UserDetailsServiceImpl userDetailsService;
 
-    public GuardianNotificationDTO createGuardianNotification(String type, String content, Authentication authentication) {
-        Guardian guardian = getAuthenticatedGuardian(authentication);
+    public void sendNotification(NotificationType type, String body) {
+        Object currentUser = userDetailsService.getUserByContextHolder();
+        Long userId;
+        UserType userType;
 
-        NotificationType notificationType = notificationTypeRepository.findByNameAndTarget(type, "GUARDIAN")
-                .orElseThrow(() -> new NotificationTypeNotFoundException("유효하지 않은 알림 타입: " + type));
+        if (currentUser instanceof Guardian guardian) {
+            userId = guardian.getId();
+            userType = UserType.GUARDIAN;
+        } else if (currentUser instanceof Parent parent) {
+            userId = parent.getId();
+            userType = UserType.PARENT;
+        } else {
+            throw new IllegalArgumentException("인증된 사용자 정보가 유효하지 않습니다.");
+        }
 
-        GuardianNotification notification = GuardianNotification.builder()
-                .guardian(guardian)
-                .notificationType(notificationType)
-                .content(content)
+        FcmToken fcmToken = fcmTokenRepository.findByUserIdAndUserType(userId, userType)
+                .orElseThrow(() -> new RuntimeException("FCM 토큰을 찾을 수 없습니다."));
+
+        try {
+            pushNotificationService.sendPushNotification(type.name(), body, Map.of("type", type.name()), fcmToken.getToken());
+        } catch (IOException | InterruptedException e) {
+            log.error("알림 전송 실패", e);
+            throw new RuntimeException("알림 전송 실패: " + e.getMessage());
+        }
+
+        Notification notification = Notification.builder()
+                .userId(userId)
+                .userType(userType)
+                .type(type)
+                .body(body)
+                .isRead(false)
+                .createdAt(LocalDateTime.now())
                 .build();
-
-        guardianNotificationRepository.save(notification);
-
-        return GuardianNotificationDTO.builder()
-                .content(notification.getContent())
-                .type(notification.getNotificationType().getName())
-                .createdAt(notification.getCreatedAt())
-                .build();
+        notificationRepository.save(notification);
     }
-
-    public ParentNotificationDTO createParentNotification(String type, String content, Authentication authentication) {
-        Parent parent = getAuthenticatedParent(authentication);
-
-        NotificationType notificationType = notificationTypeRepository.findByNameAndTarget(type, "PARENT")
-                .orElseThrow(() -> new NotificationTypeNotFoundException("유효하지 않은 알림 타입: " + type));
-
-        ParentNotification notification = ParentNotification.builder()
-                .parent(parent)
-                .notificationType(notificationType)
-                .content(content)
-                .build();
-
-        parentNotificationRepository.save(notification);
-
-        return ParentNotificationDTO.builder()
-                .content(notification.getContent())
-                .type(notification.getNotificationType().getName())
-                .createdAt(notification.getCreatedAt())
-                .build();
-    }
-
-    private Guardian getAuthenticatedGuardian(Authentication authentication) {
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return guardianRepository.findGuardianByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new GuardianNotFoundException("인증된 지도사 정보를 찾을 수 없습니다."));
-    }
-
-    private Parent getAuthenticatedParent(Authentication authentication) {
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return parentRepository.findParentByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new ParentNotFoundException("인증된 부모 정보를 찾을 수 없습니다."));
-    }
-
-    // 아래부터 나중에 쓸 수도 있어서 삭제 XX
-    private GuardianNotificationDTO convertToGuardianNotificationDTO(GuardianNotification notification) {
-        return GuardianNotificationDTO.builder()
-                .content(notification.getContent())
-                .type(notification.getNotificationType().getName())
-                .createdAt(notification.getCreatedAt())
-                .build();
-    }
-
-
-    private ParentNotificationDTO convertToParentNotificationDTO(ParentNotification notification) {
-        return ParentNotificationDTO.builder()
-                .content(notification.getContent())
-                .type(notification.getNotificationType().getName())
-                .createdAt(notification.getCreatedAt())
-                .build();
-    }
-
 }

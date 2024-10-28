@@ -1,14 +1,21 @@
 package com.ebiz.wsb.domain.notification.api;
 
 import com.ebiz.wsb.domain.notification.application.NotificationService;
-import com.ebiz.wsb.domain.notification.dto.GuardianNotificationDTO;
-import com.ebiz.wsb.domain.notification.dto.ParentNotificationDTO;
+import com.ebiz.wsb.domain.notification.application.PushNotificationService;
+import com.ebiz.wsb.domain.notification.entity.FcmToken;
+import com.ebiz.wsb.domain.notification.entity.Notification;
+import com.ebiz.wsb.domain.notification.entity.NotificationType;
+import com.ebiz.wsb.domain.notification.entity.UserType;
+import com.ebiz.wsb.domain.notification.repository.FcmTokenRepository;
+import com.ebiz.wsb.domain.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -18,27 +25,13 @@ public class NotificationController {
 
     private final NotificationService notificationService;
 
-    @PostMapping("/guardian")
-    public ResponseEntity<GuardianNotificationDTO> createGuardianNotification(
-            @RequestBody Map<String, String> requestBody,
-            Authentication authentication) {
+    @PostMapping("/send")
+    public ResponseEntity<String> sendNotification(
+            @RequestParam NotificationType type,
+            @RequestParam String body) {
 
-        String type = requestBody.get("type");
-        String content = requestBody.get("content");
+        notificationService.sendNotification(type, body);
 
-        GuardianNotificationDTO createdNotification = notificationService.createGuardianNotification(type, content, authentication);
-        return ResponseEntity.ok(createdNotification);
-    }
-
-    @PostMapping("/parent")
-    public ResponseEntity<ParentNotificationDTO> createParentNotification(
-            @RequestBody Map<String, String> requestBody,
-            Authentication authentication) {
-
-        String type = requestBody.get("type");
-        String content = requestBody.get("content");
-
-        ParentNotificationDTO createdNotification = notificationService.createParentNotification(type, content, authentication);
-        return ResponseEntity.ok(createdNotification);
+        return ResponseEntity.ok("알림 전송 및 로그 저장 완료");
     }
 }
