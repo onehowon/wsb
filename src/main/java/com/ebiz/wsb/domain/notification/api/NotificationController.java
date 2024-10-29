@@ -1,37 +1,30 @@
 package com.ebiz.wsb.domain.notification.api;
 
-import com.ebiz.wsb.domain.notification.application.NotificationService;
-import com.ebiz.wsb.domain.notification.application.PushNotificationService;
-import com.ebiz.wsb.domain.notification.entity.FcmToken;
-import com.ebiz.wsb.domain.notification.entity.Notification;
-import com.ebiz.wsb.domain.notification.entity.NotificationType;
-import com.ebiz.wsb.domain.notification.entity.UserType;
-import com.ebiz.wsb.domain.notification.repository.FcmTokenRepository;
-import com.ebiz.wsb.domain.notification.repository.NotificationRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
+import com.ebiz.wsb.domain.notification.application.PushNotificationService;
+import com.ebiz.wsb.domain.notification.dto.PushRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/notifications")
 @RequiredArgsConstructor
+@RequestMapping("/notifications")
 public class NotificationController {
 
-    private final NotificationService notificationService;
+    private final PushNotificationService pushNotificationService;
 
     @PostMapping("/send")
-    public ResponseEntity<String> sendNotification(
-            @RequestParam NotificationType type,
-            @RequestParam String body) {
-
-        notificationService.sendNotification(type, body);
-
-        return ResponseEntity.ok("알림 전송 및 로그 저장 완료");
+    public ResponseEntity<?> sendNotification(@RequestBody PushRequest request, @RequestParam String token) {
+        try {
+            pushNotificationService.sendPushMessage(request.getTitle(), request.getBody(), null, token);
+            return ResponseEntity.ok("푸시 알림이 성공적으로 전송되었습니다.");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("푸시 알림 전송 실패: " + e.getMessage());
+        }
     }
 }

@@ -1,75 +1,111 @@
 package com.ebiz.wsb.domain.notification.application;
 
+import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
+import com.ebiz.wsb.domain.guardian.entity.Guardian;
+import com.ebiz.wsb.domain.notification.dto.AndroidNotificationDTO;
+import com.ebiz.wsb.domain.notification.dto.FcmMessage;
+import com.ebiz.wsb.domain.notification.dto.FcmMessage.Notification;
+import com.ebiz.wsb.domain.notification.dto.NotificationDTO;
+import com.ebiz.wsb.domain.notification.entity.FcmToken;
+import com.ebiz.wsb.domain.notification.repository.FcmTokenRepository;
+import com.ebiz.wsb.domain.parent.entity.Parent;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.common.net.HttpHeaders;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import okhttp3.RequestBody;
 import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class PushNotificationService {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final HttpClient client = HttpClient.newHttpClient();
+    private final UserDetailsServiceImpl userDetailsService;
+    private final FcmTokenRepository fcmTokenRepository;
+    private final ObjectMapper objectMapper;
+    private final OkHttpClient client = new OkHttpClient();
 
-    private static final String FCM_SEND_URL = "https://fcm.googleapis.com/v1/projects/donghang-c8fca/messages:send";
+    @Value("${fcm.project.id}")
+    private String PROJECT_ID;
+    private static final String FCM_SEND_URL = "https://fcm.googleapis.com/v1/projects/%s/messages:send";
+    private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
 
-    public void sendPushNotification(String title, String body, Map<String, String> data, String token) throws IOException, InterruptedException{
-        try {
-            String message = createMessage(title, body, data, token);
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(FCM_SEND_URL))
-                    .header("Authorization", "Bearer " + getAccessToken())
-                    .header("Content-Type", "application/json; charset=UTF-8")
-                    .POST(HttpRequest.BodyPublishers.ofString(message))
-                    .build();
-
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() != 200) {
-                log.error("FCM 푸시 알림 전송 실패. 상태 코드: {}, 응답 내용: {}", response.statusCode(), response.body());
-                throw new IOException("FCM 푸시 알림 전송 실패: " + response.body());
-            }
-            log.info("FCM 푸시 알림 전송 성공: {}", response.body());
-        } catch (IOException | InterruptedException e) {
-            log.error("FCM 푸시 알림 전송 중 예외 발생", e);
-            Thread.currentThread().interrupt();
-        }
+    public void sendPushMessage(String title, String body, Map<String, String> data, String token)
+            throws IOException {
+        String message = makeMessage(title, body, data, token);
+        RequestBody requestBody = RequestBody.create(JSON_MEDIA_TYPE, message);
+        Request request = new Request.Builder()
+                .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + getAccessToken())
+                .addHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8")
+                .post(requestBody)
+                .url(String.format(FCM_SEND_URL, PROJECT_ID))
+                .build();
+        Response response = client.newCall(request).execute();
+        response.close();
     }
 
-    private String createMessage(String title, String body, Map<String, String> data, String token) throws IOException{
-        var notification = Map.of(
-                "title", title,
-                "body", body
-        );
+    private String makeMessage(String title, String body, Map<String, String> data, String token)
+            throws JsonProcessingException {
+        AndroidNotificationDTO android = new AndroidNotificationDTO();
+        NotificationDTO notificationDTO = new NotificationDTO();
+        notificationDTO.setTitle(title);
+        notificationDTO.setBody(body);
+        android.setNotification(notificationDTO);
 
-        var message = Map.of(
-                "message", Map.of(
-                        "token", token,
-                        "notification", notification,
-                        "data", data
-                )
-        );
+        FcmMessage fcmMessage = FcmMessage.builder()
+                .message(FcmMessage.Message.builder()
+                        .token(token)
+                        .data(data)
+                        .android(android)
+                        .notification(Notification.builder()
+                                .title(title)
+                                .body(body)
+                                .build())
+                        .build())
+                .build();
 
-        return objectMapper.writeValueAsString(message);
+        return objectMapper.writeValueAsString(fcmMessage);
     }
 
-    private String getAccessToken() throws IOException{
-        try(InputStream serviceAccount = getClass().getClassLoader().getResourceAsStream("firebase/firebase-adminsdk.json")){
-            GoogleCredentials googleCredentials = GoogleCredentials.fromStream(serviceAccount)
-                    .createScoped(List.of("https://www.googleapis.com/auth/cloud-platform"));
-            googleCredentials.refreshIfExpired();
-            return googleCredentials.getAccessToken().getTokenValue();
+    private String getAccessToken() throws IOException {
+        ClassPathResource classPathResource = new ClassPathResource(
+                "firebase/firebase-adminsdk.json");
+
+        GoogleCredentials googleCredentials = GoogleCredentials.fromStream(classPathResource.getInputStream())
+                .createScoped(List.of("https://www.googleapis.com/auth/cloud-platform"));
+        googleCredentials.refreshIfExpired();
+        return googleCredentials.getAccessToken().getTokenValue();
+    }
+
+    public void save(String token) {
+        Object user = userDetailsService.getUserByContextHolder();
+
+        Long userId;
+        if (user instanceof Guardian) {
+            userId = ((Guardian) user).getId();
+        } else if (user instanceof Parent) {
+            userId = ((Parent) user).getId();
+        } else {
+            throw new IllegalArgumentException("알 수 없는 사용자 타입입니다.");
         }
+
+        FcmToken fcmToken = FcmToken.builder()
+                .userId(userId)
+                .token(token)
+                .build();
+        fcmTokenRepository.save(fcmToken);
     }
 }

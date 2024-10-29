@@ -7,6 +7,8 @@ import com.ebiz.wsb.domain.auth.dto.UserType;
 import com.ebiz.wsb.domain.auth.exception.DuplicatedSignUpException;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
+import com.ebiz.wsb.domain.notification.entity.FcmToken;
+import com.ebiz.wsb.domain.notification.repository.FcmTokenRepository;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.repository.ParentRepository;
 import com.ebiz.wsb.domain.token.application.TokenService;
@@ -41,6 +43,7 @@ public class AuthService {
     private final TokenRepository tokenRepository;
     private final TokenService tokenService;
     private final BlackListRepository blackListRepository;
+    private final FcmTokenRepository fcmTokenRepository;
 
     @Transactional
     public void signUp(SignUpRequest request){
@@ -97,6 +100,16 @@ public class AuthService {
                     tokenRepository.save(userId, refreshToken);
                 }
             }
+
+            if(userId != null && request.getFcmToken() != null){
+                fcmTokenRepository.findByUserId(userId)
+                        .ifPresent(fcmTokenRepository::delete);
+                FcmToken fcmToken = FcmToken.builder()
+                        .userId(userId)
+                        .token(request.getFcmToken())
+                        .build();
+                fcmTokenRepository.save(fcmToken);
+            }
         }
 
         return SignInDTO.builder()
@@ -104,6 +117,7 @@ public class AuthService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .message(message)
+                .fcmToken(request.getFcmToken())
                 .build();
     }
 

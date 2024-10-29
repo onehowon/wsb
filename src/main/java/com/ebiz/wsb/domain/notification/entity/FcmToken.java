@@ -21,11 +21,10 @@ public class FcmToken {
     @Column(name = "user_id")
     private Long userId; // 유저 ID로 지도사와 부모 구분
 
+    @Column(name = "token")
+    private String token;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "user_type")
     private UserType userType;
-
-
-    @Column(name = "token")
-    private String token;
 }
