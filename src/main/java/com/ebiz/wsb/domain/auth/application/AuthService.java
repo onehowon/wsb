@@ -104,9 +104,11 @@ public class AuthService {
             if(userId != null && request.getFcmToken() != null){
                 fcmTokenRepository.findByUserId(userId)
                         .ifPresent(fcmTokenRepository::delete);
+
                 FcmToken fcmToken = FcmToken.builder()
                         .userId(userId)
                         .token(request.getFcmToken())
+                        .userType(request.getUserType())
                         .build();
                 fcmTokenRepository.save(fcmToken);
             }
