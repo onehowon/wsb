@@ -18,6 +18,7 @@ import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.student.exception.StudentNotFoundException;
 import com.ebiz.wsb.domain.student.repository.StudentRepository;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
+import com.ebiz.wsb.domain.waypoint.exception.IncompletePreviousWaypointException;
 import com.ebiz.wsb.domain.waypoint.exception.WaypointAttendanceCompletionException;
 import com.ebiz.wsb.domain.waypoint.exception.WaypointNotFoundException;
 import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
@@ -121,13 +122,21 @@ public class AttendanceService {
     @Transactional
     public BaseResponse completeAttendance(Long waypointId) {
         // "출근하기"를 누르지 않았다면, 출석 완료 신청 못하게 막기
-        Waypoint checkWaypoint = waypointRepository.findById(waypointId)
+        Waypoint currentWaypoint = waypointRepository.findById(waypointId)
                 .orElseThrow(() -> new WaypointNotFoundException("해당 경유지를 찾을 수 없습니다"));
-        Group checkGroup = groupRepository.findById(checkWaypoint.getGroup().getId())
+        Group group = groupRepository.findById(currentWaypoint.getGroup().getId())
                 .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다"));
 
-        if(!checkGroup.getIsGuideActive()) {
+        if(!group.getIsGuideActive()) {
             throw new GuideNotStartedException("출근하지 않았기 때문에 출석 완료 신청을 할 수 없습니다");
+        }
+
+        // 이전 경유지의 출석 상태가 완료되지 않았다면, 출석 완료를 하지 못하게 막기
+        List<Waypoint> waypoints = group.getWaypoints();
+        for (Waypoint waypoint : waypoints) {
+            if (waypoint.getId() < waypointId && !waypoint.getAttendanceComplete()) {
+                throw new IncompletePreviousWaypointException("이전 경유지의 출석이 완료되지 않아 출석 완료 신청을 할 수 없습니다");
+            }
         }
 
         // 해당 경유지의 전체 출석 여부가 출석 완료 상태면, 변경 하지 못하게 막음
