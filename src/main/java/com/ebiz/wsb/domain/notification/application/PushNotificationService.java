@@ -1,5 +1,7 @@
 package com.ebiz.wsb.domain.notification.application;
 
+import com.ebiz.wsb.domain.alert.application.AlertService;
+import com.ebiz.wsb.domain.alert.entity.Alert;
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.notification.dto.AndroidNotificationDTO;
@@ -36,6 +38,7 @@ public class PushNotificationService {
     private final UserDetailsServiceImpl userDetailsService;
     private final FcmTokenRepository fcmTokenRepository;
     private final ObjectMapper objectMapper;
+    private final AlertService alertService;
     private final OkHttpClient client = new OkHttpClient();
 
     @Value("${fcm.project.id}")
@@ -43,7 +46,7 @@ public class PushNotificationService {
     private static final String FCM_SEND_URL = "https://fcm.googleapis.com/v1/projects/%s/messages:send";
     private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
 
-    public void sendPushMessage(String title, String body, Map<String, String> data, String token)
+    public void sendPushMessage(String title, String body, Map<String, String> data, String token, Alert.AlertCategory category)
             throws IOException {
         String message = makeMessage(title, body, data, token);
         RequestBody requestBody = RequestBody.create(JSON_MEDIA_TYPE, message);
@@ -55,6 +58,18 @@ public class PushNotificationService {
                 .build();
         Response response = client.newCall(request).execute();
         response.close();
+
+        Object user = userDetailsService.getUserByContextHolder();
+        Long userId;
+
+        if (user instanceof Guardian) {
+            userId = ((Guardian) user).getId();
+        } else if (user instanceof Parent) {
+            userId = ((Parent) user).getId();
+        } else {
+            throw new IllegalArgumentException("알 수 없는 사용자 타입입니다.");
+        }
+        alertService.createAlert(userId, category, title, body);
     }
 
     private String makeMessage(String title, String body, Map<String, String> data, String token)

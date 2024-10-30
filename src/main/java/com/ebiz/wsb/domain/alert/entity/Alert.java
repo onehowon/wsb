@@ -1,4 +1,4 @@
-package com.ebiz.wsb.domain.sse.entity;
+package com.ebiz.wsb.domain.alert.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -41,14 +41,18 @@ public class Alert {
     @Column(name = "content")
     private String content;
 
-    @Column(name = "created_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "is_read", columnDefinition = "boolean default false")
+    @Column(name = "is_read")
     private boolean isRead;
 
     public enum AlertCategory {
-        GENERAL, COMMUTING
+        SCHOOL,
+        POST,
+        APP,
+        SCHEDULE,
+        MESSAGE
     }
 
     public void read() {

@@ -1,6 +1,6 @@
-package com.ebiz.wsb.domain.sse.dto;
+package com.ebiz.wsb.domain.alert.dto;
 
-import com.ebiz.wsb.domain.sse.entity.Alert;
+import com.ebiz.wsb.domain.alert.entity.Alert;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;
