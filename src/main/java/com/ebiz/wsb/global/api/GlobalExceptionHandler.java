@@ -1,5 +1,8 @@
 package com.ebiz.wsb.global.api;
 
+import com.ebiz.wsb.domain.group.exception.GroupAlreadyActiveException;
+import com.ebiz.wsb.domain.group.exception.GroupNotAccessException;
+import com.ebiz.wsb.domain.group.exception.GuideNotOnDutyException;
 import com.ebiz.wsb.domain.group.exception.GuideNotStartedException;
 import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotAccessException;
@@ -21,6 +24,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -183,5 +187,16 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.builder()
                         .message(ex.getMessage())
                         .build());
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler({
+            GroupAlreadyActiveException.class,
+            GroupNotAccessException.class,
+            GuideNotOnDutyException.class,
+    })
+    @ResponseBody
+    public String handleBadRequestExceptions(RuntimeException ex) {
+        return ex.getMessage();
     }
 }

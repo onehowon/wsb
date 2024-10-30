@@ -126,13 +126,16 @@ public class AuthService {
     public void signOut(String authorizationHeader) {
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
         String refreshToken = tokenService.resolveToken(authorizationHeader);
+
         if(userByContextHolder instanceof Guardian) {
             Guardian guardian = (Guardian) userByContextHolder;
             tokenRepository.deleteId(guardian.getId());
+            fcmTokenRepository.findByUserId(guardian.getId()).ifPresent(fcmTokenRepository::delete);
             saveBlackList(refreshToken);
-        }else if(userByContextHolder instanceof Parent) {
+        } else if(userByContextHolder instanceof Parent) {
             Parent parent = (Parent) userByContextHolder;
             tokenRepository.deleteId(parent.getId());
+            fcmTokenRepository.findByUserId(parent.getId()).ifPresent(fcmTokenRepository::delete);
             saveBlackList(refreshToken);
         }
     }

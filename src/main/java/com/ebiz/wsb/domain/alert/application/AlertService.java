@@ -8,28 +8,21 @@ import com.ebiz.wsb.domain.alert.exception.AlertNotFoundException;
 import com.ebiz.wsb.domain.alert.repository.AlertRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AlertService {
     private final UserDetailsServiceImpl userDetailsService;
     private final AlertRepository alertRepository;
 
     @Transactional
-    public Alert createAlert(Long userId, Alert.AlertCategory category, String title, String content) {
-        Object user = userDetailsService.getUserByContextHolder();
-
-        Long receiverId;
-        if (user instanceof Guardian) {
-            receiverId = ((Guardian) user).getId();
-        } else if (user instanceof Parent) {
-            receiverId = ((Parent) user).getId();
-        } else {
-            throw new IllegalArgumentException("알 수 없는 사용자 타입입니다.");
-        }
+    public Alert createAlert(Long receiverId, Alert.AlertCategory category, String title, String content) {
+        log.info("createAlert 호출: receiverId={}, category={}, title={}, content={}", receiverId, category, title, content);
 
         Alert alert = Alert.builder()
                 .receiverId(receiverId)
@@ -40,8 +33,14 @@ public class AlertService {
                 .isRead(false)
                 .build();
 
-        return alertRepository.save(alert);
+        Alert savedAlert = alertRepository.save(alert);
+        log.info("Alert 저장 완료: alertId={}", savedAlert.getId()); // 저장 완료 확인
+        return savedAlert;
     }
+
+
+
+
 
     @Transactional
     public void markAsRead(Long alertId) {
