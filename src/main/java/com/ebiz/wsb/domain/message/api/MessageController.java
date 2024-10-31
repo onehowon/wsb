@@ -17,19 +17,19 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class MessageController {
-    private final MessageService messageService;
-    @PostMapping("/send/{parentId}")
-    public ResponseEntity<MessageDTO> sendMessage(
-            @PathVariable Long parentId,
-            @RequestParam String content) {
 
-        MessageDTO messageDTO = messageService.sendMessage(parentId, content);
-        return ResponseEntity.ok(messageDTO);
+    private final MessageService messageService;
+
+    @PostMapping("/send")
+    public ResponseEntity<String> sendMessage(@RequestParam String content) {
+        messageService.sendMessage(content);
+        return ResponseEntity.ok("메시지가 성공적으로 전달되었습니다.");
     }
-    @GetMapping("/received/{guardianId}")
-    public ResponseEntity<?> getMessagesForGuardian(@PathVariable Long guardianId) {
+
+    @GetMapping("/received")
+    public ResponseEntity<?> getMessagesForGuardian() {
         try {
-            List<MessageDTO> messagesForGuardian = messageService.getMessagesForGuardian(guardianId);
+            List<MessageDTO> messagesForGuardian = messageService.getMessagesForGuardian();
 
             if (messagesForGuardian.isEmpty()) {
                 return ResponseEntity.ok("받은 메시지가 없습니다.");
@@ -38,5 +38,12 @@ public class MessageController {
         } catch (GuardianNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
+    }
+
+    // 메시지 읽음 상태로 변경하는 엔드포인트
+    @PutMapping("/{messageId}/read")
+    public ResponseEntity<Void> markMessageAsRead(@PathVariable Long messageId) {
+        messageService.markMessageAsRead(messageId);
+        return ResponseEntity.ok().build();
     }
 }
