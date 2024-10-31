@@ -1,5 +1,6 @@
 package com.ebiz.wsb.domain.group.dto;
 
+import com.ebiz.wsb.domain.attendance.entity.AttendanceMessageType;
 import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
 import com.ebiz.wsb.domain.parent.dto.ParentDTO;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -21,4 +22,5 @@ public class GroupDTO {
     private String schoolName;
     private Boolean isGuideActive;
     private Long dutyGuardianId;
+    private AttendanceMessageType messageType;
 }
