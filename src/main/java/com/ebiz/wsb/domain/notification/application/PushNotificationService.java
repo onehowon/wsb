@@ -12,6 +12,7 @@ import com.ebiz.wsb.domain.notification.dto.NotificationDTO;
 import com.ebiz.wsb.domain.notification.dto.PushType;
 import com.ebiz.wsb.domain.notification.entity.FcmToken;
 import com.ebiz.wsb.domain.notification.entity.UserType;
+import com.ebiz.wsb.domain.notification.exception.PushNotFoundException;
 import com.ebiz.wsb.domain.notification.repository.FcmTokenRepository;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.repository.ParentRepository;
@@ -73,7 +74,6 @@ public class PushNotificationService {
         Response response = client.newCall(request).execute();
         response.close();
 
-        // `receiverId`를 포함하여 `createAlert` 호출
         alertService.createAlert(receiverId, category, title, body);
     }
 
@@ -191,12 +191,22 @@ public class PushNotificationService {
             case MESSAGE:
                 data.put("category", "새로운 메시지가 도착했어요. 지금 확인해보세요");
                 break;
+            case START_WORK:
+                data.put("category", "지도사님이 운행을 시작했어요.");
+                break;
+            case PICKUP:
+                data.put("category", "지도사님이 우리 아이를 픽업했어요.");
+                break;
+            case END_WORK:
+                data.put("category", "지도사님이 운행을 종료했어요.");
+                break;
             default:
                 data.put("category", "일반 공지사항입니다.");
         }
 
         return data;
     }
+
 
     private Alert.AlertCategory mapPushTypeToAlertCategory(PushType pushType) {
         switch (pushType) {
@@ -210,9 +220,14 @@ public class PushNotificationService {
                 return Alert.AlertCategory.SCHEDULE;
             case MESSAGE:
                 return Alert.AlertCategory.MESSAGE;
+            case START_WORK:
+                return Alert.AlertCategory.START_WORK;
+            case PICKUP:
+                return Alert.AlertCategory.PICKUP;
+            case END_WORK:
+                return Alert.AlertCategory.END_WORK;
             default:
-                throw new IllegalArgumentException("지원되지 않는 PushType입니다.");
+                throw new PushNotFoundException("지원되지 않는 PushType입니다.");
         }
     }
-
 }

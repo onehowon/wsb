@@ -54,7 +54,10 @@ public class Alert {
         POST,
         APP,
         SCHEDULE,
-        MESSAGE
+        MESSAGE,
+        START_WORK,
+        PICKUP,
+        END_WORK
     }
 
     public void read() {

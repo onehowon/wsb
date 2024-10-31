@@ -5,5 +5,8 @@ public enum PushType {
     POST,
     APP,
     SCHEDULE,
-    MESSAGE
+    MESSAGE,
+    START_WORK,
+    PICKUP,
+    END_WORK
 }
