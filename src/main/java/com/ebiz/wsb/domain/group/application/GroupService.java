@@ -120,4 +120,21 @@ public class GroupService {
                 .build();
     }
 
+    public GroupDTO getGuideStatus() {
+        // 현재 사용자 정보를 가져와 인솔자인지 확인
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        if (!(userByContextHolder instanceof Guardian)) {
+            throw new GuardianNotFoundException("해당 지도사를 찾을 수 없습니다");
+        }
+
+        Guardian guardian = (Guardian) userByContextHolder;
+
+        // 인솔자가 속한 그룹 정보를 조회
+        Group group = groupRepository.findById(guardian.getGroup().getId())
+                .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다"));
+
+        return GroupDTO.builder()
+                .isGuideActive(group.getIsGuideActive())
+                .build();
+    }
 }
