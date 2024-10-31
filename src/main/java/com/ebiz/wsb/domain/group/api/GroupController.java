@@ -26,4 +26,10 @@ public class GroupController {
         GroupDTO groupDTO = groupService.stopGuide();
         return ResponseEntity.ok(groupDTO);
     }
+
+    @GetMapping("/guide-status")
+    public ResponseEntity<GroupDTO> getGuideStatus() {
+        GroupDTO guideStatus = groupService.getGuideStatus();
+        return ResponseEntity.ok(guideStatus);
+    }
 }
