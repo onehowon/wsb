@@ -26,7 +26,7 @@ public class AttendanceResetService {
     public void resetAttendanceStatus() {
         // 모든 학생의 출석 상태를 초기화
         if(useSchedule) {
-            log.info("저녁 7시 기준으로, 1. 출석 테이블(오늘과 어제 데이터) 2. 경유지 출석 완료 필드 3. 경유지 출석 인원 수 필드 초기화");
+            log.info("저녁 7시 기준으로, 1. )출석 테이블(오늘과 어제 데이터 2. 경유지 출석 완료 필드 3. 경유지 출석 인원 수 필드 초기화");
 
             // 오늘과 어제의 날짜를 구함
             // 미래의 결석 신청한 날짜는 유지하기 위함
