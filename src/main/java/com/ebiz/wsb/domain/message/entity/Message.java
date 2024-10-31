@@ -39,5 +39,4 @@ public class Message {
 
     @Column(name = "transferred_at")
     private LocalDateTime transferredAt;
-
 }

@@ -1,5 +1,6 @@
 package com.ebiz.wsb.domain.message.application;
 
+import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.group.dto.GroupDTO;
 import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
@@ -9,6 +10,7 @@ import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
 import com.ebiz.wsb.domain.message.dto.MessageDTO;
 import com.ebiz.wsb.domain.message.entity.Message;
 import com.ebiz.wsb.domain.message.entity.MessageRecipient;
+import com.ebiz.wsb.domain.message.exception.MessageAccessException;
 import com.ebiz.wsb.domain.message.repository.MessageRecipientRepository;
 import com.ebiz.wsb.domain.message.repository.MessageRepository;
 import com.ebiz.wsb.domain.parent.dto.ParentDTO;
@@ -18,6 +20,7 @@ import com.ebiz.wsb.domain.parent.repository.ParentRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.User;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -30,73 +33,98 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MessageService {
 
-    private final ParentRepository parentRepository;
     private final MessageRepository messageRepository;
     private final MessageRecipientRepository messageRecipientRepository;
-    private final GuardianRepository guardianRepository;
+    private final UserDetailsServiceImpl userDetailsService;
 
     @Transactional
-    public MessageDTO sendMessage(Long parentId, String content) {
-        // Parent 정보를 통해 Group을 가져옴
-        Parent parent = parentRepository.findById(parentId)
-                .orElseThrow(() -> new ParentNotFoundException("부모 정보를 찾을 수 없습니다."));
-        Group group = parent.getGroup();
-        if (group == null) {
-            throw new GroupNotFoundException("부모가 속한 그룹이 없습니다.");
-        }
-        // 메시지 생성 및 저장
-        Message message = Message.builder()
-                .group(group)
-                .parent(parent)
-                .content(content)
-                .transferredAt(LocalDateTime.now())
-                .build();
-        messageRepository.save(message);
-        // 해당 그룹의 모든 인솔자에게 메시지 보내기
-        List<Guardian> guardians = group.getGuardians();
-        for(Guardian guardian : guardians) {
-            MessageRecipient recipient = MessageRecipient.builder()
-                    .guardian(guardian)
-                    .message(message)
+    public void sendMessage(String content) {
+        // 현재 사용자 정보(인증 객체)로 학부모 여부 확인
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        if(userByContextHolder instanceof Parent) {
+            Parent parent = (Parent) userByContextHolder;
+
+            Group group = parent.getGroup();
+            if (group == null) {
+                throw new GroupNotFoundException("부모가 속한 그룹이 없습니다.");
+            }
+
+            // 메시지 생성 및 저장
+            Message message = Message.builder()
+                    .group(group)
+                    .parent(parent)
+                    .content(content)
+                    .transferredAt(LocalDateTime.now())
                     .build();
-            messageRecipientRepository.save(recipient);
+            messageRepository.save(message);
+
+            // 해당 그룹의 모든 인솔자에게 메시지 보내기
+            List<Guardian> guardians = group.getGuardians();
+            for(Guardian guardian : guardians) {
+                MessageRecipient recipient = MessageRecipient.builder()
+                        .guardian(guardian)
+                        .message(message)
+                        .build();
+                messageRecipientRepository.save(recipient);
+            }
+        } else {
+            throw new ParentNotFoundException("현재 사용자는 학부모가 아닙니다.");
         }
-        return MessageDTO.builder()
-                .messageId(message.getMessageId())
-                .content(message.getContent())
-                .transferredAt(message.getTransferredAt())
-                .build();
     }
-    public List<MessageDTO> getMessagesForGuardian(Long guardianId) {
-        // Guardian 존재 여부 확인
-        Guardian guardian = guardianRepository.findById(guardianId)
-                .orElseThrow(() -> new GuardianNotFoundException("지도사를 찾을 수 없습니다."));
-        List<MessageRecipient> recipients = messageRecipientRepository.findByGuardianId(guardianId);
-        // 메시지가 없는 경우 빈 리스트 반환
-        if (recipients.isEmpty()) {
-            return Collections.emptyList();
+
+    public List<MessageDTO> getMessagesForGuardian() {
+        // 현재 사용자 정보(인증 객체)로 학부모 여부 확인
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        if(userByContextHolder instanceof Guardian) {
+            Guardian guardian = (Guardian) userByContextHolder;
+            List<MessageRecipient> recipients = messageRecipientRepository.findByGuardianId(guardian.getId());
+
+            // 메시지가 없는 경우 빈 리스트 반환
+            if (recipients.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            // MessageRecipient 엔티티를 MessageDTO로 변환
+            return recipients.stream()
+                    .map(recipient -> MessageDTO.builder()
+                            .messageId(recipient.getMessage().getMessageId())
+                            .parent(toParentDTO(recipient.getMessage().getParent()))
+                            .content(recipient.getMessage().getContent())
+                            .transferredAt(recipient.getMessage().getTransferredAt())
+                            .isRead(recipient.isRead())
+                            .build())
+                    .collect(Collectors.toList());
+        } else {
+            throw new GuardianNotFoundException("현재 사용자는 인솔자가 아닙니다.");
         }
-        // MessageRecipient 엔티티를 MessageDTO로 변환
-        return recipients.stream()
-                .map(recipient -> MessageDTO.builder()
-                        .messageId(recipient.getMessage().getMessageId())
-                        .group(toGroupDTO(recipient.getMessage().getGroup()))
-                        .parent(toParentDTO(recipient.getMessage().getParent()))
-                        .content(recipient.getMessage().getContent())
-                        .transferredAt(recipient.getMessage().getTransferredAt())
-                        .build())
-                .collect(Collectors.toList());
     }
-    private GroupDTO toGroupDTO(Group group) {
-        return GroupDTO.builder()
-                .id(group.getId())
-                .groupName(group.getGroupName())
-                .build();
-    }
+
     private ParentDTO toParentDTO(Parent parent) {
         return ParentDTO.builder()
                 .id(parent.getId())
                 .name(parent.getName())
+                .imagePath(parent.getImagePath())
                 .build();
     }
+
+    @Transactional
+    public void markMessageAsRead(Long messageId) {
+        // 현재 사용자 정보(인증 객체)로 인솔자 여부 확인
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        if (userByContextHolder instanceof Guardian) {
+            Guardian guardian = (Guardian) userByContextHolder;
+
+            // 특정 메시지 수신자를 조회하여 읽음 상태를 업데이트
+            MessageRecipient recipient = messageRecipientRepository
+                    .findByMessage_messageIdAndGuardian_Id(messageId, guardian.getId())
+                    .orElseThrow(() -> new MessageAccessException("해당 메시지를 찾을 수 없습니다."));
+
+            // 읽음 상태로 변경
+            recipient.markAsRead();
+            messageRecipientRepository.save(recipient);
+        } else {
+            throw new GuardianNotFoundException("현재 사용자는 인솔자가 아닙니다.");
+        }
+    }
+
 }

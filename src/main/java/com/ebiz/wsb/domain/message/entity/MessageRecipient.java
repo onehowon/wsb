@@ -30,5 +30,10 @@ public class MessageRecipient {
     @JoinColumn(name = "guardian_id", nullable = false)
     private Guardian guardian;
 
+    @Column(nullable = false, name = "is_read")
+    private boolean isRead = false;
 
+    public void markAsRead() {
+        this.isRead = true;
+    }
 }
