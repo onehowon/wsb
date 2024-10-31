@@ -25,88 +25,77 @@ public class GroupService {
     private final UserDetailsServiceImpl userDetailsService;
 
     @Transactional
-    public GroupDTO startGuide(Long groupId) {
-        // 해당 그룹 찾기
-        Group group = groupRepository.findById(groupId)
+    public GroupDTO startGuide() {
+        // 현재 사용자 정보를 가져와 인솔자인지 확인
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        if (!(userByContextHolder instanceof Guardian)) {
+            throw new GuardianNotFoundException("해당 지도사를 찾을 수 없습니다");
+        }
+
+        Guardian guardian = (Guardian) userByContextHolder;
+
+        // 인솔자가 속한 그룹 정보를 조회
+        Group group = groupRepository.findById(guardian.getGroup().getId())
                 .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다"));
 
-        // 이미 다른 인솔자가 출근을 시작한 경우 처리
-        if(group.getIsGuideActive()) {
+        // 다른 인솔자가 이미 출근을 시작한 경우 예외 발생
+        if (group.getIsGuideActive()) {
             throw new GroupAlreadyActiveException("해당 그룹은 이미 운행 중입니다");
         }
 
-        // "출근하기" 버튼 누른 인솔자 찾기
-        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        // 출근 정보 업데이트
+        Group updateGroup = group.toBuilder()
+                .isGuideActive(true)
+                .dutyGuardianId(guardian.getId())
+                .build();
 
-        if(userByContextHolder instanceof Guardian) {
-            Guardian guardian = (Guardian) userByContextHolder;
+        groupRepository.save(updateGroup);
 
-            if (guardian.getGroup() == null || !guardian.getGroup().getId().equals(groupId)) {
-                throw new GroupNotAccessException("해당 그룹의 출근 권한이 없습니다.");
-            }
-
-            if (group.getIsGuideActive()) {
-                throw new GroupAlreadyActiveException("해당 그룹은 이미 운행 중입니다");
-            }
-
-            // 그룹에 운행 중임을 나타내는 값과 운행 위치를 제공하는 인솔자 ID 기입
-            Group updateGroup = group.toBuilder()
-                    .isGuideActive(true)
-                    .dutyGuardianId(guardian.getId())
-                    .build();
-
-            groupRepository.save(updateGroup);
-
-            GroupDTO groupDTO = GroupDTO.builder()
-                    .id(updateGroup.getId())
-                    .groupName(updateGroup.getGroupName())
-                    .schoolName(updateGroup.getSchoolName())
-                    .isGuideActive(updateGroup.getIsGuideActive())
-                    .dutyGuardianId(updateGroup.getDutyGuardianId())
-                    .build();
-
-            return groupDTO;
-        } else {
-            throw new GuardianNotFoundException("해당 지도사를 찾을 수 없습니다");
-        }
+        // 업데이트된 그룹 정보를 DTO로 변환하여 반환
+        return GroupDTO.builder()
+                .id(updateGroup.getId())
+                .groupName(updateGroup.getGroupName())
+                .schoolName(updateGroup.getSchoolName())
+                .isGuideActive(updateGroup.getIsGuideActive())
+                .dutyGuardianId(updateGroup.getDutyGuardianId())
+                .build();
     }
 
     @Transactional
-    public GroupDTO stopGuide(Long groupId) {
-        // 해당 그룹 찾기
-        Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다"));
-
+    public GroupDTO stopGuide() {
+        // 현재 사용자 정보를 가져와 인솔자인지 확인
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
-        if(userByContextHolder instanceof Guardian) {
-            Guardian guardian = (Guardian) userByContextHolder;
-
-            if (guardian.getGroup() == null || !guardian.getGroup().getId().equals(groupId)) {
-                throw new GroupNotAccessException("해당 그룹의 퇴근 권한이 없습니다.");
-            }
-
-            if(guardian.getId().equals(group.getDutyGuardianId())) {
-                Group updateGroup = group.toBuilder()
-                        .isGuideActive(false)
-                        .dutyGuardianId(null)
-                        .build();
-
-                groupRepository.save(updateGroup);
-
-                GroupDTO groupDTO = GroupDTO.builder()
-                        .id(updateGroup.getId())
-                        .groupName(updateGroup.getGroupName())
-                        .schoolName(updateGroup.getSchoolName())
-                        .isGuideActive(updateGroup.getIsGuideActive())
-                        .dutyGuardianId(updateGroup.getDutyGuardianId())
-                        .build();
-
-                return groupDTO;
-            }else {
-                throw new GuideNotOnDutyException("해당 지도사는 퇴근하기의 권한이 없습니다");
-            }
-        } else {
+        if (!(userByContextHolder instanceof Guardian)) {
             throw new GuardianNotFoundException("해당 지도사를 찾을 수 없습니다");
         }
+
+        Guardian guardian = (Guardian) userByContextHolder;
+
+        // 인솔자가 속한 그룹 정보 가져오기
+        Group group = groupRepository.findById(guardian.getGroup().getId())
+                .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다"));
+
+        // 현재 출근 상태인지, 그리고 출근한 인솔자가 요청한 인솔자와 일치하는지 확인
+        if (!group.getIsGuideActive() || !guardian.getId().equals(group.getDutyGuardianId())) {
+            throw new GuideNotOnDutyException("해당 지도사는 퇴근하기의 권한이 없습니다");
+        }
+
+        // 출근 상태를 해제하고 dutyGuardianId를 null로 설정
+        Group updateGroup = group.toBuilder()
+                .isGuideActive(false)
+                .dutyGuardianId(null)
+                .build();
+
+        groupRepository.save(updateGroup);
+
+        // 업데이트된 그룹 정보를 DTO로 반환
+        return GroupDTO.builder()
+                .id(updateGroup.getId())
+                .groupName(updateGroup.getGroupName())
+                .schoolName(updateGroup.getSchoolName())
+                .isGuideActive(updateGroup.getIsGuideActive())
+                .dutyGuardianId(updateGroup.getDutyGuardianId())
+                .build();
     }
+
 }

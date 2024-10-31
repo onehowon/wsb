@@ -22,6 +22,4 @@ public interface WaypointRepository extends JpaRepository<Waypoint, Long> {
     @Transactional
     @Query("UPDATE Waypoint w SET w.currentCount = 0, w.attendanceComplete = false")
     void resetTwoWaypointFields();
-
-
 }
