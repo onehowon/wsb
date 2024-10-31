@@ -157,6 +157,8 @@ public class GuardianService {
         return GroupDTO.builder()
                 .groupName(group.getGroupName())
                 .schoolName(group.getSchoolName())
+                .dutyGuardianId(group.getDutyGuardianId())
+                .isGuideActive(group.getIsGuideActive())
                 .id(group.getId())
                 .build();
     }
