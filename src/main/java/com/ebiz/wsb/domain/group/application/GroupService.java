@@ -1,5 +1,6 @@
 package com.ebiz.wsb.domain.group.application;
 
+import com.ebiz.wsb.domain.attendance.entity.AttendanceMessageType;
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.group.dto.GroupDTO;
 import com.ebiz.wsb.domain.group.entity.Group;
@@ -14,6 +15,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.User;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,6 +25,8 @@ public class GroupService {
 
     private final GroupRepository groupRepository;
     private final UserDetailsServiceImpl userDetailsService;
+    private final SimpMessagingTemplate template;
+
 
     @Transactional
     public GroupDTO startGuide() {
@@ -50,6 +54,15 @@ public class GroupService {
                 .build();
 
         groupRepository.save(updateGroup);
+
+        // 웹소캣으로 보낼 GroupDTO 정보 생성
+        GroupDTO groupDTO = GroupDTO.builder()
+                        .messageType(AttendanceMessageType.GUIDE_STATUS_CHANGE)
+                        .isGuideActive(group.getIsGuideActive())
+                        .dutyGuardianId(group.getDutyGuardianId())
+                        .build();
+
+        template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
 
         // 업데이트된 그룹 정보를 DTO로 변환하여 반환
         return GroupDTO.builder()
@@ -87,6 +100,15 @@ public class GroupService {
                 .build();
 
         groupRepository.save(updateGroup);
+
+        // 웹소캣으로 보낼 GroupDTO 정보 생성
+        GroupDTO groupDTO = GroupDTO.builder()
+                .messageType(AttendanceMessageType.GUIDE_STATUS_CHANGE)
+                .isGuideActive(group.getIsGuideActive())
+                .dutyGuardianId(group.getDutyGuardianId())
+                .build();
+
+        template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
 
         // 업데이트된 그룹 정보를 DTO로 반환
         return GroupDTO.builder()
