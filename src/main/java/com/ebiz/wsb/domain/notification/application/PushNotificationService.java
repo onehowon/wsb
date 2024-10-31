@@ -131,34 +131,23 @@ public class PushNotificationService {
     }
 
     public void sendPushNotificationToGroup(Long groupId, String title, String body, PushType pushType) {
-        log.info("sendPushNotificationToGroup 호출: groupId={}, title={}, body={}", groupId, title, body);
 
-        // 그룹 ID에 해당하는 Guardian과 Parent 조회
         List<Parent> parents = parentRepository.findByGroupId(groupId);
         List<Guardian> guardians = guardianRepository.findByGroupId(groupId);
 
-        log.info("조회된 Parent 수: {}", parents.size());
-        log.info("조회된 Guardian 수: {}", guardians.size());
 
-        // FCM 토큰 수집
         List<String> fcmTokens = new ArrayList<>();
 
-// Parent의 FCM 토큰 수집
         for (Parent parent : parents) {
             List<FcmToken> parentTokens = fcmTokenRepository.findByUserIdAndUserType(parent.getId(), UserType.PARENT);
             parentTokens.forEach(token -> fcmTokens.add(token.getToken()));
         }
 
-// Guardian의 FCM 토큰 수집
         for (Guardian guardian : guardians) {
             List<FcmToken> guardianTokens = fcmTokenRepository.findByUserIdAndUserType(guardian.getId(), UserType.GUARDIAN);
             guardianTokens.forEach(token -> fcmTokens.add(token.getToken()));
         }
 
-        log.info("수집된 FCM 토큰 수: {}", fcmTokens.size());
-
-
-        // 알림 데이터 생성 및 전송
         Map<String, String> data = createPushData(pushType);
         Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
 
@@ -169,13 +158,9 @@ public class PushNotificationService {
 
             if (userId != null) {
                 try {
-                    // DB에 알림 저장
-                    log.info("Alert 저장 시도: userId={}, category={}, title={}, content={}", userId, alertCategory, title, body);
                     alertService.createAlert(userId, alertCategory, title, body);
 
-                    // 푸시 메시지 전송
                     sendPushMessage(userId, title, body, data, token, alertCategory);
-                    log.info("푸시 메시지 전송 성공: token={}", token);
 
                 } catch (IOException e) {
                     log.error("푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
@@ -187,10 +172,6 @@ public class PushNotificationService {
             }
         }
     }
-
-
-
-
     private Map<String, String> createPushData(PushType pushType) {
         Map<String, String> data = new HashMap<>();
 

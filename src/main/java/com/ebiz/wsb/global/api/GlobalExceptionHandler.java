@@ -9,14 +9,17 @@ import com.ebiz.wsb.domain.guardian.exception.GuardianNotAccessException;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.location.exception.InvalidLocationDataException;
 import com.ebiz.wsb.domain.mail.exception.InvalidMailException;
+import com.ebiz.wsb.domain.message.exception.MessageAccessException;
 import com.ebiz.wsb.domain.notice.exception.LikesNumberException;
 import com.ebiz.wsb.domain.notice.exception.NoticeAccessDeniedException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
 import com.ebiz.wsb.domain.parent.exception.ParentAccessException;
+import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
 import com.ebiz.wsb.domain.schedule.exception.ScheduleAccessException;
 import com.ebiz.wsb.domain.student.exception.StudentNotAccessException;
 import com.ebiz.wsb.domain.token.exception.InvalidTokenException;
 import com.ebiz.wsb.domain.waypoint.exception.WaypointNotFoundException;
+import com.ebiz.wsb.global.dto.BaseResponse;
 import com.ebiz.wsb.global.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -198,5 +201,23 @@ public class GlobalExceptionHandler {
     @ResponseBody
     public String handleBadRequestExceptions(RuntimeException ex) {
         return ex.getMessage();
+    }
+
+    @ExceptionHandler(ParentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> ParentNotFoundException(ParentNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.builder()
+                        .message(ex.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(MessageAccessException.class)
+    public ResponseEntity<ErrorResponse> MesssageAccessException(MessageAccessException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.builder()
+                        .message(ex.getMessage())
+                        .build());
     }
 }
