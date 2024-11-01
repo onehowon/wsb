@@ -70,6 +70,8 @@ public class GroupService {
         template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
 
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.START_WORK);
+        log.info(pushData.get("title").toString());
+        log.info(pushData.get("body").toString());
 
         pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.START_WORK);
 
