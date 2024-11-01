@@ -4,6 +4,7 @@ import com.ebiz.wsb.domain.attendance.entity.AttendanceMessageType;
 import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
 import com.ebiz.wsb.domain.parent.dto.ParentDTO;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,6 +23,7 @@ public class GroupDTO {
     private String groupName;
     private String schoolName;
     private Boolean isGuideActive;
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     private Long dutyGuardianId;
     private AttendanceMessageType messageType;
 }
