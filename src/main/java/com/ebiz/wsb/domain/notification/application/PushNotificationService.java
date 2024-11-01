@@ -54,16 +54,16 @@ public class PushNotificationService {
     private final AlertService alertService;
     private final ParentRepository parentRepository;
     private final GuardianRepository guardianRepository;
-    private final OkHttpClient client = new OkHttpClient();
 
     @Value("${fcm.project.id}")
     private String PROJECT_ID;
     private static final String FCM_SEND_URL = "https://fcm.googleapis.com/v1/projects/%s/messages:send";
     private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
 
-    public void sendPushMessage(Long receiverId, String title, String body, Map<String, String> data, String token, Alert.AlertCategory category)
+    public void sendPushMessage(String title, String body, Map<String, String> data, String token)
             throws IOException {
         String message = makeMessage(title, body, data, token);
+        OkHttpClient client = new OkHttpClient();
         RequestBody requestBody = RequestBody.create(JSON_MEDIA_TYPE, message);
         Request request = new Request.Builder()
                 .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + getAccessToken())
@@ -72,9 +72,8 @@ public class PushNotificationService {
                 .url(String.format(FCM_SEND_URL, PROJECT_ID))
                 .build();
         Response response = client.newCall(request).execute();
+        System.out.println(response.body().string());
         response.close();
-
-        alertService.createAlert(receiverId, category, title, body);
     }
 
 
@@ -160,7 +159,7 @@ public class PushNotificationService {
                 try {
                     alertService.createAlert(userId, alertCategory, title, body);
 
-                    sendPushMessage(userId, title, body, data, token, alertCategory);
+                    sendPushMessage(title, body, data, token);
 
                 } catch (IOException e) {
                     log.error("푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
@@ -193,7 +192,7 @@ public class PushNotificationService {
             if(userId != null){
                 try{
                     alertService.createAlert(userId, alertCategory, title, body);
-                    sendPushMessage(userId, title, body, data, token, alertCategory);
+                    sendPushMessage(title, body, data, token);
                 } catch (IOException e){
                     log.error("푸시 메시지 전송 실패: token={} / error : {}", token, e.getMessage());
                 } catch (Exception e) {
@@ -212,13 +211,15 @@ public class PushNotificationService {
 
         for (Parent parent : parents) {
             List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(parent.getId(), UserType.PARENT);
+            log.info(tokens.toString());
             tokens.forEach(token -> parentTokens.add(token.getToken()));
         }
+        log.info(parentTokens.toString());
 
         Map<String, String> data = createPushData(pushType);
         Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
+
         log.info(data.toString());
-        log.info(parentTokens.toString());
 
         for (String token : parentTokens) {
             Long userId = fcmTokenRepository.findByToken(token)
@@ -228,7 +229,7 @@ public class PushNotificationService {
             if (userId != null) {
                 try {
                     alertService.createAlert(userId, alertCategory, title, body);
-                    sendPushMessage(userId, title, body, data, token, alertCategory);
+                    sendPushMessage( title, body, data, token);
                 } catch (IOException e) {
                     log.error("푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
                 } catch (Exception e) {
@@ -311,6 +312,6 @@ public class PushNotificationService {
 
     // 테스트용 메서드
     public void sendMessageToToken(Long userId, String title, String body, Map<String, String> data, String token, Alert.AlertCategory category) throws IOException {
-        sendPushMessage(userId, title, body, data, token, category);
+        sendPushMessage( title, body, data, token);
     }
 }
