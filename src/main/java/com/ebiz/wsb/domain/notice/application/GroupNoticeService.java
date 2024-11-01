@@ -15,6 +15,8 @@ import com.ebiz.wsb.domain.notice.exception.NotNoticeInGroupException;
 import com.ebiz.wsb.domain.notice.exception.NoticeAccessDeniedException;
 import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
 import com.ebiz.wsb.domain.notice.repository.GroupNoticeRepository;
+import com.ebiz.wsb.domain.notification.application.PushNotificationService;
+import com.ebiz.wsb.domain.notification.dto.PushType;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.global.service.S3Service;
 
@@ -31,6 +33,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.ebiz.wsb.domain.notice.entity.QGroupNotice.groupNotice;
@@ -44,6 +47,7 @@ public class GroupNoticeService {
     private final S3Service s3service;
     private final UserDetailsServiceImpl userDetailsService;
     private final GroupRepository groupRepository;
+    private final PushNotificationService pushNotificationService;
 
     @Transactional
     public Page<GroupNoticeDTO> getAllGroupNotices(Pageable pageable) {
@@ -163,8 +167,14 @@ public class GroupNoticeService {
         }
 
         savedGroupNotice.getPhotos().addAll(photoEntities);
-
         groupNoticeRepository.save(savedGroupNotice);
+
+        PushType pushType = PushType.POST;
+        Map<String, String> data = pushNotificationService.createPushData(pushType);
+        String title = data.get("title");
+        String body = data.get("body");
+
+        pushNotificationService.sendPushNotificationToGroup(group.getId(), title, body, pushType);
 
         return convertToDTO(savedGroupNotice);
     }

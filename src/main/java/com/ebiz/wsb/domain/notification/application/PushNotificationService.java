@@ -172,41 +172,82 @@ public class PushNotificationService {
             }
         }
     }
-    private Map<String, String> createPushData(PushType pushType) {
+
+    public void sendPushNotifcationToGuardians(Long groupId, String title, String body, PushType pushType){
+        List<Guardian> guardians = guardianRepository.findByGroupId(groupId);
+
+        List<String> guardianTokens = new ArrayList<>();
+        for(Guardian guardian : guardians){
+            List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(guardian.getId(), UserType.GUARDIAN);
+            tokens.forEach(token -> guardianTokens.add(token.getToken()));
+        }
+
+        Map<String, String> data = createPushData(pushType);
+        Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
+
+        for ( String token : guardianTokens){
+            Long userId = fcmTokenRepository.findByToken(token)
+                    .map(FcmToken::getUserId)
+                    .orElse(null);
+
+            if(userId != null){
+                try{
+                    alertService.createAlert(userId, alertCategory, title, body);
+                    sendPushMessage(userId, title, body, data, token, alertCategory);
+                } catch (IOException e){
+                    log.error("푸시 메시지 전송 실패: token={} / error : {}", token, e.getMessage());
+                } catch (Exception e) {
+                    log.error("Alert 저장 실패 또는 예외 발생: userId={}, error: {}", userId, e.getMessage());
+                }
+            } else {
+                log.warn("유효하지 않은 토큰으로 알림 전송 시도: token={}", token);
+            }
+        }
+    }
+
+    public Map<String, String> createPushData(PushType pushType) {
         Map<String, String> data = new HashMap<>();
 
         switch (pushType) {
             case SCHOOL:
-                data.put("category", "등하교 인증이 등록되었어요. 지금 확인해보세요");
+                data.put("title", "등하교 인증");
+                data.put("body", "등하교 인증이 등록되었어요. 지금 확인해보세요");
                 break;
             case POST:
-                data.put("category", "지도사님이 새로운 글을 업로드했어요");
+                data.put("title", "새로운 공지사항");
+                data.put("body", "지도사님이 새로운 공지사항을 작성했습니다.");
                 break;
             case APP:
-                data.put("category", "시스템 공지입니다.");
+                data.put("title", "시스템 공지");
+                data.put("body", "시스템 공지입니다.");
                 break;
             case SCHEDULE:
-                data.put("category", "새로운 스케줄이 등록되었어요. 지금 확인해보세요");
+                data.put("title", "새로운 스케줄");
+                data.put("body", "새로운 스케줄이 등록되었어요. 지금 확인해보세요");
                 break;
             case MESSAGE:
-                data.put("category", "새로운 메시지가 도착했어요. 지금 확인해보세요");
+                data.put("title", "새로운 메시지");
+                data.put("body", "새로운 메시지가 도착했어요. 지금 확인해보세요");
                 break;
             case START_WORK:
-                data.put("category", "지도사님이 운행을 시작했어요.");
+                data.put("title", "운행 알림");
+                data.put("body", "지도사님이 운행을 시작했어요.");
                 break;
             case PICKUP:
-                data.put("category", "지도사님이 우리 아이를 픽업했어요.");
+                data.put("title", "픽업 알림");
+                data.put("body", "지도사님이 우리 아이를 픽업했어요.");
                 break;
             case END_WORK:
-                data.put("category", "지도사님이 운행을 종료했어요.");
+                data.put("title", "운행 종료 알림");
+                data.put("body", "지도사님이 운행을 종료했어요.");
                 break;
             default:
-                data.put("category", "일반 공지사항입니다.");
+                data.put("title", "일반 공지");
+                data.put("body", "일반 공지사항입니다.");
         }
 
         return data;
     }
-
 
     private Alert.AlertCategory mapPushTypeToAlertCategory(PushType pushType) {
         switch (pushType) {
@@ -229,5 +270,11 @@ public class PushNotificationService {
             default:
                 throw new PushNotFoundException("지원되지 않는 PushType입니다.");
         }
+    }
+
+
+    // 테스트용 메서드
+    public void sendMessageToToken(Long userId, String title, String body, Map<String, String> data, String token, Alert.AlertCategory category) throws IOException {
+        sendPushMessage(userId, title, body, data, token, category);
     }
 }

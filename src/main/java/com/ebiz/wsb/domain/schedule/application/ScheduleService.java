@@ -7,6 +7,8 @@ import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.dto.GuardianSummaryDTO;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
+import com.ebiz.wsb.domain.notification.application.PushNotificationService;
+import com.ebiz.wsb.domain.notification.dto.PushType;
 import com.ebiz.wsb.domain.schedule.dto.*;
 import com.ebiz.wsb.domain.schedule.entity.Schedule;
 import com.ebiz.wsb.domain.schedule.entity.ScheduleType;
@@ -37,6 +39,7 @@ public class ScheduleService {
     private final UserDetailsServiceImpl userDetailsService;
     private final GroupRepository groupRepository;
     private final ScheduleTypeRepository scheduleTypeRepository;
+    private final PushNotificationService pushNotificationService;
 
     @Transactional
     public ScheduleDTO createSchedule(ScheduleDTO scheduleDTO) {
@@ -66,6 +69,9 @@ public class ScheduleService {
                 .build();
 
         schedule = scheduleRepository.save(schedule);
+
+        Map<String, String> pushData = pushNotificationService.createPushData(PushType.SCHEDULE);
+        sendPushNotificationToGroup(group.getId(), pushData.get("title"), pushData.get("body"), PushType.SCHEDULE);
 
         return convertScheduleToDTO(schedule);
     }
@@ -226,5 +232,9 @@ public class ScheduleService {
         }
 
         return guardian;
+    }
+
+    private void sendPushNotificationToGroup(Long groupId, String title, String body, PushType pushType) {
+        pushNotificationService.sendPushNotificationToGroup(groupId, title, body, pushType);
     }
 }

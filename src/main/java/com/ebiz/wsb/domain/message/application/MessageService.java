@@ -1,5 +1,6 @@
 package com.ebiz.wsb.domain.message.application;
 
+import com.ebiz.wsb.domain.alert.entity.Alert;
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.group.dto.GroupDTO;
 import com.ebiz.wsb.domain.group.entity.Group;
@@ -13,6 +14,8 @@ import com.ebiz.wsb.domain.message.entity.MessageRecipient;
 import com.ebiz.wsb.domain.message.exception.MessageAccessException;
 import com.ebiz.wsb.domain.message.repository.MessageRecipientRepository;
 import com.ebiz.wsb.domain.message.repository.MessageRepository;
+import com.ebiz.wsb.domain.notification.application.PushNotificationService;
+import com.ebiz.wsb.domain.notification.dto.PushType;
 import com.ebiz.wsb.domain.parent.dto.ParentDTO;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
@@ -26,6 +29,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +40,7 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final MessageRecipientRepository messageRecipientRepository;
     private final UserDetailsServiceImpl userDetailsService;
+    private final PushNotificationService pushNotificationService;
 
     @Transactional
     public void sendMessage(String content) {
@@ -57,6 +62,8 @@ public class MessageService {
                     .transferredAt(LocalDateTime.now())
                     .build();
             messageRepository.save(message);
+
+            pushNotificationService.sendPushNotifcationToGuardians(group.getId(), "새로운 메시지", content, PushType.MESSAGE);
 
             // 해당 그룹의 모든 인솔자에게 메시지 보내기
             List<Guardian> guardians = group.getGuardians();
