@@ -11,12 +11,16 @@ import com.ebiz.wsb.domain.group.exception.GuideNotOnDutyException;
 import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
+import com.ebiz.wsb.domain.notification.application.PushNotificationService;
+import com.ebiz.wsb.domain.notification.dto.PushType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.User;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +30,7 @@ public class GroupService {
     private final GroupRepository groupRepository;
     private final UserDetailsServiceImpl userDetailsService;
     private final SimpMessagingTemplate template;
+    private final PushNotificationService pushNotificationService;
 
 
     @Transactional
@@ -63,6 +68,10 @@ public class GroupService {
                         .build();
 
         template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
+
+        Map<String, String> pushData = pushNotificationService.createPushData(PushType.START_WORK);
+
+        pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.START_WORK);
 
         // 업데이트된 그룹 정보를 DTO로 변환하여 반환
         return GroupDTO.builder()
@@ -135,6 +144,7 @@ public class GroupService {
 
         return GroupDTO.builder()
                 .isGuideActive(group.getIsGuideActive())
+                .dutyGuardianId(group.getDutyGuardianId())
                 .build();
     }
 }

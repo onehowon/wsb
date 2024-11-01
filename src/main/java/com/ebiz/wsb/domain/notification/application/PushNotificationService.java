@@ -209,6 +209,7 @@ public class PushNotificationService {
         List<Parent> parents = parentRepository.findByGroupId(groupId);
 
         List<String> parentTokens = new ArrayList<>();
+
         for (Parent parent : parents) {
             List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(parent.getId(), UserType.PARENT);
             tokens.forEach(token -> parentTokens.add(token.getToken()));
