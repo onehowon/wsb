@@ -17,6 +17,4 @@ public class SignInRequest {
     private String password;
 
     private String fcmToken;
-
-    private UserType userType;
 }
