@@ -102,7 +102,7 @@ public class MessageService {
                             .build())
                     .collect(Collectors.toList());
         } else {
-            throw new GuardianNotFoundException("현재 사용자는 인솔자가 아닙니다.");
+            throw new GuardianNotFoundException("현재 사용자는 지도사가 아닙니다.");
         }
     }
 
@@ -130,7 +130,7 @@ public class MessageService {
             recipient.markAsRead();
             messageRecipientRepository.save(recipient);
         } else {
-            throw new GuardianNotFoundException("현재 사용자는 인솔자가 아닙니다.");
+            throw new GuardianNotFoundException("현재 사용자는 지도사가 아닙니다.");
         }
     }
 
