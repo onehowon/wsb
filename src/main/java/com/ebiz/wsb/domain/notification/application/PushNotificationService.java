@@ -217,6 +217,8 @@ public class PushNotificationService {
 
         Map<String, String> data = createPushData(pushType);
         Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
+        log.info(data.toString());
+        log.info(parentTokens.toString());
 
         for (String token : parentTokens) {
             Long userId = fcmTokenRepository.findByToken(token)

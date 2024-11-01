@@ -91,6 +91,17 @@ public class AuthService {
                     userId = guardian.getId();
                     tokenRepository.save(userId, refreshToken);
                 }
+                if(userId != null && request.getFcmToken() != null){
+                    fcmTokenRepository.findByUserId(userId)
+                            .ifPresent(fcmTokenRepository::delete);
+
+                    FcmToken fcmToken = FcmToken.builder()
+                            .userId(userId)
+                            .token(request.getFcmToken())
+                            .userType(com.ebiz.wsb.domain.notification.entity.UserType.GUARDIAN)
+                            .build();
+                    fcmTokenRepository.save(fcmToken);
+                }
             } else if (authentication.getAuthorities().stream()
                     .anyMatch(auth -> auth.getAuthority().equals("ROLE_PARENT"))) {
                 Parent parent = parentRepository.findParentByEmail(email)
@@ -99,19 +110,20 @@ public class AuthService {
                     userId = parent.getId();
                     tokenRepository.save(userId, refreshToken);
                 }
+                if(userId != null && request.getFcmToken() != null){
+                    fcmTokenRepository.findByUserId(userId)
+                            .ifPresent(fcmTokenRepository::delete);
+
+                    FcmToken fcmToken = FcmToken.builder()
+                            .userId(userId)
+                            .token(request.getFcmToken())
+                            .userType(com.ebiz.wsb.domain.notification.entity.UserType.PARENT)
+                            .build();
+                    fcmTokenRepository.save(fcmToken);
+                }
             }
 
-            if(userId != null && request.getFcmToken() != null){
-                fcmTokenRepository.findByUserId(userId)
-                        .ifPresent(fcmTokenRepository::delete);
 
-                FcmToken fcmToken = FcmToken.builder()
-                        .userId(userId)
-                        .token(request.getFcmToken())
-                        .userType(request.getUserType())
-                        .build();
-                fcmTokenRepository.save(fcmToken);
-            }
         }
 
         return SignInDTO.builder()
