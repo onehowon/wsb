@@ -63,7 +63,9 @@ public class MessageService {
                     .build();
             messageRepository.save(message);
 
-            pushNotificationService.sendPushNotifcationToGuardians(group.getId(), "새로운 메시지", content, PushType.MESSAGE);
+            // 메시지 보낼 때, 인솔자에게 메시지 푸시알림 보내기
+            Map<String, String> pushData = pushNotificationService.createPushData(PushType.MESSAGE);
+            pushNotificationService.sendPushNotifcationToGuardians(group.getId(), pushData.get("title"), pushData.get("body"), PushType.MESSAGE);
 
             // 해당 그룹의 모든 인솔자에게 메시지 보내기
             List<Guardian> guardians = group.getGuardians();
