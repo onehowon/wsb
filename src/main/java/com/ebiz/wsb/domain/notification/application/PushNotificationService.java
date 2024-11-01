@@ -205,6 +205,39 @@ public class PushNotificationService {
         }
     }
 
+    public void sendPushNotificationToParents(Long groupId, String title, String body, PushType pushType) {
+        List<Parent> parents = parentRepository.findByGroupId(groupId);
+
+        List<String> parentTokens = new ArrayList<>();
+        for (Parent parent : parents) {
+            List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(parent.getId(), UserType.PARENT);
+            tokens.forEach(token -> parentTokens.add(token.getToken()));
+        }
+
+        Map<String, String> data = createPushData(pushType);
+        Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
+
+        for (String token : parentTokens) {
+            Long userId = fcmTokenRepository.findByToken(token)
+                    .map(FcmToken::getUserId)
+                    .orElse(null);
+
+            if (userId != null) {
+                try {
+                    alertService.createAlert(userId, alertCategory, title, body);
+                    sendPushMessage(userId, title, body, data, token, alertCategory);
+                } catch (IOException e) {
+                    log.error("푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
+                } catch (Exception e) {
+                    log.error("Alert 저장 실패 또는 예외 발생: userId={}, error: {}", userId, e.getMessage());
+                }
+            } else {
+                log.warn("유효하지 않은 토큰으로 알림 전송 시도: token={}", token);
+            }
+        }
+    }
+
+
     public Map<String, String> createPushData(PushType pushType) {
         Map<String, String> data = new HashMap<>();
 
