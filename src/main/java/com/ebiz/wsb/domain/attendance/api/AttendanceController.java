@@ -33,7 +33,6 @@ public class AttendanceController {
 
     @PostMapping("/{studentId}/preabsent")
     public ResponseEntity<BaseResponse> preAbsent(@PathVariable Long studentId, @RequestParam("date") String date) {
-        // 날짜를 파싱하여 LocalDate로 변환
         LocalDate absenceDate = LocalDate.parse(date);
         BaseResponse baseResponse = attendanceService.markPreAbsent(studentId, absenceDate);
         return ResponseEntity.ok(baseResponse);

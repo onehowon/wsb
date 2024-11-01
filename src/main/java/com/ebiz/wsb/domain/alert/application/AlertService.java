@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -38,9 +39,21 @@ public class AlertService {
         return savedAlert;
     }
 
+    @Transactional
+    public List<Alert> getAlertsForCurrentUser(){
+        Object currentUser = userDetailsService.getUserByContextHolder();
+        Long receiverId;
 
+        if (currentUser instanceof Parent) {
+            receiverId = ((Parent) currentUser).getId();
+        } else if (currentUser instanceof Guardian) {
+            receiverId = ((Guardian) currentUser).getId();
+        } else {
+            throw new IllegalArgumentException("알 수 없는 사용자 타입입니다.");
+        }
 
-
+        return alertRepository.findByReceiverId(receiverId);
+    }
 
     @Transactional
     public void markAsRead(Long alertId) {
