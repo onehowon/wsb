@@ -24,9 +24,9 @@ public class NotificationController {
     private final PushNotificationService pushNotificationService;
 
     @PostMapping("/send")
-    public ResponseEntity<?> sendNotification(@RequestBody PushRequest request, @RequestBody String token, @RequestBody Long receiverId) {
+    public ResponseEntity<?> sendNotification(@RequestBody PushRequest request) {
         try {
-            pushNotificationService.sendPushMessage(request.getTitle(), request.getBody(), null, token);
+            pushNotificationService.sendPushMessage(request.getTitle(), request.getBody(), null, request.getToken());
             return ResponseEntity.ok("푸시 알림이 성공적으로 전송되었습니다.");
         } catch (Exception e) {
             return ResponseEntity.status(500).body("푸시 알림 전송 실패: " + e.getMessage());

@@ -91,16 +91,14 @@ public class AuthService {
                     userId = guardian.getId();
                     tokenRepository.save(userId, refreshToken);
                 }
-                if(userId != null && request.getFcmToken() != null){
-                    fcmTokenRepository.findByUserId(userId)
-                            .ifPresent(fcmTokenRepository::delete);
-
+                if (userId != null && request.getFcmToken() != null) {
                     FcmToken fcmToken = FcmToken.builder()
                             .userId(userId)
                             .token(request.getFcmToken())
                             .userType(com.ebiz.wsb.domain.notification.entity.UserType.GUARDIAN)
                             .build();
                     fcmTokenRepository.save(fcmToken);
+                    log.info("Saved FCM token for guardian ID {}: {}", userId, request.getFcmToken());
                 }
             } else if (authentication.getAuthorities().stream()
                     .anyMatch(auth -> auth.getAuthority().equals("ROLE_PARENT"))) {
@@ -110,20 +108,16 @@ public class AuthService {
                     userId = parent.getId();
                     tokenRepository.save(userId, refreshToken);
                 }
-                if(userId != null && request.getFcmToken() != null){
-                    fcmTokenRepository.findByUserId(userId)
-                            .ifPresent(fcmTokenRepository::delete);
-
+                if (userId != null && request.getFcmToken() != null) {
                     FcmToken fcmToken = FcmToken.builder()
                             .userId(userId)
                             .token(request.getFcmToken())
                             .userType(com.ebiz.wsb.domain.notification.entity.UserType.PARENT)
                             .build();
                     fcmTokenRepository.save(fcmToken);
+                    log.info("Saved FCM token for parent ID {}: {}", userId, request.getFcmToken());
                 }
             }
-
-
         }
 
         return SignInDTO.builder()

@@ -206,15 +206,16 @@ public class PushNotificationService {
 
     public void sendPushNotificationToParents(Long groupId, String title, String body, PushType pushType) {
         List<Parent> parents = parentRepository.findByGroupId(groupId);
+        log.info("Found {} parents in group {}", parents.size(), groupId);
 
         List<String> parentTokens = new ArrayList<>();
 
         for (Parent parent : parents) {
             List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(parent.getId(), UserType.PARENT);
-            log.info(tokens.toString());
+            log.info("Parent ID {} has {} tokens", parent.getId(), tokens.size());
             tokens.forEach(token -> parentTokens.add(token.getToken()));
         }
-        log.info(parentTokens.toString());
+        log.info("Total tokens collected for group {}: {}", groupId, parentTokens.size());
 
         Map<String, String> data = createPushData(pushType);
         Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
@@ -229,7 +230,7 @@ public class PushNotificationService {
             if (userId != null) {
                 try {
                     alertService.createAlert(userId, alertCategory, title, body);
-                    sendPushMessage( title, body, data, token);
+                    sendPushMessage(title, body, data, token);
                 } catch (IOException e) {
                     log.error("푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
                 } catch (Exception e) {

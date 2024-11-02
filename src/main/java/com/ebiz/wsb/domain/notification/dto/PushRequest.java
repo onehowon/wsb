@@ -9,5 +9,7 @@ import lombok.Getter;
 public class PushRequest {
     private String title;
     private String body;
+    private String token;
+    private String receiverId;
     private Alert.AlertCategory alertCategory;
 }
