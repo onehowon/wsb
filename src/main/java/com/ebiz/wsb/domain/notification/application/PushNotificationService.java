@@ -25,6 +25,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.TopicManagementResponse;
+import java.io.FileInputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
@@ -101,14 +102,21 @@ public class PushNotificationService {
     }
 
     private String getAccessToken() throws IOException {
-        ClassPathResource classPathResource = new ClassPathResource(
-                "firebase/firebase-adminsdk.json");
 
-        GoogleCredentials googleCredentials = GoogleCredentials.fromStream(classPathResource.getInputStream())
+        String firebaseConfigPath = System.getenv("FIREBASE_CONFIG_PATH");
+
+        if (firebaseConfigPath == null) {
+            throw new IOException("Firebase config path environment variable not set");
+        }
+
+        FileInputStream serviceAccount = new FileInputStream(firebaseConfigPath);
+
+        GoogleCredentials googleCredentials = GoogleCredentials.fromStream(serviceAccount)
                 .createScoped(List.of("https://www.googleapis.com/auth/cloud-platform"));
         googleCredentials.refreshIfExpired();
         return googleCredentials.getAccessToken().getTokenValue();
     }
+
 
     public void save(String token) {
         Object user = userDetailsService.getUserByContextHolder();
