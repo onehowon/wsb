@@ -12,6 +12,8 @@ import com.ebiz.wsb.domain.group.exception.GuideNotStartedException;
 import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
+import com.ebiz.wsb.domain.notification.application.PushNotificationService;
+import com.ebiz.wsb.domain.notification.dto.PushType;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
 import com.ebiz.wsb.domain.student.entity.Student;
@@ -31,6 +33,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,6 +47,7 @@ public class AttendanceService {
     private final WaypointRepository waypointRepository;
     private final UserDetailsServiceImpl userDetailsService;
     private final GroupRepository groupRepository;
+    private final PushNotificationService pushNotificationService;
 
     @Transactional
     public void updateAttendance(Long studentId, AttendanceStatus attendanceStatus, Long groupId) {
@@ -199,6 +203,12 @@ public class AttendanceService {
                 .build();
 
         template.convertAndSend("/sub/group/" + groupId, attendanceDTO);
+
+        Map<String, String> pushData = pushNotificationService.createPushData(PushType.PICKUP);
+        log.info(pushData.get("title").toString());
+        log.info(pushData.get("body").toString());
+
+        pushNotificationService.sendPushNotificationToParentsAtWaypoint(waypointId, pushData.get("title"), pushData.get("body"), PushType.PICKUP);
 
         return BaseResponse.builder()
                 .message("해당 경유지의 출석을 완료하였습니다")

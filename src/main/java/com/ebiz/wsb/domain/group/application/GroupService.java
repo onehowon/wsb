@@ -124,6 +124,15 @@ public class GroupService {
 
         template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
 
+        Map<String, String> pushData = pushNotificationService.createPushData(PushType.END_WORK);
+        log.info(pushData.get("title").toString());
+        log.info(pushData.get("body").toString());
+
+        log.info("Attempting to send push notification to parents for group {}", group.getId());
+        pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.END_WORK);
+
+        log.info("Push notification to parents completed for group {}", group.getId());
+
         // 업데이트된 그룹 정보를 DTO로 반환
         return GroupDTO.builder()
                 .id(updateGroup.getId())

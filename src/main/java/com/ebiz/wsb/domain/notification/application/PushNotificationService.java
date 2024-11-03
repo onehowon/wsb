@@ -16,6 +16,10 @@ import com.ebiz.wsb.domain.notification.exception.PushNotFoundException;
 import com.ebiz.wsb.domain.notification.repository.FcmTokenRepository;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.repository.ParentRepository;
+import com.ebiz.wsb.domain.student.entity.Student;
+import com.ebiz.wsb.domain.student.repository.StudentRepository;
+import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
+import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.core.ApiFuture;
@@ -39,10 +43,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import okhttp3.RequestBody;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -55,6 +56,8 @@ public class PushNotificationService {
     private final AlertService alertService;
     private final ParentRepository parentRepository;
     private final GuardianRepository guardianRepository;
+    private final WaypointRepository waypointRepository;
+    private final StudentRepository studentRepository;
 
     @Value("${fcm.project.id}")
     private String PROJECT_ID;
@@ -224,6 +227,50 @@ public class PushNotificationService {
             tokens.forEach(token -> parentTokens.add(token.getToken()));
         }
         log.info("Total tokens collected for group {}: {}", groupId, parentTokens.size());
+
+        Map<String, String> data = createPushData(pushType);
+        Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
+
+        log.info(data.toString());
+
+        for (String token : parentTokens) {
+            Long userId = fcmTokenRepository.findByToken(token)
+                    .map(FcmToken::getUserId)
+                    .orElse(null);
+
+            if (userId != null) {
+                try {
+                    alertService.createAlert(userId, alertCategory, title, body);
+                    sendPushMessage(title, body, data, token);
+                } catch (IOException e) {
+                    log.error("푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
+                } catch (Exception e) {
+                    log.error("Alert 저장 실패 또는 예외 발생: userId={}, error: {}", userId, e.getMessage());
+                }
+            } else {
+                log.warn("유효하지 않은 토큰으로 알림 전송 시도: token={}", token);
+            }
+        }
+    }
+
+    public void sendPushNotificationToParentsAtWaypoint(Long waypointId, String title, String body, PushType pushType) {
+        List<Student> students = studentRepository.findByWaypointId(waypointId);
+        List<Long> parentIds = new ArrayList<>();
+
+        for (Student student : students) {
+            Long parentId = student.getParent().getId();
+            if (!parentIds.contains(parentId)) {
+                parentIds.add(parentId);
+            }
+        }
+
+        List<String> parentTokens = new ArrayList<>();
+
+        for (Long parentId : parentIds) {
+            List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(parentId, UserType.PARENT);
+            log.info("Parent ID {} has {} tokens", parentId, tokens.size());
+            tokens.forEach(token -> parentTokens.add(token.getToken()));
+        }
 
         Map<String, String> data = createPushData(pushType);
         Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);

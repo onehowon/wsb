@@ -12,4 +12,6 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     List<Student> findAllByParentId(Long parentId);
 
     List<Student> findAllByGroupId(Long groupId);
+
+    List<Student> findByWaypointId(Long waypointId);
 }
