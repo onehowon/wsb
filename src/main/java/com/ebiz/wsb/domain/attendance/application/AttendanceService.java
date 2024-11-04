@@ -183,7 +183,7 @@ public class AttendanceService {
                 .build();
 
         // 출석 여부를 변경한 경유지 자체를 업데이트 및 저장
-        waypointRepository.save(updatedWaypoint);
+        waypointRepository.saveAndFlush(updatedWaypoint);
 
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
         if (!(userByContextHolder instanceof Guardian)) {
@@ -202,13 +202,13 @@ public class AttendanceService {
                 .waypointId(updatedWaypoint.getId())
                 .build();
 
-        template.convertAndSend("/sub/group/" + groupId, attendanceDTO);
-
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.PICKUP);
         log.info(pushData.get("title").toString());
         log.info(pushData.get("body").toString());
 
         pushNotificationService.sendPushNotificationToParentsAtWaypoint(waypointId, pushData.get("title"), pushData.get("body"), PushType.PICKUP);
+
+        template.convertAndSend("/sub/group/" + groupId, attendanceDTO);
 
         return BaseResponse.builder()
                 .message("해당 경유지의 출석을 완료하였습니다")
