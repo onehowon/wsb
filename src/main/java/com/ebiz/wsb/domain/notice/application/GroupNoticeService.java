@@ -151,7 +151,6 @@ public class GroupNoticeService {
                 .photos(new ArrayList<>())
                 .build();
 
-        GroupNotice savedGroupNotice = groupNoticeRepository.save(groupNotice);
 
         List<GroupNoticePhoto> photoEntities = new ArrayList<>();
         if (imageFiles != null && !imageFiles.isEmpty()) {
@@ -160,14 +159,14 @@ public class GroupNoticeService {
                     String photoUrl = uploadImage(file);
                     photoEntities.add(GroupNoticePhoto.builder()
                             .photoUrl(photoUrl)
-                            .groupNotice(savedGroupNotice)
+                            .groupNotice(groupNotice)
                             .build());
                 }
             }
         }
 
-        savedGroupNotice.getPhotos().addAll(photoEntities);
-        groupNoticeRepository.save(savedGroupNotice);
+        groupNotice.getPhotos().addAll(photoEntities);
+        groupNoticeRepository.save(groupNotice);
 
         PushType pushType = PushType.POST;
         Map<String, String> data = pushNotificationService.createPushData(pushType);
@@ -176,7 +175,7 @@ public class GroupNoticeService {
 
         pushNotificationService.sendPushNotificationToGroup(group.getId(), title, body, pushType);
 
-        return convertToDTO(savedGroupNotice);
+        return convertToDTO(groupNotice);
     }
 
 
