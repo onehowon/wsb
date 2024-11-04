@@ -258,7 +258,7 @@ public class PushNotificationService {
         List<Long> parentIds = new ArrayList<>();
 
         for (Student student : students) {
-            Long parentId = student.getParent().getId();
+            Long parentId = student.getParent() != null ? student.getParent().getId() : null;
             if (!parentIds.contains(parentId)) {
                 parentIds.add(parentId);
             }
