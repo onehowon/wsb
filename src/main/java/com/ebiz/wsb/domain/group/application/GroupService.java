@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.User;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.util.Map;
 
@@ -33,7 +34,7 @@ public class GroupService {
     private final PushNotificationService pushNotificationService;
 
 
-    @Transactional
+    @Transactional()
     public GroupDTO startGuide() {
         // 현재 사용자 정보를 가져와 인솔자인지 확인
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
@@ -58,16 +59,15 @@ public class GroupService {
                 .dutyGuardianId(guardian.getId())
                 .build();
 
-        groupRepository.save(updateGroup);
+        Group save = groupRepository.save(updateGroup);
+        groupRepository.flush();
 
         // 웹소캣으로 보낼 GroupDTO 정보 생성
         GroupDTO groupDTO = GroupDTO.builder()
                         .messageType(AttendanceMessageType.GUIDE_STATUS_CHANGE)
-                        .isGuideActive(group.getIsGuideActive())
-                        .dutyGuardianId(group.getDutyGuardianId())
+                        .isGuideActive(save.getIsGuideActive())
+                        .dutyGuardianId(save.getDutyGuardianId())
                         .build();
-
-        template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
 
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.START_WORK);
         log.info(pushData.get("title").toString());
@@ -77,6 +77,8 @@ public class GroupService {
         pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.START_WORK);
 
         log.info("Push notification to parents completed for group {}", group.getId());
+
+        template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
 
         // 업데이트된 그룹 정보를 DTO로 변환하여 반환
         return GroupDTO.builder()
@@ -143,12 +145,15 @@ public class GroupService {
                 .build();
     }
 
+    @Transactional
     public GroupDTO getGuideStatus() {
         // 현재 사용자 정보를 가져와 인솔자인지 확인
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
         if (!(userByContextHolder instanceof Guardian)) {
             throw new GuardianNotFoundException("해당 지도사를 찾을 수 없습니다");
         }
+
+        log.info("sadasd");
 
         Guardian guardian = (Guardian) userByContextHolder;
 
