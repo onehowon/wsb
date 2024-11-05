@@ -2,6 +2,7 @@ package com.ebiz.wsb.domain.notice.api;
 
 import com.ebiz.wsb.domain.notice.application.GroupNoticeService;
 import com.ebiz.wsb.domain.notice.dto.GroupNoticeDTO;
+import com.ebiz.wsb.domain.notice.dto.LikesResponseDTO;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -65,8 +66,8 @@ public class GroupNoticeController {
     }
 
     @PostMapping("/{groupNoticeId}/like")
-    public ResponseEntity<String> toggleLike(@PathVariable Long groupNoticeId){
-        String responseMessage = groupNoticeService.toggleLike(groupNoticeId);
-        return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+    public ResponseEntity<LikesResponseDTO> toggleLike(@PathVariable Long groupNoticeId) {
+        LikesResponseDTO response = groupNoticeService.toggleLike(groupNoticeId);
+        return ResponseEntity.ok(response);
     }
 }

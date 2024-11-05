@@ -23,4 +23,5 @@ public class GroupNoticeDTO {
     private Integer likes;
     private LocalDateTime createdAt;
     private GuardianSummaryDTO guardian;
+    private boolean liked;
 }

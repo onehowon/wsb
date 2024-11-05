@@ -8,6 +8,7 @@ import com.ebiz.wsb.domain.guardian.dto.GuardianSummaryDTO;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.notice.dto.GroupNoticeDTO;
+import com.ebiz.wsb.domain.notice.dto.LikesResponseDTO;
 import com.ebiz.wsb.domain.notice.entity.GroupNotice;
 import com.ebiz.wsb.domain.notice.entity.GroupNoticePhoto;
 import com.ebiz.wsb.domain.notice.entity.Likes;
@@ -27,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -238,6 +240,19 @@ public class GroupNoticeService {
 
     private GroupNoticeDTO convertToDTO(GroupNotice groupNotice) {
 
+        Object currentUser = userDetailsService.getUserByContextHolder();
+        Long userId;
+
+        if (currentUser instanceof Guardian) {
+            userId = ((Guardian) currentUser).getId();
+        } else if (currentUser instanceof Parent) {
+            userId = ((Parent) currentUser).getId();
+        } else {
+            throw new NoticeAccessDeniedException("인증되지 않은 사용자입니다.");
+        }
+
+        boolean liked = likesRepository.findByUserIdAndGroupNotice(userId, groupNotice).isPresent();
+
         List<String> photoUrls = groupNotice.getPhotos().stream()
                 .map(GroupNoticePhoto::getPhotoUrl)
                 .collect(Collectors.toList());
@@ -256,6 +271,7 @@ public class GroupNoticeService {
                 .likes(groupNotice.getLikes())
                 .createdAt(groupNotice.getCreatedAt())
                 .guardian(guardianSummaryDTO)
+                .liked(liked)
                 .build();
     }
 
@@ -268,7 +284,7 @@ public class GroupNoticeService {
     }
 
     @Transactional
-    public String toggleLike(Long groupNoticeId) {
+    public LikesResponseDTO toggleLike(Long groupNoticeId) {
         Object currentUser = userDetailsService.getUserByContextHolder();
         Long userId;
 
@@ -283,11 +299,14 @@ public class GroupNoticeService {
         GroupNotice groupNotice = groupNoticeRepository.findById(groupNoticeId)
                 .orElseThrow(() -> new NoticeNotFoundException(groupNoticeId));
 
-
         Optional<Likes> existingLike = likesRepository.findByUserIdAndGroupNotice(userId, groupNotice);
+        boolean liked;
+        int likesCount;
+
         if (existingLike.isPresent()) {
 
             likesRepository.delete(existingLike.get());
+            likesCount = groupNotice.getLikes() - 1;
 
             GroupNotice updatedGroupNotice = GroupNotice.builder()
                     .groupNoticeId(groupNotice.getGroupNoticeId())
@@ -295,12 +314,12 @@ public class GroupNoticeService {
                     .group(groupNotice.getGroup())
                     .content(groupNotice.getContent())
                     .photos(groupNotice.getPhotos())
-                    .likes(groupNotice.getLikes() - 1)
+                    .likes(likesCount)
                     .createdAt(groupNotice.getCreatedAt())
                     .build();
-
             groupNoticeRepository.save(updatedGroupNotice);
-            return "좋아요가 취소되었습니다.";
+
+            liked = false;
         } else {
             Likes newLike = Likes.builder()
                     .userId(userId)
@@ -309,18 +328,27 @@ public class GroupNoticeService {
                     .build();
             likesRepository.save(newLike);
 
+            likesCount = groupNotice.getLikes() + 1;
+
             GroupNotice updatedGroupNotice = GroupNotice.builder()
                     .groupNoticeId(groupNotice.getGroupNoticeId())
                     .guardian(groupNotice.getGuardian())
                     .group(groupNotice.getGroup())
                     .content(groupNotice.getContent())
                     .photos(groupNotice.getPhotos())
-                    .likes(groupNotice.getLikes() + 1)
+                    .likes(likesCount)
                     .createdAt(groupNotice.getCreatedAt())
                     .build();
-
             groupNoticeRepository.save(updatedGroupNotice);
-            return "좋아요가 추가되었습니다.";
+
+            liked = true;
         }
+
+
+        return LikesResponseDTO.builder()
+                .groupNoticeId(groupNoticeId)
+                .liked(liked)
+                .likesCount(likesCount)
+                .build();
     }
 }
