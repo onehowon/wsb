@@ -28,6 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -136,12 +137,14 @@ public class AuthService {
         if(userByContextHolder instanceof Guardian) {
             Guardian guardian = (Guardian) userByContextHolder;
             tokenRepository.deleteId(guardian.getId());
-            fcmTokenRepository.findByUserId(guardian.getId()).ifPresent(fcmTokenRepository::delete);
+            List<FcmToken> fcmTokens = fcmTokenRepository.findByUserIdAndUserType(guardian.getId(), com.ebiz.wsb.domain.notification.entity.UserType.GUARDIAN);
+            fcmTokenRepository.deleteAll(fcmTokens);
             saveBlackList(refreshToken);
         } else if(userByContextHolder instanceof Parent) {
             Parent parent = (Parent) userByContextHolder;
             tokenRepository.deleteId(parent.getId());
-            fcmTokenRepository.findByUserId(parent.getId()).ifPresent(fcmTokenRepository::delete);
+            List<FcmToken> fcmTokens = fcmTokenRepository.findByUserIdAndUserType(parent.getId(), com.ebiz.wsb.domain.notification.entity.UserType.PARENT);
+            fcmTokenRepository.deleteAll(fcmTokens);
             saveBlackList(refreshToken);
         }
     }
