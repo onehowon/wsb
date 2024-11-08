@@ -91,9 +91,10 @@ public class GroupNoticeService {
 
         Page<GroupNotice> notices = groupNoticeRepository.findAllByGroupIdOrderByCreatedAtDesc(groupId, pageable);
 
+        // 공지사항이 비어 있으면 빈 배열을 반환
         if (notices.isEmpty()) {
             log.info("그룹 ID {}에 대한 공지사항이 없습니다.", groupId);
-            throw new NotNoticeInGroupException(groupId);
+            return Page.empty();
         }
 
         return notices.map(this::convertToDTO);
