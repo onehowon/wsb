@@ -109,15 +109,6 @@ public class GroupService {
         Group group = groupRepository.findById(guardian.getGroup().getId())
                 .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다"));
 
-        // 해당 그룹의 마지막 경유지 true 값으로 변경 후 저장하기
-        List<Waypoint> waypoints = group.getWaypoints();
-        Waypoint waypoint = waypoints.get(waypoints.size() - 1);
-        Waypoint updateWaypoint = waypoint.toBuilder()
-                .attendanceComplete(true)
-                .build();
-
-        waypointRepository.save(updateWaypoint);
-
         // 현재 출근 상태인지, 그리고 출근한 인솔자가 요청한 인솔자와 일치하는지 확인
         if (!group.getIsGuideActive() || !guardian.getId().equals(group.getDutyGuardianId())) {
             throw new GuideNotOnDutyException("해당 지도사는 퇴근하기의 권한이 없습니다");
