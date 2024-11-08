@@ -13,6 +13,9 @@ import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.notification.application.PushNotificationService;
 import com.ebiz.wsb.domain.notification.dto.PushType;
+import com.ebiz.wsb.domain.waypoint.dto.WaypointDTO;
+import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
+import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +24,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -32,6 +36,7 @@ public class GroupService {
     private final UserDetailsServiceImpl userDetailsService;
     private final SimpMessagingTemplate template;
     private final PushNotificationService pushNotificationService;
+    private final WaypointRepository waypointRepository;
 
 
     @Transactional()
@@ -104,6 +109,15 @@ public class GroupService {
         Group group = groupRepository.findById(guardian.getGroup().getId())
                 .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다"));
 
+        // 해당 그룹의 마지막 경유지 true 값으로 변경 후 저장하기
+        List<Waypoint> waypoints = group.getWaypoints();
+        Waypoint waypoint = waypoints.get(waypoints.size() - 1);
+        Waypoint updateWaypoint = waypoint.toBuilder()
+                .attendanceComplete(true)
+                .build();
+
+        waypointRepository.save(updateWaypoint);
+
         // 현재 출근 상태인지, 그리고 출근한 인솔자가 요청한 인솔자와 일치하는지 확인
         if (!group.getIsGuideActive() || !guardian.getId().equals(group.getDutyGuardianId())) {
             throw new GuideNotOnDutyException("해당 지도사는 퇴근하기의 권한이 없습니다");
@@ -117,7 +131,7 @@ public class GroupService {
 
         groupRepository.save(updateGroup);
 
-        // 웹소캣으로 보낼 GroupDTO 정보 생성
+        // 웹소캣으로 보낼 GroupDTO와 WaypointDTO 정보 생성
         GroupDTO groupDTO = GroupDTO.builder()
                 .messageType(AttendanceMessageType.GUIDE_STATUS_CHANGE)
                 .isGuideActive(group.getIsGuideActive())
@@ -130,10 +144,7 @@ public class GroupService {
         log.info(pushData.get("title").toString());
         log.info(pushData.get("body").toString());
 
-        log.info("Attempting to send push notification to parents for group {}", group.getId());
         pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.END_WORK);
-
-        log.info("Push notification to parents completed for group {}", group.getId());
 
         // 업데이트된 그룹 정보를 DTO로 반환
         return GroupDTO.builder()
