@@ -21,9 +21,16 @@ public class NoticeService {
     private final NoticeRepository noticeRepository;
 
     public Page<NoticeDTO> getAllNotices(Pageable pageable) {
-        return noticeRepository.findAll(pageable)
-                .map(this::convertToDTO);
+        Page<Notice> notices = noticeRepository.findAll(pageable);
+
+        // 만약 빈 배열이라면 빈 Page 객체 반환
+        if (notices.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        return notices.map(this::convertToDTO);
     }
+
 
     public NoticeDTO getNoticeById(Long noticeId) {
         Notice notice = noticeRepository.findById(noticeId)
