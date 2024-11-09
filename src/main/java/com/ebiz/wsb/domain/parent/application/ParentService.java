@@ -1,7 +1,11 @@
 package com.ebiz.wsb.domain.parent.application;
 
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
+import com.ebiz.wsb.domain.group.dto.GroupDTO;
+import com.ebiz.wsb.domain.group.entity.Group;
+import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
+import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.parent.dto.ParentDTO;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.exception.ParentAccessException;
@@ -158,6 +162,26 @@ public class ParentService {
                 .address(parent.getAddress())
                 .imagePath(parent.getImagePath())
                 .students(studentDTOs)
+                .build();
+    }
+
+    public GroupDTO getParentGroup() {
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        if (!(userByContextHolder instanceof Parent)) {
+            throw new ParentNotFoundException("학부모 정보를 찾을 수 없습니다.");
+        }
+
+        Parent parent = (Parent) userByContextHolder;
+        Group group = parent.getGroup();
+        if (group == null) {
+            throw new GroupNotFoundException("배정된 그룹을 찾을 수 없습니다.");
+        }
+
+        return GroupDTO.builder()
+                .groupName(group.getGroupName())
+                .schoolName(group.getSchoolName())
+                .dutyGuardianId(group.getDutyGuardianId())
+                .id(group.getId())
                 .build();
     }
 }
