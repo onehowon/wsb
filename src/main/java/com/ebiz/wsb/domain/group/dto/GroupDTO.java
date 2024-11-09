@@ -26,4 +26,5 @@ public class GroupDTO {
     @JsonInclude(JsonInclude.Include.ALWAYS)
     private Long dutyGuardianId;
     private AttendanceMessageType messageType;
+    private Boolean shuttleStatus;
 }

@@ -50,7 +50,6 @@ public class Alert {
     private boolean isRead;
 
     public enum AlertCategory {
-        SCHOOL,
         POST,
         APP,
         SCHEDULE,

@@ -76,7 +76,6 @@ public class PushNotificationService {
                 .url(String.format(FCM_SEND_URL, PROJECT_ID))
                 .build();
         Response response = client.newCall(request).execute();
-        System.out.println(response.body().string());
         response.close();
     }
 
@@ -217,21 +216,16 @@ public class PushNotificationService {
 
     public void sendPushNotificationToParents(Long groupId, String title, String body, PushType pushType) {
         List<Parent> parents = parentRepository.findByGroupId(groupId);
-        log.info("Found {} parents in group {}", parents.size(), groupId);
 
         List<String> parentTokens = new ArrayList<>();
 
         for (Parent parent : parents) {
             List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(parent.getId(), UserType.PARENT);
-            log.info("Parent ID {} has {} tokens", parent.getId(), tokens.size());
             tokens.forEach(token -> parentTokens.add(token.getToken()));
         }
-        log.info("Total tokens collected for group {}: {}", groupId, parentTokens.size());
 
         Map<String, String> data = createPushData(pushType);
         Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
-
-        log.info(data.toString());
 
         for (String token : parentTokens) {
             Long userId = fcmTokenRepository.findByToken(token)
@@ -302,10 +296,6 @@ public class PushNotificationService {
         Map<String, String> data = new HashMap<>();
 
         switch (pushType) {
-            case SCHOOL:
-                data.put("title", "등하교 인증");
-                data.put("body", "등하교 인증이 등록되었어요. 지금 확인해보세요");
-                break;
             case POST:
                 data.put("title", "새로운 공지사항");
                 data.put("body", "지도사님이 새로운 공지사항을 작성했습니다.");
@@ -344,8 +334,6 @@ public class PushNotificationService {
 
     private Alert.AlertCategory mapPushTypeToAlertCategory(PushType pushType) {
         switch (pushType) {
-            case SCHOOL:
-                return Alert.AlertCategory.SCHOOL;
             case POST:
                 return Alert.AlertCategory.POST;
             case APP:
