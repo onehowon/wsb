@@ -24,6 +24,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
@@ -77,9 +78,6 @@ public class GroupService {
                         .build();
 
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.START_WORK);
-        log.info(pushData.get("title").toString());
-        log.info(pushData.get("body").toString());
-
         pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.START_WORK);
 
         template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
@@ -141,8 +139,13 @@ public class GroupService {
                 .build();
 
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.END_WORK);
-        log.info(pushData.get("title").toString());
-        log.info(pushData.get("body").toString());
+
+        // 현재 시간 가져오기
+        LocalTime now = LocalTime.now();
+
+        // body 내용에 시간과 학교 이름 삽입
+        String bodyWithTimeAndSchoolName = String.format(pushData.get("body"), now.getHour(), now.getMinute(), group.getSchoolName());
+        pushData.put("body", bodyWithTimeAndSchoolName);
 
         pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.END_WORK);
 
@@ -167,8 +170,6 @@ public class GroupService {
             throw new GuardianNotFoundException("해당 지도사를 찾을 수 없습니다");
         }
 
-        log.info("sadasd");
-
         Guardian guardian = (Guardian) userByContextHolder;
 
         // 인솔자가 속한 그룹 정보를 조회
@@ -178,6 +179,7 @@ public class GroupService {
         return GroupDTO.builder()
                 .isGuideActive(group.getIsGuideActive())
                 .dutyGuardianId(group.getDutyGuardianId())
+                .shuttleStatus(group.getShuttleStatus())
                 .build();
     }
 }

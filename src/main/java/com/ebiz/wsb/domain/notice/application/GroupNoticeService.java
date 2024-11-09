@@ -35,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -181,6 +182,16 @@ public class GroupNoticeService {
         String body = data.get("body");
 
         pushNotificationService.sendPushNotificationToGroup(group.getId(), title, body, pushType);
+
+
+
+        Map<String, String> pushData = pushNotificationService.createPushData(PushType.POST);
+
+        // body 내용에 지도사 이름 삽입
+        String bodyWithGuardianName = String.format(pushData.get("body"), guardian.getName());
+        pushData.put("body", bodyWithGuardianName);
+
+        pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.END_WORK);
 
         return convertToDTO(groupNotice);
     }

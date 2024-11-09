@@ -32,6 +32,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -203,8 +204,13 @@ public class AttendanceService {
                 .build();
 
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.PICKUP);
-        log.info(pushData.get("title").toString());
-        log.info(pushData.get("body").toString());
+
+        // 현재 시간 가져오기
+        LocalTime now = LocalTime.now();
+
+        //body 내용에 시간 삽입
+        String bodyWithTime = String.format(pushData.get("body"), now.getHour(), now.getMinute());
+        pushData.put("body", bodyWithTime);
 
         pushNotificationService.sendPushNotificationToParentsAtWaypoint(waypointId, pushData.get("title"), pushData.get("body"), PushType.PICKUP);
 

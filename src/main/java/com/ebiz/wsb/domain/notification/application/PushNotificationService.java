@@ -297,8 +297,8 @@ public class PushNotificationService {
 
         switch (pushType) {
             case POST:
-                data.put("title", "새로운 공지사항");
-                data.put("body", "지도사님이 새로운 공지사항을 작성했습니다.");
+                data.put("title", "새로운 공지사항이 등록되었어요!");
+                data.put("body", "%s 지도사님이 새로운 공지사항을 작성했어요.");
                 break;
             case APP:
                 data.put("title", "시스템 공지");
@@ -306,23 +306,23 @@ public class PushNotificationService {
                 break;
             case SCHEDULE:
                 data.put("title", "새로운 스케줄");
-                data.put("body", "새로운 스케줄이 등록되었어요. 지금 확인해보세요");
+                data.put("body", "새로운 스케줄이 등록되었어요. 지금 확인해보세요.");
                 break;
             case MESSAGE:
                 data.put("title", "새로운 메시지");
-                data.put("body", "새로운 메시지가 도착했어요. 지금 확인해보세요");
+                data.put("body", "새로운 메시지가 도착했어요. 지금 확인해보세요.");
                 break;
             case START_WORK:
-                data.put("title", "운행 알림");
-                data.put("body", "지도사님이 운행을 시작했어요.");
+                data.put("title", "워킹스쿨버스가 출발했어요!");
+                data.put("body", "워킹스쿨버스가 출발했어요. 늦지 않게 아이를 준비 시켜주세요.");
                 break;
             case PICKUP:
-                data.put("title", "픽업 알림");
-                data.put("body", "지도사님이 우리 아이를 픽업했어요.");
+                data.put("title", "자녀의 출석이 확인되었어요!");
+                data.put("body", "%d시 $d분에 자녀의 출석이 확인되었어요.");
                 break;
             case END_WORK:
-                data.put("title", "운행 종료 알림");
-                data.put("body", "지도사님이 운행을 종료했어요.");
+                data.put("title", "자녀가 학교에 도착했어요!");
+                data.put("body", "%d시 %d분에 자녀가 %s에 도착했어요.");
                 break;
             default:
                 data.put("title", "일반 공지");
