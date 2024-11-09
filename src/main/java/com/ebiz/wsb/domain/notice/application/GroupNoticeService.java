@@ -176,15 +176,6 @@ public class GroupNoticeService {
         groupNotice.getPhotos().addAll(photoEntities);
         groupNoticeRepository.save(groupNotice);
 
-        PushType pushType = PushType.POST;
-        Map<String, String> data = pushNotificationService.createPushData(pushType);
-        String title = data.get("title");
-        String body = data.get("body");
-
-        pushNotificationService.sendPushNotificationToGroup(group.getId(), title, body, pushType);
-
-
-
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.POST);
 
         // body 내용에 지도사 이름 삽입
