@@ -54,9 +54,12 @@ public class Alert {
         APP,
         SCHEDULE,
         MESSAGE,
-        START_WORK,
+        PREABSENT_MESSAGE,
+        START_WORK_PARENT,
+        START_WORK_GUARDIAN,
         PICKUP,
-        END_WORK
+        END_WORK_PARENT,
+        END_WORK_GUARDIAN
     }
 
     public void read() {

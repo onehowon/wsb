@@ -20,6 +20,7 @@ import com.ebiz.wsb.domain.parent.dto.ParentDTO;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
 import com.ebiz.wsb.domain.parent.repository.ParentRepository;
+import com.ebiz.wsb.domain.student.entity.Student;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +66,21 @@ public class MessageService {
 
             // 메시지 보낼 때, 인솔자에게 메시지 푸시알림 보내기
             Map<String, String> pushData = pushNotificationService.createPushData(PushType.MESSAGE);
+
+            // title 내용에 학생 이름 삽입
+            String titleWithStudentNames = String.format(
+                    pushData.get("title"),
+                    parent.getStudents().stream()
+                            .map(Student::getName)
+                            .collect(Collectors.joining(", "))
+            );
+
+            // body 내용에 메시지 내용 삽입
+            String bodyWithContent = String.format(pushData.get("body"), content);
+
+            pushData.put("title", titleWithStudentNames);
+            pushData.put("body", bodyWithContent);
+
             pushNotificationService.sendPushNotifcationToGuardians(group.getId(), pushData.get("title"), pushData.get("body"), PushType.MESSAGE);
 
             // 해당 그룹의 모든 인솔자에게 메시지 보내기

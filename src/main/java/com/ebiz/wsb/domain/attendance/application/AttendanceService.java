@@ -25,15 +25,18 @@ import com.ebiz.wsb.domain.waypoint.exception.WaypointAttendanceCompletionExcept
 import com.ebiz.wsb.domain.waypoint.exception.WaypointNotFoundException;
 import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
 import com.ebiz.wsb.global.dto.BaseResponse;
+import com.ebiz.wsb.global.dto.ErrorResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -246,14 +249,37 @@ public class AttendanceService {
                         .attendanceStatus(AttendanceStatus.UNCONFIRMED) // 기본 상태 설정
                         .build());
 
-        // 출석 상태를 "사전 결석"으로 업데이트
-        Attendance updatedAttendance = attendance.toBuilder()
-                .attendanceStatus(AttendanceStatus.PREABSENT)
-                .build();
+        // 출석 상태가 이미 "사전 결석"인 경우 업데이트하지 않음
+        if (attendance.getAttendanceStatus() != AttendanceStatus.PREABSENT) {
+            Attendance updateAttendance = attendance.toBuilder()
+                    .attendanceStatus(AttendanceStatus.PREABSENT)
+                    .build();
 
-        attendanceRepository.save(updatedAttendance);
-        return BaseResponse.builder()
-                .message("사전 결석 신청이 완료되었습니다")
-                .build();
+            attendanceRepository.save(updateAttendance);
+
+            Map<String, String> pushData = pushNotificationService.createPushData(PushType.PREABSENT_MESSAGE);
+
+            // title 내용에 학생 이름과 날짜 삽입
+            String bodyWithStudentNameAndDate = String.format(pushData.get("title"), findStudent.getName(), absenceDate.getMonth(), absenceDate.getDayOfMonth());
+            pushData.put("title", bodyWithStudentNameAndDate);
+
+            // 요일 구하기
+            DayOfWeek dayOfWeek = absenceDate.getDayOfWeek();
+            // 요일을 한글로 출력
+            String koreanDayOfWeek = dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, Locale.KOREAN);
+            // body 내용에 학생 이름과 해당 학생의 경유지, 날짜 삽입
+            String bodyWithStudentNameAndWaypointAndDate = String.format(pushData.get("body"), findStudent.getName(), findStudent.getWaypoint().getWaypointName(), absenceDate.getMonth(), koreanDayOfWeek);
+            pushData.put("body", bodyWithStudentNameAndWaypointAndDate);
+
+            pushNotificationService.sendPushNotifcationToGuardians(findStudent.getGroup().getId(), pushData.get("title"), pushData.get("body"), PushType.END_WORK);
+
+            return BaseResponse.builder()
+                    .message("사전 결석 신청이 완료되었습니다")
+                    .build();
+        } else {
+            return BaseResponse.builder()
+                    .message("이미 해당 날짜에 결석 신청이 있습니다")
+                    .build();
+        }
     }
 }

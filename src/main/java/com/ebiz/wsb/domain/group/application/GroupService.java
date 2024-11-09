@@ -77,8 +77,14 @@ public class GroupService {
                         .shuttleStatus(save.getShuttleStatus())
                         .build();
 
-        Map<String, String> pushData = pushNotificationService.createPushData(PushType.START_WORK);
-        pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.START_WORK);
+        Map<String, String> parentPushData = pushNotificationService.createPushData(PushType.START_WORK_PARENT);
+        Map<String, String> guardianPushData = pushNotificationService.createPushData(PushType.START_WORK_GUARDIAN);
+
+        // 지도사한테 보내는 메시지 body 값 수정
+        String bodyWithGuardianName = String.format(guardianPushData.get("body"), guardian.getName());
+        guardianPushData.put("body", bodyWithGuardianName);
+
+        pushNotificationService.sendPushNotificationToGroupDifferentMessage(group.getId(), parentPushData.get("title"), guardianPushData.get("body"),guardianPushData.get("title"), parentPushData.get("body"), PushType.START_WORK_PARENT, PushType.START_WORK_GUARDIAN);
 
         template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
 
@@ -138,16 +144,21 @@ public class GroupService {
                 .shuttleStatus(save.getShuttleStatus())
                 .build();
 
-        Map<String, String> pushData = pushNotificationService.createPushData(PushType.END_WORK);
+        Map<String, String> parentPushData = pushNotificationService.createPushData(PushType.END_WORK_PARENT);
+        Map<String, String> guardianPushData = pushNotificationService.createPushData(PushType.END_WORK_GUARDIAN);
 
         // 현재 시간 가져오기
         LocalTime now = LocalTime.now();
 
         // body 내용에 시간과 학교 이름 삽입
-        String bodyWithTimeAndSchoolName = String.format(pushData.get("body"), now.getHour(), now.getMinute(), group.getSchoolName());
-        pushData.put("body", bodyWithTimeAndSchoolName);
+        String bodyWithTimeAndSchoolName = String.format(parentPushData.get("body"), now.getHour(), now.getMinute(), group.getSchoolName());
+        parentPushData.put("body", bodyWithTimeAndSchoolName);
 
-        pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.END_WORK);
+        // 지도사한테 보내는 메시지 body 값 수정
+        String bodyWithGuardianName = String.format(guardianPushData.get("body"), guardian.getName());
+        guardianPushData.put("body", bodyWithGuardianName);
+
+        pushNotificationService.sendPushNotificationToGroupDifferentMessage(group.getId(), parentPushData.get("title"), guardianPushData.get("body"),guardianPushData.get("title"), parentPushData.get("body"), PushType.START_WORK_PARENT, PushType.START_WORK_GUARDIAN);
 
         template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
 
