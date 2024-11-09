@@ -84,7 +84,7 @@ public class GroupService {
         String bodyWithGuardianName = String.format(guardianPushData.get("body"), guardian.getName());
         guardianPushData.put("body", bodyWithGuardianName);
 
-        pushNotificationService.sendPushNotificationToGroupDifferentMessage(group.getId(), parentPushData.get("title"), guardianPushData.get("body"),guardianPushData.get("title"), parentPushData.get("body"), PushType.START_WORK_PARENT, PushType.START_WORK_GUARDIAN);
+        pushNotificationService.sendPushNotificationToGroupDifferentMessage(group.getId(), parentPushData.get("title"), parentPushData.get("body"),guardianPushData.get("title"), guardianPushData.get("body"), PushType.START_WORK_PARENT, PushType.START_WORK_GUARDIAN);
 
         template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
 
@@ -158,7 +158,7 @@ public class GroupService {
         String bodyWithGuardianName = String.format(guardianPushData.get("body"), guardian.getName());
         guardianPushData.put("body", bodyWithGuardianName);
 
-        pushNotificationService.sendPushNotificationToGroupDifferentMessage(group.getId(), parentPushData.get("title"), guardianPushData.get("body"),guardianPushData.get("title"), parentPushData.get("body"), PushType.START_WORK_PARENT, PushType.START_WORK_GUARDIAN);
+        pushNotificationService.sendPushNotificationToGroupDifferentMessage(group.getId(), parentPushData.get("title"), parentPushData.get("body"),guardianPushData.get("title"), guardianPushData.get("body"), PushType.START_WORK_PARENT, PushType.START_WORK_GUARDIAN);
 
         template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
 
