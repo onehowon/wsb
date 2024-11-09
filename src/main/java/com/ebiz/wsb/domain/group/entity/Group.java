@@ -39,6 +39,9 @@ public class Group {
     @Column(name = "duty_guardian_id")
     private Long dutyGuardianId;
 
+    @Column(name = "shuttle_status")
+    private Boolean shuttleStatus;
+
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
     private List<Guardian> guardians = new ArrayList<>();
 

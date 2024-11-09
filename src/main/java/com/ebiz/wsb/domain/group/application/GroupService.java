@@ -62,6 +62,7 @@ public class GroupService {
         Group updateGroup = group.toBuilder()
                 .isGuideActive(true)
                 .dutyGuardianId(guardian.getId())
+                .shuttleStatus(true)
                 .build();
 
         Group save = groupRepository.save(updateGroup);
@@ -72,26 +73,25 @@ public class GroupService {
                         .messageType(AttendanceMessageType.GUIDE_STATUS_CHANGE)
                         .isGuideActive(save.getIsGuideActive())
                         .dutyGuardianId(save.getDutyGuardianId())
+                        .shuttleStatus(save.getShuttleStatus())
                         .build();
 
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.START_WORK);
         log.info(pushData.get("title").toString());
         log.info(pushData.get("body").toString());
 
-        log.info("Attempting to send push notification to parents for group {}", group.getId());
         pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.START_WORK);
-
-        log.info("Push notification to parents completed for group {}", group.getId());
 
         template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
 
         // 업데이트된 그룹 정보를 DTO로 변환하여 반환
         return GroupDTO.builder()
-                .id(updateGroup.getId())
-                .groupName(updateGroup.getGroupName())
-                .schoolName(updateGroup.getSchoolName())
-                .isGuideActive(updateGroup.getIsGuideActive())
-                .dutyGuardianId(updateGroup.getDutyGuardianId())
+                .id(save.getId())
+                .groupName(save.getGroupName())
+                .schoolName(save.getSchoolName())
+                .isGuideActive(save.getIsGuideActive())
+                .dutyGuardianId(save.getDutyGuardianId())
+                .shuttleStatus(save.getShuttleStatus())
                 .build();
     }
 
@@ -126,18 +126,19 @@ public class GroupService {
         Group updateGroup = group.toBuilder()
                 .isGuideActive(false)
                 .dutyGuardianId(null)
+                .shuttleStatus(false)
                 .build();
 
-        groupRepository.save(updateGroup);
+        Group save = groupRepository.save(updateGroup);
+        groupRepository.flush();
 
         // 웹소캣으로 보낼 GroupDTO와 WaypointDTO 정보 생성
         GroupDTO groupDTO = GroupDTO.builder()
                 .messageType(AttendanceMessageType.GUIDE_STATUS_CHANGE)
-                .isGuideActive(group.getIsGuideActive())
-                .dutyGuardianId(group.getDutyGuardianId())
+                .isGuideActive(save.getIsGuideActive())
+                .dutyGuardianId(save.getDutyGuardianId())
+                .shuttleStatus(save.getShuttleStatus())
                 .build();
-
-        template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
 
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.END_WORK);
         log.info(pushData.get("title").toString());
@@ -145,13 +146,16 @@ public class GroupService {
 
         pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.END_WORK);
 
+        template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
+
         // 업데이트된 그룹 정보를 DTO로 반환
         return GroupDTO.builder()
-                .id(updateGroup.getId())
-                .groupName(updateGroup.getGroupName())
-                .schoolName(updateGroup.getSchoolName())
-                .isGuideActive(updateGroup.getIsGuideActive())
-                .dutyGuardianId(updateGroup.getDutyGuardianId())
+                .id(save.getId())
+                .groupName(save.getGroupName())
+                .schoolName(save.getSchoolName())
+                .isGuideActive(save.getIsGuideActive())
+                .dutyGuardianId(save.getDutyGuardianId())
+                .shuttleStatus(save.getShuttleStatus())
                 .build();
     }
 
