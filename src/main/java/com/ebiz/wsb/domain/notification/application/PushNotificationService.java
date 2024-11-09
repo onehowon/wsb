@@ -393,7 +393,7 @@ public class PushNotificationService {
                 break;
             case PICKUP:
                 data.put("title", "자녀의 출석이 확인되었어요!");
-                data.put("body", "%d시 $d분에 자녀의 출석이 확인되었어요.");
+                data.put("body", "%d시 %d분에 자녀의 출석이 확인되었어요.");
                 break;
             case END_WORK_PARENT:
                 data.put("title", "자녀가 학교에 도착했어요!");
