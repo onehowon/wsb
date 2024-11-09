@@ -63,7 +63,7 @@ public class GroupService {
         Group updateGroup = group.toBuilder()
                 .isGuideActive(true)
                 .dutyGuardianId(guardian.getId())
-                .shuttleStatus(true)
+                .shuttleStatus(false)
                 .build();
 
         Group save = groupRepository.save(updateGroup);
@@ -124,7 +124,7 @@ public class GroupService {
         Group updateGroup = group.toBuilder()
                 .isGuideActive(false)
                 .dutyGuardianId(null)
-                .shuttleStatus(false)
+                .shuttleStatus(true)
                 .build();
 
         Group save = groupRepository.save(updateGroup);
