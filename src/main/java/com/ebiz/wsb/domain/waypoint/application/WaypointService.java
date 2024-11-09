@@ -7,6 +7,7 @@ import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
+import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.student.dto.StudentDTO;
 import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.student.exception.StudentNotFoundException;
@@ -35,25 +36,35 @@ public class WaypointService {
 
     public List<WaypointDTO> getWaypoints() {
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
+
+        Group group;
+
         if (userByContextHolder instanceof Guardian) {
             Guardian guardian = (Guardian) userByContextHolder;
-            Group group = guardian.getGroup();
+            group = guardian.getGroup();
+
             if (group == null) {
                 throw new GroupNotFoundException("해당 지도사는 어떤 그룹에도 속해 있지 않습니다.");
             }
+        } else if (userByContextHolder instanceof Parent) {
+            Parent parent = (Parent) userByContextHolder;
+            group = parent.getGroup();
 
-            List<Waypoint> waypoints = waypointRepository.findByGroup_Id(group.getId());
-            if (waypoints.isEmpty()) {
-                throw new WaypointNotFoundException("해당 그룹에 등록된 경유지가 없습니다.");
+            if (group == null) {
+                throw new GroupNotFoundException("해당 학부모는 어떤 그룹에도 속해 있지 않습니다.");
             }
-
-            return waypoints.stream()
-                    .map(this::convertToDTOWithStudentCount)
-                    .collect(Collectors.toList());
         } else {
             throw new WaypointNotAccessException("인증되지 않은 사용자는 경유지를 조회할 수 없습니다.");
-
         }
+
+        List<Waypoint> waypoints = waypointRepository.findByGroup_Id(group.getId());
+        if (waypoints.isEmpty()) {
+            throw new WaypointNotFoundException("해당 그룹에 등록된 경유지가 없습니다.");
+        }
+
+        return waypoints.stream()
+                .map(this::convertToDTOWithStudentCount)
+                .collect(Collectors.toList());
     }
 
     private WaypointDTO convertToDTOWithStudentCount(Waypoint waypoint) {
