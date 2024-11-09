@@ -182,7 +182,7 @@ public class GroupNoticeService {
         String bodyWithGuardianName = String.format(pushData.get("body"), guardian.getName());
         pushData.put("body", bodyWithGuardianName);
 
-        pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.END_WORK);
+        pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.POST);
 
         return convertToDTO(groupNotice);
     }

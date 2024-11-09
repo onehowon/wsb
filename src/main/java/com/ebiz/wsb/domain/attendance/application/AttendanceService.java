@@ -271,7 +271,7 @@ public class AttendanceService {
             String bodyWithStudentNameAndWaypointAndDate = String.format(pushData.get("body"), findStudent.getName(), findStudent.getWaypoint().getWaypointName(), absenceDate.getMonth(), koreanDayOfWeek);
             pushData.put("body", bodyWithStudentNameAndWaypointAndDate);
 
-            pushNotificationService.sendPushNotifcationToGuardians(findStudent.getGroup().getId(), pushData.get("title"), pushData.get("body"), PushType.END_WORK);
+            pushNotificationService.sendPushNotifcationToGuardians(findStudent.getGroup().getId(), pushData.get("title"), pushData.get("body"), PushType.PREABSENT_MESSAGE);
 
             return BaseResponse.builder()
                     .message("사전 결석 신청이 완료되었습니다")
