@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @DynamicInsert
+@Table(name = "Attendance")
 public class Attendance {
 
     @Id

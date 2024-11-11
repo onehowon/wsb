@@ -40,10 +40,9 @@ public class MessageController {
         }
     }
 
-    // 메시지 읽음 상태로 변경하는 엔드포인트
-    @PutMapping("/{messageId}/read")
-    public ResponseEntity<Void> markMessageAsRead(@PathVariable Long messageId) {
-        messageService.markMessageAsRead(messageId);
-        return ResponseEntity.ok().build();
-    }
+//    @GetMapping("/received/one")
+//    public ResponseEntity<?> getMessagesForGuardianOne() {
+//
+//    }
+
 }

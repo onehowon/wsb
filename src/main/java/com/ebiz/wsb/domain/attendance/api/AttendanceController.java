@@ -4,7 +4,6 @@ import com.ebiz.wsb.domain.attendance.application.AttendanceService;
 import com.ebiz.wsb.domain.attendance.dto.AttendanceUpdateRequest;
 import com.ebiz.wsb.global.dto.BaseResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;

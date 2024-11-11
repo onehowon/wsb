@@ -56,7 +56,6 @@ public class PushNotificationService {
     private final AlertService alertService;
     private final ParentRepository parentRepository;
     private final GuardianRepository guardianRepository;
-    private final WaypointRepository waypointRepository;
     private final StudentRepository studentRepository;
 
     @Value("${fcm.project.id}")
@@ -251,12 +250,14 @@ public class PushNotificationService {
 
     public void sendPushNotifcationToGuardians(Long groupId, String title, String body, PushType pushType){
         List<Guardian> guardians = guardianRepository.findByGroupId(groupId);
+        log.info(guardians.toString());
 
         List<String> guardianTokens = new ArrayList<>();
         for(Guardian guardian : guardians){
             List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(guardian.getId(), UserType.GUARDIAN);
             tokens.forEach(token -> guardianTokens.add(token.getToken()));
         }
+        log.info(guardianTokens.toString());
 
         Map<String, String> data = createPushData(pushType);
         Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
@@ -265,7 +266,7 @@ public class PushNotificationService {
             Long userId = fcmTokenRepository.findByToken(token)
                     .map(FcmToken::getUserId)
                     .orElse(null);
-
+            log.info(userId.toString());
             if(userId != null){
                 try{
                     alertService.createAlert(userId, alertCategory, title, body);
@@ -366,42 +367,52 @@ public class PushNotificationService {
             case POST:
                 data.put("title", "새로운 공지사항이 등록되었어요!");
                 data.put("body", "%s 지도사님이 새로운 공지사항을 작성했어요.");
+                data.put("type", "POST");
                 break;
             case APP:
                 data.put("title", "시스템 공지");
                 data.put("body", "시스템 공지입니다.");
+                data.put("type", "APP");
                 break;
             case SCHEDULE:
                 data.put("title", "새로운 스케줄");
                 data.put("body", "새로운 스케줄이 등록되었어요. 지금 확인해보세요.");
+                data.put("type", "SCHEDULE");
                 break;
             case MESSAGE:
                 data.put("title", "%s 학생 학부모로부터 메시지가 도착했어요!");
                 data.put("body", "%s");
+                data.put("type", "MESSAGE");
                 break;
             case PREABSENT_MESSAGE:
                 data.put("title", "%s 학생이 %d월 %d일 결석해요!");
-                data.put("body", "%s 학생(%s)이 %d월 %d일 %요일 결석을 신청했어요");
+                data.put("body", "%s 학생(%s)이 %d월 %d일 %s요일 결석을 신청했어요");
+                data.put("type", "PREABSENT_MESSAGE");
                 break;
             case START_WORK_PARENT:
                 data.put("title", "워킹스쿨버스가 출발했어요!");
                 data.put("body", "워킹스쿨버스가 출발했어요. 늦지 않게 아이를 준비 시켜주세요.");
+                data.put("type", "START_WORK_PARENT");
                 break;
             case START_WORK_GUARDIAN:
                 data.put("title", "지도사 출근 알림");
                 data.put("body", "%s 지도사님이 출근하셨어요.");
+                data.put("type", "START_WORK_GUARDIAN");
                 break;
             case PICKUP:
                 data.put("title", "자녀의 출석이 확인되었어요!");
                 data.put("body", "%d시 %d분에 자녀의 출석이 확인되었어요.");
+                data.put("type", "PICKUP");
                 break;
             case END_WORK_PARENT:
                 data.put("title", "자녀가 학교에 도착했어요!");
                 data.put("body", "%d시 %d분에 자녀가 %s에 도착했어요.");
+                data.put("type", "END_WORK_PARENT");
                 break;
             case END_WORK_GUARDIAN:
                 data.put("title", "지도사 퇴근 알림");
-                data.put("body", "%s 지도사님이 출근하셨어요.");
+                data.put("body", "%s 지도사님이 퇴근하셨어요.");
+                data.put("type", "END_WORK_GUARDIAN");
                 break;
             default:
                 data.put("title", "일반 공지");

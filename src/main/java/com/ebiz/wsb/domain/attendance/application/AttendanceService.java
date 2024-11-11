@@ -25,7 +25,6 @@ import com.ebiz.wsb.domain.waypoint.exception.WaypointAttendanceCompletionExcept
 import com.ebiz.wsb.domain.waypoint.exception.WaypointNotFoundException;
 import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
 import com.ebiz.wsb.global.dto.BaseResponse;
-import com.ebiz.wsb.global.dto.ErrorResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
