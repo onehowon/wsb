@@ -132,24 +132,23 @@ public class MessageService {
                 .build();
     }
 
-    @Transactional
-    public void markMessageAsRead(Long messageId) {
-        // 현재 사용자 정보(인증 객체)로 인솔자 여부 확인
-        Object userByContextHolder = userDetailsService.getUserByContextHolder();
-        if (userByContextHolder instanceof Guardian) {
-            Guardian guardian = (Guardian) userByContextHolder;
-
-            // 특정 메시지 수신자를 조회하여 읽음 상태를 업데이트
-            MessageRecipient recipient = messageRecipientRepository
-                    .findByMessage_messageIdAndGuardian_Id(messageId, guardian.getId())
-                    .orElseThrow(() -> new MessageAccessException("해당 메시지를 찾을 수 없습니다."));
-
-            // 읽음 상태로 변경
-            recipient.markAsRead();
-            messageRecipientRepository.save(recipient);
-        } else {
-            throw new GuardianNotFoundException("현재 사용자는 지도사가 아닙니다.");
-        }
-    }
-
+//    public void getMessagesForGuardianOne() {
+//        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+//        if(userByContextHolder instanceof Guardian) {
+//            Guardian guardian = (Guardian) userByContextHolder;
+//
+//            List<MessageRecipient> recipients = messageRecipientRepository.findByGuardianId(guardian.getId());
+//
+//            // 메시지가 없는 경우 빈 리스트 반환
+//            if (recipients.isEmpty()) {
+//                return Collections.emptyList();
+//            }
+//
+//            return
+//
+//
+//
+//
+//        }
+//    }
 }

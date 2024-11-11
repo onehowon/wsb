@@ -147,11 +147,8 @@ public class GroupService {
         Map<String, String> parentPushData = pushNotificationService.createPushData(PushType.END_WORK_PARENT);
         Map<String, String> guardianPushData = pushNotificationService.createPushData(PushType.END_WORK_GUARDIAN);
 
-        // 현재 시간 가져오기
-        LocalTime now = LocalTime.now();
-
         // body 내용에 시간과 학교 이름 삽입
-        String bodyWithTimeAndSchoolName = String.format(parentPushData.get("body"), now.getHour(), now.getMinute(), group.getSchoolName());
+        String bodyWithTimeAndSchoolName = String.format(parentPushData.get("body"), LocalTime.now().getHour(), LocalTime.now().getMinute(), group.getSchoolName());
         parentPushData.put("body", bodyWithTimeAndSchoolName);
 
         // 지도사한테 보내는 메시지 body 값 수정
