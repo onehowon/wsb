@@ -207,11 +207,8 @@ public class AttendanceService {
 
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.PICKUP);
 
-        // 현재 시간 가져오기
-        LocalTime now = LocalTime.now();
-
         //body 내용에 시간 삽입
-        String bodyWithTime = String.format(pushData.get("body"), now.getHour(), now.getMinute());
+        String bodyWithTime = String.format(pushData.get("body"), LocalTime.now().getHour(), LocalTime.now().getMinute());
         pushData.put("body", bodyWithTime);
 
         pushNotificationService.sendPushNotificationToParentsAtWaypoint(waypointId, pushData.get("title"), pushData.get("body"), PushType.PICKUP);

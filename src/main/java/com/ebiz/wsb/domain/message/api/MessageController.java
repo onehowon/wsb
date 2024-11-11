@@ -40,9 +40,9 @@ public class MessageController {
         }
     }
 
-//    @GetMapping("/received/one")
-//    public ResponseEntity<?> getMessagesForGuardianOne() {
-//
-//    }
+    @GetMapping("/received/one")
+    public ResponseEntity<?> getMessagesForGuardianOne() {
+        messageService.getMessagesForGuardianOne();
+    }
 
 }
