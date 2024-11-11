@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -207,8 +208,9 @@ public class AttendanceService {
 
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.PICKUP);
 
-        //body 내용에 시간 삽입
-        String bodyWithTime = String.format(pushData.get("body"), LocalTime.now().getHour(), LocalTime.now().getMinute());
+        // body 내용에 한국 시간(Asia/Seoul)으로 시간 삽입
+        LocalTime nowInKorea = LocalTime.now(ZoneId.of("Asia/Seoul"));
+        String bodyWithTime = String.format(pushData.get("body"), nowInKorea.getHour(), nowInKorea.getMinute());
         pushData.put("body", bodyWithTime);
 
         pushNotificationService.sendPushNotificationToParentsAtWaypoint(waypointId, pushData.get("title"), pushData.get("body"), PushType.PICKUP);
