@@ -215,7 +215,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MessageAccessException.class)
     public ResponseEntity<ErrorResponse> MesssageAccessException(MessageAccessException ex) {
         return ResponseEntity
-                .status(HttpStatus.FORBIDDEN)
+                .status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.builder()
                         .message(ex.getMessage())
                         .build());

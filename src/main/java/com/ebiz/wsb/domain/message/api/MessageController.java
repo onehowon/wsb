@@ -40,9 +40,10 @@ public class MessageController {
         }
     }
 
-//    @GetMapping("/received/one")
-//    public ResponseEntity<?> getMessagesForGuardianOne() {
-//        messageService.getMessagesForGuardianOne();
-//    }
+    @GetMapping("/received/one")
+    public ResponseEntity<?> getMessagesForGuardianOne() {
+        List<MessageDTO> messagesForGuardianOne = messageService.getMessagesForGuardianOne();
+        return ResponseEntity.ok(messagesForGuardianOne);
+    }
 
 }

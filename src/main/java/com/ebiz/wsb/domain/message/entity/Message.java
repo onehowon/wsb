@@ -4,16 +4,14 @@ import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -39,4 +37,7 @@ public class Message {
 
     @Column(name = "transferred_at")
     private LocalDateTime transferredAt;
+
+    @Column(nullable = false, name = "is_read")
+    private boolean isRead = false;
 }
