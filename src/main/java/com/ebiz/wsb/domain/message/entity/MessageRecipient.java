@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicInsert;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Builder
@@ -30,10 +32,7 @@ public class MessageRecipient {
     @JoinColumn(name = "guardian_id", nullable = false)
     private Guardian guardian;
 
-    @Column(nullable = false, name = "is_read")
-    private boolean isRead = false;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    public void markAsRead() {
-        this.isRead = true;
-    }
 }

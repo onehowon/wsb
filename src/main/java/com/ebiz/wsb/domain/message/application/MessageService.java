@@ -1,13 +1,9 @@
 package com.ebiz.wsb.domain.message.application;
 
-import com.ebiz.wsb.domain.alert.entity.Alert;
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
-import com.ebiz.wsb.domain.group.dto.GroupDTO;
 import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
-import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
-import com.ebiz.wsb.domain.guardian.repository.GuardianRepository;
 import com.ebiz.wsb.domain.message.dto.MessageDTO;
 import com.ebiz.wsb.domain.message.entity.Message;
 import com.ebiz.wsb.domain.message.entity.MessageRecipient;
@@ -19,18 +15,15 @@ import com.ebiz.wsb.domain.notification.dto.PushType;
 import com.ebiz.wsb.domain.parent.dto.ParentDTO;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
-import com.ebiz.wsb.domain.parent.repository.ParentRepository;
 import com.ebiz.wsb.domain.student.entity.Student;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.User;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -61,7 +54,9 @@ public class MessageService {
                     .parent(parent)
                     .content(content)
                     .transferredAt(LocalDateTime.now())
+                    .isRead(false)
                     .build();
+
             messageRepository.save(message);
 
             // 메시지 보낼 때, 인솔자에게 메시지 푸시알림 보내기
@@ -89,7 +84,9 @@ public class MessageService {
                 MessageRecipient recipient = MessageRecipient.builder()
                         .guardian(guardian)
                         .message(message)
+                        .createdAt(LocalDateTime.now())
                         .build();
+
                 messageRecipientRepository.save(recipient);
             }
         } else {
@@ -97,11 +94,52 @@ public class MessageService {
         }
     }
 
+    @Transactional
     public List<MessageDTO> getMessagesForGuardian() {
-        // 현재 사용자 정보(인증 객체)로 학부모 여부 확인
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        if (userByContextHolder instanceof Guardian) {
+            Guardian guardian = (Guardian) userByContextHolder;
+            List<MessageRecipient> recipients = messageRecipientRepository.findByGuardianId(guardian.getId());
+
+            if (recipients.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            recipients.sort((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()));
+
+            List<Message> unreadMessages = new ArrayList<>();
+            List<MessageDTO> messages = recipients.stream()
+                    .map(recipient -> {
+                        Message message = recipient.getMessage();
+
+                        if (!message.isRead()) {
+                            unreadMessages.add(message); // 비동기적으로 업데이트할 메시지 추가
+                        }
+
+                        return MessageDTO.builder()
+                                .messageId(message.getMessageId())
+                                .parent(toParentDTO(message.getParent()))
+                                .content(message.getContent())
+                                .transferredAt(message.getTransferredAt())
+                                .isRead(message.isRead())
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+
+            // 비동기 메서드를 통해 읽음 상태를 업데이트
+            markMessagesAsReadAsync(unreadMessages);
+
+            return messages;
+        } else {
+            throw new MessageAccessException("지도사님이 아니면 메시지를 확인할 수 없습니다");
+        }
+    }
+
+    public List<MessageDTO> getMessagesForGuardianOne() {
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
         if(userByContextHolder instanceof Guardian) {
             Guardian guardian = (Guardian) userByContextHolder;
+
             List<MessageRecipient> recipients = messageRecipientRepository.findByGuardianId(guardian.getId());
 
             // 메시지가 없는 경우 빈 리스트 반환
@@ -109,20 +147,33 @@ public class MessageService {
                 return Collections.emptyList();
             }
 
-            // MessageRecipient 엔티티를 MessageDTO로 변환
-            return recipients.stream()
-                    .map(recipient -> MessageDTO.builder()
-                            .messageId(recipient.getMessage().getMessageId())
-                            .parent(toParentDTO(recipient.getMessage().getParent()))
-                            .content(recipient.getMessage().getContent())
-                            .transferredAt(recipient.getMessage().getTransferredAt())
-                            .isRead(recipient.isRead())
-                            .build())
-                    .collect(Collectors.toList());
-        } else {
-            throw new GuardianNotFoundException("현재 사용자는 지도사가 아닙니다.");
+            // createdAt 기준으로 내림차순 정렬
+            recipients.sort((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()));
+
+            // 최신의 메시지 하나 추출
+            MessageRecipient recentMessageRecipient = recipients.get(0);
+
+            MessageDTO messageDTO = MessageDTO.builder()
+                    .messageId(recentMessageRecipient.getMessage().getMessageId())
+                    .parent(toParentDTO(recentMessageRecipient.getMessage().getParent()))
+                    .content(recentMessageRecipient.getMessage().getContent())
+                    .transferredAt(recentMessageRecipient.getMessage().getTransferredAt())
+                    .isRead(recentMessageRecipient.getMessage().isRead())
+                    .build();
+
+            return Collections.singletonList(messageDTO); // 단일 메시지를 리스트로 반환
         }
+        throw new MessageAccessException("지도사님이 아니면 메시지를 확인할 수 없습니다");
     }
+
+    @Async
+    public void markMessagesAsReadAsync(List<Message> messages) {
+        messages.forEach(message -> {
+            message.setRead(true);   // 메시지의 읽음 상태를 true로 설정
+            messageRepository.save(message); // 변경 사항을 저장
+        });
+    }
+
 
     private ParentDTO toParentDTO(Parent parent) {
         return ParentDTO.builder()
@@ -131,24 +182,4 @@ public class MessageService {
                 .imagePath(parent.getImagePath())
                 .build();
     }
-
-//    public void getMessagesForGuardianOne() {
-//        Object userByContextHolder = userDetailsService.getUserByContextHolder();
-//        if(userByContextHolder instanceof Guardian) {
-//            Guardian guardian = (Guardian) userByContextHolder;
-//
-//            List<MessageRecipient> recipients = messageRecipientRepository.findByGuardianId(guardian.getId());
-//
-//            // 메시지가 없는 경우 빈 리스트 반환
-//            if (recipients.isEmpty()) {
-//                return Collections.emptyList();
-//            }
-//
-//            return
-//
-//
-//
-//
-//        }
-//    }
 }
