@@ -107,7 +107,7 @@ public class PushNotificationService {
         String firebaseConfigPath = System.getenv("FIREBASE_CONFIG_PATH");
 
         if (firebaseConfigPath == null) {
-            throw new IOException("Firebase config path environment variable not set");
+            throw new IOException("Firebase의 Config 경로가 유효하지 않습니다.");
         }
 
         FileInputStream serviceAccount = new FileInputStream(firebaseConfigPath);
@@ -284,13 +284,24 @@ public class PushNotificationService {
 
     public void sendPushNotificationToParents(Long groupId, String title, String body, PushType pushType) {
         List<Parent> parents = parentRepository.findByGroupId(groupId);
+<<<<<<< HEAD
+=======
+        log.info("발견된 {} 부모는 해당 그룹에 속해 있습니다. {}", parents.size(), groupId);
+>>>>>>> 462b4e9 (feat: 그룹 공지사항 댓글 생성, 조회, 삭제)
 
         List<String> parentTokens = new ArrayList<>();
 
         for (Parent parent : parents) {
             List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(parent.getId(), UserType.PARENT);
+<<<<<<< HEAD
             tokens.forEach(token -> parentTokens.add(token.getToken()));
         }
+=======
+            log.info("부모 ID의 {} has {} tokens", parent.getId(), tokens.size());
+            tokens.forEach(token -> parentTokens.add(token.getToken()));
+        }
+        log.info("그룹으로부터 수집된 총 토큰 갯수 {}: {}", groupId, parentTokens.size());
+>>>>>>> 462b4e9 (feat: 그룹 공지사항 댓글 생성, 조회, 삭제)
 
         Map<String, String> data = createPushData(pushType);
         Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
@@ -330,7 +341,7 @@ public class PushNotificationService {
 
         for (Long parentId : parentIds) {
             List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(parentId, UserType.PARENT);
-            log.info("Parent ID {} has {} tokens", parentId, tokens.size());
+            log.info("발견된 {} 부모는 해당 그룹에 속해 있습니다. {}", parentId, tokens.size());
             tokens.forEach(token -> parentTokens.add(token.getToken()));
         }
 

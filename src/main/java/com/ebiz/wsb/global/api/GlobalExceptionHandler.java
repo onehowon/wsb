@@ -10,9 +10,7 @@ import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.location.exception.InvalidLocationDataException;
 import com.ebiz.wsb.domain.mail.exception.InvalidMailException;
 import com.ebiz.wsb.domain.message.exception.MessageAccessException;
-import com.ebiz.wsb.domain.notice.exception.LikesNumberException;
-import com.ebiz.wsb.domain.notice.exception.NoticeAccessDeniedException;
-import com.ebiz.wsb.domain.notice.exception.NoticeNotFoundException;
+import com.ebiz.wsb.domain.notice.exception.*;
 import com.ebiz.wsb.domain.parent.exception.ParentAccessException;
 import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
 import com.ebiz.wsb.domain.schedule.exception.ScheduleAccessException;
@@ -216,6 +214,24 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> MesssageAccessException(MessageAccessException ex) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.builder()
+                        .message(ex.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(CommentAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleCommentAccessDenied(CommentAccessDeniedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.builder()
+                        .message(ex.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(CommentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthenticatedUser(CommentNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.builder()
                         .message(ex.getMessage())
                         .build());

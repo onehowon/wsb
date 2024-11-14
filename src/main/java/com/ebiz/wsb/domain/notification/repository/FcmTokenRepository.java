@@ -10,11 +10,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface FcmTokenRepository extends JpaRepository<FcmToken, Long> {
-    Optional<FcmToken> findByUserId(Long UserId);
-
-    List<FcmToken> findAllByUserId(Long userId);
-    void deleteByUserId(Long userId);
-
     Optional<FcmToken> findByToken(String token);
     List<FcmToken> findByUserIdAndUserType(Long userId, UserType userType);
 }

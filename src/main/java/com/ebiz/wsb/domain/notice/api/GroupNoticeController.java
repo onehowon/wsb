@@ -1,6 +1,8 @@
 package com.ebiz.wsb.domain.notice.api;
 
+import com.ebiz.wsb.domain.notice.application.CommentService;
 import com.ebiz.wsb.domain.notice.application.GroupNoticeService;
+import com.ebiz.wsb.domain.notice.dto.CommentDTO;
 import com.ebiz.wsb.domain.notice.dto.GroupNoticeDTO;
 import com.ebiz.wsb.domain.notice.dto.LikesResponseDTO;
 import lombok.AllArgsConstructor;
@@ -21,6 +23,7 @@ import java.util.List;
 public class GroupNoticeController {
 
     private final GroupNoticeService groupNoticeService;
+    private final CommentService commentService;
     @GetMapping("/group/notices")
     public ResponseEntity<Page<GroupNoticeDTO>> getAllGroupNotices(
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -69,5 +72,25 @@ public class GroupNoticeController {
     public ResponseEntity<LikesResponseDTO> toggleLike(@PathVariable Long groupNoticeId) {
         LikesResponseDTO response = groupNoticeService.toggleLike(groupNoticeId);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{groupNoticeId}/comments")
+    public ResponseEntity<CommentDTO> addComment(@PathVariable Long groupNoticeId,
+                                                 @RequestParam String content,
+                                                 Authentication authentication){
+        CommentDTO commentDTO = commentService.addComment(groupNoticeId, content);
+        return new ResponseEntity<>(commentDTO, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/{groupNoticeId}/comments")
+    public ResponseEntity<List<CommentDTO>> getComments(@PathVariable Long groupNoticeId){
+        List<CommentDTO> comments = commentService.getCommentsByGroupNoticeId(groupNoticeId);
+        return ResponseEntity.ok(comments);
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    public ResponseEntity<String> deleteComment(@PathVariable Long commentId) {
+        String message = commentService.deleteComment(commentId);
+        return ResponseEntity.ok(message);
     }
 }
