@@ -24,17 +24,15 @@ public class StudentController {
             @RequestParam("schoolName") String schoolName,
             @RequestParam("grade") String grade,
             @RequestParam("notes") String notes,
-            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile)
-    {
-
-        Long parentId = studentService.getLoggedInParentId();
+            @RequestParam("parentPhone") String parentPhone,
+            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile) {
 
         StudentCreateRequestDTO studentCreateRequestDTO = StudentCreateRequestDTO.builder()
                 .name(name)
                 .schoolName(schoolName)
                 .grade(grade)
                 .notes(notes)
-                .parentId(parentId)
+                .parentPhone(parentPhone)
                 .build();
 
         StudentDTO createdStudent = studentService.createStudent(studentCreateRequestDTO, imageFile);
@@ -42,14 +40,18 @@ public class StudentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<StudentDTO>> getAllStudents(){
-        List<StudentDTO> students = studentService.getAllStudents();
+    public ResponseEntity<List<StudentDTO>> getAllStudents(@RequestParam("userType") String userType) {
+        // userType: "PARENT" or "GUARDIAN"
+        List<StudentDTO> students = studentService.getAllStudents(userType);
         return ResponseEntity.ok(students);
     }
 
     @GetMapping("/{studentId}")
-    public ResponseEntity<StudentDTO> getStudentById(@PathVariable Long studentId){
-        StudentDTO studentDTO = studentService.getStudentById(studentId);
+    public ResponseEntity<StudentDTO> getStudentById(
+            @PathVariable Long studentId,
+            @RequestParam("userType") String userType) {
+        // userType: "PARENT" or "GUARDIAN"
+        StudentDTO studentDTO = studentService.getStudentById(studentId, userType);
         return ResponseEntity.ok(studentDTO);
     }
 
@@ -62,14 +64,11 @@ public class StudentController {
             @RequestParam("notes") String notes,
             @RequestParam(value = "imageFile", required = false) MultipartFile imageFile) {
 
-        Long parentId = studentService.getLoggedInParentId();
-
         StudentCreateRequestDTO studentCreateRequestDTO = StudentCreateRequestDTO.builder()
                 .name(name)
                 .schoolName(schoolName)
                 .grade(grade)
                 .notes(notes)
-                .parentId(parentId)
                 .build();
 
         StudentDTO updatedStudent = studentService.updateStudent(studentId, studentCreateRequestDTO, imageFile);
@@ -77,7 +76,7 @@ public class StudentController {
     }
 
     @DeleteMapping("/{studentId}")
-    public ResponseEntity<Void> deleteStudent(@PathVariable Long studentId){
+    public ResponseEntity<Void> deleteStudent(@PathVariable Long studentId) {
         studentService.deleteStudent(studentId);
         return ResponseEntity.noContent().build();
     }

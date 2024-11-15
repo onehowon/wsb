@@ -11,6 +11,7 @@ import com.ebiz.wsb.domain.parent.repository.ParentRepository;
 import com.ebiz.wsb.domain.student.dto.GroupStudentAssignRequest;
 import com.ebiz.wsb.domain.student.dto.StudentCreateRequestDTO;
 import com.ebiz.wsb.domain.student.dto.StudentDTO;
+import com.ebiz.wsb.domain.student.dto.StudentMapper;
 import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.student.exception.ImageUploadException;
 import com.ebiz.wsb.domain.student.exception.StudentNotAccessException;
@@ -18,6 +19,8 @@ import com.ebiz.wsb.domain.student.exception.StudentNotFoundException;
 import com.ebiz.wsb.domain.student.repository.StudentRepository;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
 import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
+import com.ebiz.wsb.global.service.AuthorizationHelper;
+import com.ebiz.wsb.global.service.ImageService;
 import com.ebiz.wsb.global.service.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -34,139 +37,105 @@ import java.util.List;
 public class StudentService {
 
     private final StudentRepository studentRepository;
-    private final S3Service s3Service;
     private final GroupRepository groupRepository;
     private final WaypointRepository waypointRepository;
-    private final ParentRepository parentRepository;
-    private final UserDetailsServiceImpl userDetailsService;
+    private final ImageService imageService;
+    private final AuthorizationHelper authorizationHelper;
+    private final StudentMapper studentMapper;
 
     @Transactional
-    public StudentDTO createStudent(StudentCreateRequestDTO studentCreateRequestDTO, MultipartFile imageFile) {
+    public StudentDTO createStudent(StudentCreateRequestDTO requestDTO, MultipartFile imageFile) {
+        Parent parent = authorizationHelper.getLoggedInParent();
 
-        Long parentId = getLoggedInParentId();
-
-        Parent parent = parentRepository.findById(parentId)
-                .orElseThrow(() -> new ParentNotFoundException("부모 정보를 찾을 수 없습니다."));
-
-        String imageUrl = null;
-        if (imageFile != null && !imageFile.isEmpty()) {
-            try {
-                imageUrl = s3Service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
-            } catch (IOException e) {
-                throw new ImageUploadException("이미지 업로드 중 오류가 발생했습니다.", e);
-            }
-        }
+        String imagePath = imageService.uploadImage(imageFile, "walkingschoolbus-bucket");
 
         Student student = Student.builder()
-                .name(studentCreateRequestDTO.getName())
-                .schoolName(studentCreateRequestDTO.getSchoolName())
-                .grade(studentCreateRequestDTO.getGrade())
-                .notes(studentCreateRequestDTO.getNotes())
-                .imagePath(imageUrl)
+                .name(requestDTO.getName())
+                .schoolName(requestDTO.getSchoolName())
+                .grade(requestDTO.getGrade())
+                .notes(requestDTO.getNotes())
+                .imagePath(imagePath)
                 .parent(parent)
+                .ParentPhone(requestDTO.getParentPhone())
                 .build();
 
-        student = studentRepository.save(student);
-
-        return convertToDTOWithoutGroupAndWaypoint(student);
+        return studentMapper.toDTO(studentRepository.save(student), true);
     }
 
 
-    public List<StudentDTO> getAllStudents() {
-        Object currentUser = userDetailsService.getUserByContextHolder();
+    public List<StudentDTO> getAllStudents(String userType) {
+        Object currentUser = authorizationHelper.getCurrentUser(userType); // PARENT 또는 GUARDIAN 전달
 
         List<Student> students;
-
-        if (currentUser instanceof Parent) {
-            Parent currentParent = (Parent) currentUser;
-            students = studentRepository.findAllByParentId(currentParent.getId());
-
-        } else if (currentUser instanceof Guardian) {
-            Guardian currentGuardian = (Guardian) currentUser;
-
-            if (currentGuardian.getGroup() == null) {
+        if (currentUser instanceof Parent parent) {
+            students = studentRepository.findAllByParentId(parent.getId());
+        } else if (currentUser instanceof Guardian guardian) {
+            Group group = guardian.getGroup();
+            if (group == null) {
                 throw new GroupNotFoundException("해당 지도사는 그룹에 속해 있지 않습니다.");
             }
-
-            students = studentRepository.findAllByGroupId(currentGuardian.getGroup().getId());
-
+            students = studentRepository.findAllByGroupId(group.getId());
         } else {
             throw new StudentNotAccessException("학생 정보를 조회할 권한이 없습니다.");
         }
 
-        return students.stream().map(this::convertToDTOWithGroupAndWaypoint).toList();
+        return students.stream().map(student -> studentMapper.toDTO(student, true)).toList();
     }
 
 
 
     @Transactional
-    public StudentDTO getStudentById(Long studentId) {
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new StudentNotFoundException("학생을 찾을 수 없습니다."));
+    public StudentDTO getStudentById(Long studentId, String userType) {
+        Student student = findStudentById(studentId);
 
-        Object currentUser = userDetailsService.getUserByContextHolder();
-
-        if (currentUser instanceof Parent) {
-            Parent currentParent = (Parent) currentUser;
-
-            if (!student.getParent().getId().equals(currentParent.getId())) {
-                throw new StudentNotAccessException("본인의 자녀 정보만 조회할 수 있습니다.");
-            }
-
-            return convertToDTOWithGroupAndWaypoint(student);
-        }
-
-        if (currentUser instanceof Guardian) {
-            Guardian currentGuardian = (Guardian) currentUser;
-
-            if (student.getGroup() == null || !student.getGroup().getId().equals(currentGuardian.getGroup().getId())) {
+        Object currentUser = authorizationHelper.getCurrentUser(userType); // PARENT 또는 GUARDIAN 전달
+        if (currentUser instanceof Parent parent) {
+            authorizationHelper.validateParentAccess(student.getParent(), parent.getId());
+        } else if (currentUser instanceof Guardian guardian) {
+            Group group = student.getGroup();
+            if (group == null || !group.getId().equals(guardian.getGroup().getId())) {
                 throw new StudentNotAccessException("해당 그룹의 학생 정보를 조회할 권한이 없습니다.");
             }
-
-            return convertToDTOWithGroupAndWaypoint(student);
+        } else {
+            throw new StudentNotAccessException("학생 정보를 조회할 권한이 없습니다.");
         }
-        throw new StudentNotAccessException("해당 학생 정보를 조회할 권한이 없습니다.");
+
+        return studentMapper.toDTO(student, true);
     }
 
     @Transactional
-    public StudentDTO updateStudent(Long studentId, StudentCreateRequestDTO studentCreateRequestDTO, MultipartFile imageFile) {
-        Student existingStudent = studentRepository.findById(studentId)
-                .orElseThrow(() -> new StudentNotFoundException("학생 정보를 찾을 수 없습니다."));
+    public StudentDTO updateStudent(Long studentId, StudentCreateRequestDTO requestDTO, MultipartFile imageFile) {
+        Student existingStudent = findStudentById(studentId);
+        Parent parent = authorizationHelper.getLoggedInParent();
+        authorizationHelper.validateParentAccess(existingStudent.getParent(), parent.getId());
 
-        Long parentId = getLoggedInParentId();
-        if (!existingStudent.getParent().getId().equals(parentId)) {
-            throw new StudentNotAccessException("해당 학생을 수정할 권한이 없습니다.");
+        String imagePath = imageService.uploadImage(imageFile, "walkingschoolbus-bucket");
+        if (imagePath == null) {
+            imagePath = existingStudent.getImagePath();
         }
 
-        String imageUrl = existingStudent.getImagePath();
-        if (imageFile != null && !imageFile.isEmpty()) {
-            imageUrl = uploadImage(imageFile);
-        }
-
-        existingStudent = Student.builder()
+        Student updatedStudent = Student.builder()
                 .studentId(existingStudent.getStudentId())
-                .name(studentCreateRequestDTO.getName())
-                .schoolName(studentCreateRequestDTO.getSchoolName())
-                .grade(studentCreateRequestDTO.getGrade())
-                .notes(studentCreateRequestDTO.getNotes())
-                .imagePath(imageUrl)
+                .name(requestDTO.getName())
+                .schoolName(requestDTO.getSchoolName())
+                .grade(requestDTO.getGrade())
+                .notes(requestDTO.getNotes())
+                .imagePath(imagePath)
                 .parent(existingStudent.getParent())
+                .group(existingStudent.getGroup())
+                .waypoint(existingStudent.getWaypoint())
+                .ParentPhone(requestDTO.getParentPhone())
                 .build();
 
-        studentRepository.save(existingStudent);
-
-        return convertToDTOWithoutGroupAndWaypoint(existingStudent);
+        return studentMapper.toDTO(studentRepository.save(updatedStudent), false);
     }
 
     @Transactional
     public StudentDTO assignGroupAndWaypoint(Long studentId, GroupStudentAssignRequest request) {
-
-        Student existingStudent = studentRepository.findById(studentId)
-                .orElseThrow(() -> new StudentNotFoundException("학생을 찾을 수 없습니다."));
+        Student existingStudent = findStudentById(studentId);
 
         Group group = groupRepository.findById(request.getGroupId())
-                .orElseThrow(() -> new RuntimeException("그룹을 찾을 수 없습니다."));
-
+                .orElseThrow(() -> new GroupNotFoundException("그룹을 찾을 수 없습니다."));
         Waypoint waypoint = waypointRepository.findById(request.getWaypointId())
                 .orElseThrow(() -> new RuntimeException("경유지를 찾을 수 없습니다."));
 
@@ -177,78 +146,32 @@ public class StudentService {
                 .grade(existingStudent.getGrade())
                 .notes(existingStudent.getNotes())
                 .imagePath(existingStudent.getImagePath())
+                .parent(existingStudent.getParent())
                 .group(group)
                 .waypoint(waypoint)
                 .ParentPhone(existingStudent.getParentPhone())
                 .build();
 
-        studentRepository.save(updatedStudent);
-        return convertToDTOWithGroupAndWaypoint(updatedStudent);
+        return studentMapper.toDTO(studentRepository.save(updatedStudent), true);
     }
 
 
 
     @Transactional
     public void deleteStudent(Long studentId) {
-        Student existingStudent = studentRepository.findById(studentId)
+        Student student = findStudentById(studentId);
+        Parent parent = authorizationHelper.getLoggedInParent();
+        authorizationHelper.validateParentAccess(student.getParent(), parent.getId());
+
+        if (student.getImagePath() != null) {
+            imageService.deleteImage(student.getImagePath(), "walkingschoolbus-bucket");
+        }
+
+        studentRepository.delete(student);
+    }
+
+    private Student findStudentById(Long studentId) {
+        return studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException("학생을 찾을 수 없습니다."));
-
-        Long parentId = getLoggedInParentId();
-        if (!existingStudent.getParent().getId().equals(parentId)) {
-            throw new IllegalArgumentException("해당 학생을 삭제할 권한이 없습니다.");
-        }
-
-        studentRepository.deleteById(studentId);
-    }
-
-    private StudentDTO convertToDTOWithoutGroupAndWaypoint(Student student) {
-        return StudentDTO.builder()
-                .studentId(student.getStudentId())
-                .name(student.getName())
-                .schoolName(student.getSchoolName())
-                .grade(student.getGrade())
-                .notes(student.getNotes())
-                .imagePath(student.getImagePath())
-                .parentId(student.getParent().getId())
-                .parentPhone(student.getParent().getPhone())
-                .build();
-    }
-
-    private StudentDTO convertToDTOWithGroupAndWaypoint(Student student) {
-        return StudentDTO.builder()
-                .studentId(student.getStudentId())
-                .name(student.getName())
-                .schoolName(student.getSchoolName())
-                .grade(student.getGrade())
-                .notes(student.getNotes())
-                .imagePath(student.getImagePath())
-                .groupId(student.getGroup() != null ? student.getGroup().getId() : null)
-                .groupName(student.getGroup() != null ? student.getGroup().getGroupName() : null)
-                .waypointId(student.getWaypoint() != null ? student.getWaypoint().getId() : null)
-                .waypointName(student.getWaypoint() != null ? student.getWaypoint().getWaypointName() : null)
-                .parentId(student.getParent().getId())
-                .parentPhone(student.getParent().getPhone())
-                .build();
-    }
-
-    public Long getLoggedInParentId() {
-        Object currentUser = userDetailsService.getUserByContextHolder();
-
-        if (currentUser instanceof Parent) {
-            Parent parent = (Parent) currentUser;
-            return parent.getId();
-        } else {
-            throw new StudentNotAccessException("부모만 학생 정보를 수정할 수 있습니다.");
-        }
-    }
-
-
-    private String uploadImage(MultipartFile imageFile) {
-        try {
-            String imageUrl = s3Service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
-            return imageUrl;
-        } catch (IOException e) {
-            throw new ImageUploadException("이미지 업로드 실패", e);
-        }
     }
 }

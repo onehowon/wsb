@@ -7,6 +7,7 @@ import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.parent.dto.ParentDTO;
+import com.ebiz.wsb.domain.parent.dto.ParentMapper;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.exception.ParentAccessException;
 import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
@@ -14,6 +15,7 @@ import com.ebiz.wsb.domain.parent.repository.ParentRepository;
 import com.ebiz.wsb.domain.student.dto.StudentDTO;
 import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.student.exception.ImageUploadException;
+import com.ebiz.wsb.global.service.AuthorizationHelper;
 import com.ebiz.wsb.global.service.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,8 @@ public class ParentService {
     private final ParentRepository parentRepository;
     private final S3Service s3Service;
     private final UserDetailsServiceImpl userDetailsService;
+    private final AuthorizationHelper authorizationHelper;
+    private final ParentMapper parentMapper;
 
     // 모든 부모를 조회하는 경우는 어떨 때 있는지 ..?
     public List<ParentDTO> getAllParents() {
@@ -45,7 +49,7 @@ public class ParentService {
 
     @Transactional
     public ParentDTO getParentById(Long parentId) {
-        Object currentUser = userDetailsService.getUserByContextHolder();
+        Object currentUser = userDetailsService.getUserByContextHolder(); // 기본 메서드 사용
 
         if (currentUser instanceof Parent) {
             Parent loggedInParent = (Parent) currentUser;

@@ -1,6 +1,7 @@
 package com.ebiz.wsb.domain.student.dto;
 
 import com.ebiz.wsb.domain.attendance.entity.AttendanceStatus;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class StudentDTO {
     private Long studentId;
     private Long groupId;

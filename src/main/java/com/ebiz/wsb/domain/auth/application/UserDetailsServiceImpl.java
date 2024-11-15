@@ -67,6 +67,22 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         }
     }
 
+    public Object getUserTypeByContextHolder(String userType) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserDetails userDetails = (UserDetails) principal;
+        String username = userDetails.getUsername();
+
+        if ("PARENT".equalsIgnoreCase(userType)) {
+            return parentRepository.findParentByEmail(username)
+                    .orElseThrow(() -> new UsernameNotFoundException("Parent를 찾을 수 없습니다."));
+        } else if ("GUARDIAN".equalsIgnoreCase(userType)) {
+            return guardianRepository.findGuardianByEmail(username)
+                    .orElseThrow(() -> new UsernameNotFoundException("Guardian을 찾을 수 없습니다."));
+        } else {
+            throw new IllegalArgumentException("Invalid user type: " + userType);
+        }
+    }
+
     public Authentication getAuthentication(){
         return SecurityContextHolder.getContext().getAuthentication();
     }
