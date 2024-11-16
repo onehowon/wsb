@@ -24,6 +24,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -85,7 +86,7 @@ public class GroupService {
         String bodyWithGuardianName = String.format(guardianPushData.get("body"), guardian.getName());
         guardianPushData.put("body", bodyWithGuardianName);
 
-        pushNotificationService.sendPushNotificationToGroupDifferentMessage(group.getId(), parentPushData.get("title"), parentPushData.get("body"),guardianPushData.get("title"), guardianPushData.get("body"), PushType.START_WORK_PARENT, PushType.START_WORK_GUARDIAN);
+        pushNotificationService.sendStartGuidePushNotificationToGroupDifferentMessage(group.getId(), parentPushData.get("title"), parentPushData.get("body"), guardianPushData.get("title"), guardianPushData.get("body"), PushType.START_WORK_PARENT, PushType.START_WORK_GUARDIAN);
 
         template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
 
@@ -149,7 +150,7 @@ public class GroupService {
         Map<String, String> guardianPushData = pushNotificationService.createPushData(PushType.END_WORK_GUARDIAN);
 
         LocalTime nowInKorea = LocalTime.now(ZoneId.of("Asia/Seoul"));
-        // body 내용에 시간과 학교 이름 삽입
+        // 부모님한테 보내는 메시지 body 값 수정
         String bodyWithTimeAndSchoolName = String.format(parentPushData.get("body"), nowInKorea.getHour(), nowInKorea.getMinute(), group.getSchoolName());
         parentPushData.put("body", bodyWithTimeAndSchoolName);
 
@@ -157,7 +158,12 @@ public class GroupService {
         String bodyWithGuardianName = String.format(guardianPushData.get("body"), guardian.getName());
         guardianPushData.put("body", bodyWithGuardianName);
 
-        pushNotificationService.sendPushNotificationToGroupDifferentMessage(group.getId(), parentPushData.get("title"), parentPushData.get("body"), guardianPushData.get("title"), guardianPushData.get("body"), PushType.END_WORK_PARENT, PushType.END_WORK_GUARDIAN);
+        // 알림센터에서 학부모가 받는 body 값 수정
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        String alarmBodyWithTime = String.format(parentPushData.get("parent_alarm_center_body"), now.getDayOfYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute(), group.getSchoolName());
+        parentPushData.put("parent_alarm_center_body", alarmBodyWithTime);
+
+        pushNotificationService.sendStopGuidePushNotificationToGroupDifferentMessage(group.getId(), parentPushData.get("title"), parentPushData.get("body"), parentPushData.get("parent_alarm_center_title"), parentPushData.get("parent_alarm_center_body"), guardianPushData.get("title"), guardianPushData.get("body"), PushType.END_WORK_PARENT, PushType.END_WORK_GUARDIAN);
 
         template.convertAndSend("/sub/group/" + group.getId(), groupDTO);
 

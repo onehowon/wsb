@@ -15,6 +15,7 @@ import com.ebiz.wsb.domain.parent.exception.ParentAccessException;
 import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
 import com.ebiz.wsb.domain.schedule.exception.ScheduleAccessException;
 import com.ebiz.wsb.domain.student.exception.StudentNotAccessException;
+import com.ebiz.wsb.domain.student.exception.StudentNotFoundException;
 import com.ebiz.wsb.domain.token.exception.InvalidTokenException;
 import com.ebiz.wsb.domain.waypoint.exception.WaypointNotFoundException;
 import com.ebiz.wsb.global.dto.BaseResponse;
@@ -167,6 +168,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleStudentNotAccessException(StudentNotAccessException ex) {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.builder()
+                        .message(ex.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(StudentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleStudentNotFoundException(StudentNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.builder()
                         .message(ex.getMessage())
                         .build());

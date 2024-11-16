@@ -1,5 +1,6 @@
 package com.ebiz.wsb.domain.alert.entity;
 
+import com.ebiz.wsb.domain.notification.entity.UserType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -32,6 +33,10 @@ public class Alert {
 
     @Column(name = "receiver_id")
     private Long receiverId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "usertype")
+    private UserType userType;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "category")
