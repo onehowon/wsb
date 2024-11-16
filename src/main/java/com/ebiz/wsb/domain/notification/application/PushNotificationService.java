@@ -18,17 +18,10 @@ import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.repository.ParentRepository;
 import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.student.repository.StudentRepository;
-import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
-import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.core.ApiFuture;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.net.HttpHeaders;
-import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.FirebaseMessagingException;
-import com.google.firebase.messaging.Message;
-import com.google.firebase.messaging.TopicManagementResponse;
 import java.io.FileInputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +30,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -157,7 +149,6 @@ public class PushNotificationService {
         }
 
         Map<String, String> data = createPushData(pushType);
-        Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
 
         for (String token : fcmTokens) {
             Long userId = fcmTokenRepository.findByToken(token)
@@ -166,10 +157,7 @@ public class PushNotificationService {
 
             if (userId != null) {
                 try {
-                    alertService.createAlert(userId, alertCategory, title, body);
-
                     sendPushMessage(title, body, data, token);
-
                 } catch (IOException e) {
                     log.error("푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
                 } catch (Exception e) {
@@ -181,8 +169,70 @@ public class PushNotificationService {
         }
     }
 
-    // 출근하기,퇴근하기는 그룹 안의 인솔자와 학부모에게 서로 다른 메시지 title,body가 가기 때문에 로직을 나눔
-    public void sendPushNotificationToGroupDifferentMessage(Long groupId, String parentTitle, String parentBody, String guardianTitle, String guardianBody, PushType parentPushType, PushType guardianPushType) {
+    // 출근하기
+    public void sendStartGuidePushNotificationToGroupDifferentMessage(Long groupId, String parentTitle, String parentBody, String guardianTitle, String guardianBody, PushType parentPushType, PushType guardianPushType) {
+
+        List<Parent> parents = parentRepository.findByGroupId(groupId);
+        List<Guardian> guardians = guardianRepository.findByGroupId(groupId);
+
+        // 부모와 인솔자 각각의 FCM 토큰 리스트
+        List<String> parentTokens = new ArrayList<>();
+        List<String> guardianTokens = new ArrayList<>();
+
+        for (Parent parent : parents) {
+            List<FcmToken> parentTokensList = fcmTokenRepository.findByUserIdAndUserType(parent.getId(), UserType.PARENT);
+            parentTokensList.forEach(token -> parentTokens.add(token.getToken()));
+        }
+
+        for (Guardian guardian : guardians) {
+            List<FcmToken> guardianTokensList = fcmTokenRepository.findByUserIdAndUserType(guardian.getId(), UserType.GUARDIAN);
+            guardianTokensList.forEach(token -> guardianTokens.add(token.getToken()));
+        }
+
+        Map<String, String> parentData = createPushData(parentPushType);
+        Map<String, String> guardianData = createPushData(guardianPushType);
+
+        // 부모에게 메시지 전송
+        for (String token : parentTokens) {
+            Long userId = fcmTokenRepository.findByToken(token)
+                    .map(FcmToken::getUserId)
+                    .orElse(null);
+
+            if (userId != null) {
+                try {
+                    sendPushMessage(parentTitle, parentBody, parentData, token);
+                } catch (IOException e) {
+                    log.error("부모에게 푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
+                } catch (Exception e) {
+                    log.error("부모 Alert 저장 실패 또는 예외 발생: userId={}, error: {}", userId, e.getMessage());
+                }
+            } else {
+                log.warn("유효하지 않은 부모 토큰으로 알림 전송 시도: token={}", token);
+            }
+        }
+
+        // 인솔자에게 메시지 전송
+        for (String token : guardianTokens) {
+            Long userId = fcmTokenRepository.findByToken(token)
+                    .map(FcmToken::getUserId)
+                    .orElse(null);
+
+            if (userId != null) {
+                try {
+                    sendPushMessage(guardianTitle, guardianBody, guardianData, token);
+                } catch (IOException e) {
+                    log.error("인솔자에게 푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
+                } catch (Exception e) {
+                    log.error("인솔자 Alert 저장 실패 또는 예외 발생: userId={}, error: {}", userId, e.getMessage());
+                }
+            } else {
+                log.warn("유효하지 않은 인솔자 토큰으로 알림 전송 시도: token={}", token);
+            }
+        }
+    }
+
+    // 퇴근하기
+    public void sendStopGuidePushNotificationToGroupDifferentMessage(Long groupId, String parentTitle, String parentBody, String pushParentTitle, String pushParentBody, String guardianTitle, String guardianBody, PushType parentPushType, PushType guardianPushType) {
 
         List<Parent> parents = parentRepository.findByGroupId(groupId);
         List<Guardian> guardians = guardianRepository.findByGroupId(groupId);
@@ -205,7 +255,6 @@ public class PushNotificationService {
         Map<String, String> guardianData = createPushData(guardianPushType);
 
         Alert.AlertCategory parentAlertCategory = mapPushTypeToAlertCategory(parentPushType);
-        Alert.AlertCategory guardianAlertCategory = mapPushTypeToAlertCategory(guardianPushType);
 
         // 부모에게 메시지 전송
         for (String token : parentTokens) {
@@ -215,7 +264,7 @@ public class PushNotificationService {
 
             if (userId != null) {
                 try {
-                    alertService.createAlert(userId, parentAlertCategory, parentTitle, parentBody);
+                    alertService.createAlert(userId, parentAlertCategory, pushParentTitle, pushParentBody, UserType.PARENT);
                     sendPushMessage(parentTitle, parentBody, parentData, token);
                 } catch (IOException e) {
                     log.error("부모에게 푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
@@ -235,7 +284,6 @@ public class PushNotificationService {
 
             if (userId != null) {
                 try {
-                    alertService.createAlert(userId, guardianAlertCategory, guardianTitle, guardianBody);
                     sendPushMessage(guardianTitle, guardianBody, guardianData, token);
                 } catch (IOException e) {
                     log.error("인솔자에게 푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
@@ -248,16 +296,14 @@ public class PushNotificationService {
         }
     }
 
-    public void sendPushNotifcationToGuardians(Long groupId, String title, String body, PushType pushType){
+    public void sendPushNotificationToGuardians(Long groupId, String guardianTitle, String guardianBody, String pushGuardianTitle, String pushGuardianBody, PushType pushType){
         List<Guardian> guardians = guardianRepository.findByGroupId(groupId);
-        log.info(guardians.toString());
 
         List<String> guardianTokens = new ArrayList<>();
         for(Guardian guardian : guardians){
             List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(guardian.getId(), UserType.GUARDIAN);
             tokens.forEach(token -> guardianTokens.add(token.getToken()));
         }
-        log.info(guardianTokens.toString());
 
         Map<String, String> data = createPushData(pushType);
         Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
@@ -266,11 +312,10 @@ public class PushNotificationService {
             Long userId = fcmTokenRepository.findByToken(token)
                     .map(FcmToken::getUserId)
                     .orElse(null);
-            log.info(userId.toString());
             if(userId != null){
                 try{
-                    alertService.createAlert(userId, alertCategory, title, body);
-                    sendPushMessage(title, body, data, token);
+                    alertService.createAlert(userId, alertCategory, pushGuardianTitle, pushGuardianBody, UserType.GUARDIAN);
+                    sendPushMessage(guardianTitle, guardianBody, data, token);
                 } catch (IOException e){
                     log.error("푸시 메시지 전송 실패: token={} / error : {}", token, e.getMessage());
                 } catch (Exception e) {
@@ -293,7 +338,6 @@ public class PushNotificationService {
         }
 
         Map<String, String> data = createPushData(pushType);
-        Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
 
         for (String token : parentTokens) {
             Long userId = fcmTokenRepository.findByToken(token)
@@ -302,7 +346,6 @@ public class PushNotificationService {
 
             if (userId != null) {
                 try {
-                    alertService.createAlert(userId, alertCategory, title, body);
                     sendPushMessage(title, body, data, token);
                 } catch (IOException e) {
                     log.error("푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
@@ -315,7 +358,7 @@ public class PushNotificationService {
         }
     }
 
-    public void sendPushNotificationToParentsAtWaypoint(Long waypointId, String title, String body, PushType pushType) {
+    public void sendPushNotificationToParentsAtWaypoint(Long waypointId, String pushTitle, String pushBody, String alarmTitle, String alarmBody, PushType pushType) {
         List<Student> students = studentRepository.findByWaypointId(waypointId);
         List<Long> parentIds = new ArrayList<>();
 
@@ -337,8 +380,6 @@ public class PushNotificationService {
         Map<String, String> data = createPushData(pushType);
         Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
 
-        log.info(data.toString());
-
         for (String token : parentTokens) {
             Long userId = fcmTokenRepository.findByToken(token)
                     .map(FcmToken::getUserId)
@@ -346,8 +387,8 @@ public class PushNotificationService {
 
             if (userId != null) {
                 try {
-                    alertService.createAlert(userId, alertCategory, title, body);
-                    sendPushMessage(title, body, data, token);
+                    alertService.createAlert(userId, alertCategory, alarmTitle, alarmBody, UserType.PARENT);
+                    sendPushMessage(pushTitle, pushBody, data, token);
                 } catch (IOException e) {
                     log.error("푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
                 } catch (Exception e) {
@@ -382,11 +423,15 @@ public class PushNotificationService {
             case MESSAGE:
                 data.put("title", "%s 학생 학부모로부터 메시지가 도착했어요!");
                 data.put("body", "%s");
+                data.put("guardian_alarm_center_title", "메시지(%s 학생 학부모)");
+                data.put("guardian_alarm_center_body", "%s");
                 data.put("type", "MESSAGE");
                 break;
             case PREABSENT_MESSAGE:
                 data.put("title", "%s 학생이 %d월 %d일 결석해요!");
                 data.put("body", "%s 학생(%s)이 %d월 %d일 %s요일 결석을 신청했어요");
+                data.put("guardian_alarm_center_title", "결석 등록");
+                data.put("guardian_alarm_center_body", "%s 학생이 %d월 %d일 %s요일 결석을 신청했어요.");
                 data.put("type", "PREABSENT_MESSAGE");
                 break;
             case START_WORK_PARENT:
@@ -402,11 +447,15 @@ public class PushNotificationService {
             case PICKUP:
                 data.put("title", "자녀의 출석이 확인되었어요!");
                 data.put("body", "%d시 %d분에 자녀의 출석이 확인되었어요.");
+                data.put("parent_alarm_center_title", "출석 알림");
+                data.put("parent_alarm_center_body", "%d년 %d월 %d일 %d시 %d분에 자녀의 출석이 확인되었어요. 현재 워킹스쿨버스 위치를 확인해보세요.");
                 data.put("type", "PICKUP");
                 break;
             case END_WORK_PARENT:
                 data.put("title", "자녀가 학교에 도착했어요!");
                 data.put("body", "%d시 %d분에 자녀가 %s에 도착했어요.");
+                data.put("parent_alarm_center_title", "학교 도착 알림");
+                data.put("parent_alarm_center_body", "%d년 %d월 %d일 %d시 %d분에 자녀가 %s에 도착했어요.");
                 data.put("type", "END_WORK_PARENT");
                 break;
             case END_WORK_GUARDIAN:
@@ -447,11 +496,5 @@ public class PushNotificationService {
             default:
                 throw new PushNotFoundException("지원되지 않는 PushType입니다.");
         }
-    }
-
-
-    // 테스트용 메서드
-    public void sendMessageToToken(Long userId, String title, String body, Map<String, String> data, String token, Alert.AlertCategory category) throws IOException {
-        sendPushMessage( title, body, data, token);
     }
 }

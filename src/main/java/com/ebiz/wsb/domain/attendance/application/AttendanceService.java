@@ -12,6 +12,10 @@ import com.ebiz.wsb.domain.group.exception.GuideNotStartedException;
 import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
+import com.ebiz.wsb.domain.message.entity.Message;
+import com.ebiz.wsb.domain.message.entity.MessageRecipient;
+import com.ebiz.wsb.domain.message.repository.MessageRecipientRepository;
+import com.ebiz.wsb.domain.message.repository.MessageRepository;
 import com.ebiz.wsb.domain.notification.application.PushNotificationService;
 import com.ebiz.wsb.domain.notification.dto.PushType;
 import com.ebiz.wsb.domain.parent.entity.Parent;
@@ -31,13 +35,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.*;
+import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,6 +55,8 @@ public class AttendanceService {
     private final UserDetailsServiceImpl userDetailsService;
     private final GroupRepository groupRepository;
     private final PushNotificationService pushNotificationService;
+    private final MessageRepository messageRepository;
+    private final MessageRecipientRepository messageRecipientRepository;
 
     @Transactional
     public void updateAttendance(Long studentId, AttendanceStatus attendanceStatus, Long groupId) {
@@ -208,12 +213,17 @@ public class AttendanceService {
 
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.PICKUP);
 
-        // body 내용에 한국 시간(Asia/Seoul)으로 시간 삽입
+        // 푸시 알림 body 내용에 한국 시간(Asia/Seoul)으로 시간 삽입
         LocalTime nowInKorea = LocalTime.now(ZoneId.of("Asia/Seoul"));
         String bodyWithTime = String.format(pushData.get("body"), nowInKorea.getHour(), nowInKorea.getMinute());
         pushData.put("body", bodyWithTime);
 
-        pushNotificationService.sendPushNotificationToParentsAtWaypoint(waypointId, pushData.get("title"), pushData.get("body"), PushType.PICKUP);
+        // 알림 센터 body 내용에 한국 시간(Asia/Seoul)으로 시간 삽입
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        String alarmBodyWithTime = String.format(pushData.get("parent_alarm_center_body"), now.getDayOfYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute());
+        pushData.put("parent_alarm_center_body", alarmBodyWithTime);
+
+        pushNotificationService.sendPushNotificationToParentsAtWaypoint(waypointId, pushData.get("title"), pushData.get("body"), pushData.get("parent_alarm_center_title"), pushData.get("parent_alarm_center_body"), PushType.PICKUP);
 
         template.convertAndSend("/sub/group/" + groupId, attendanceDTO);
 
@@ -255,21 +265,59 @@ public class AttendanceService {
 
             attendanceRepository.save(updateAttendance);
 
+            // 요일 가져오기
+            DayOfWeek dayOfWeek = absenceDate.getDayOfWeek();
+            String dayOfWeekKorean = dayOfWeek.getDisplayName(TextStyle.FULL, Locale.KOREAN);
+            int monthValue = absenceDate.getMonthValue();
+            int dayOfMonth = absenceDate.getDayOfMonth();
+
+            String content = String.format("%s 어머니께서 [%s: %d월 %d일 %s] 결석을 신청했어요.",
+                    findStudent.getName(),
+                    findStudent.getName(),
+                    monthValue,
+                    dayOfMonth,
+                    dayOfWeekKorean);
+
+            // 메시지 생성 및 저장
+            Message message = Message.builder()
+                    .group(parent.getGroup())
+                    .parent(parent)
+                    .content(content)
+                    .transferredAt(LocalDateTime.now())
+                    .isRead(false)
+                    .build();
+
+            messageRepository.save(message);
+
             Map<String, String> pushData = pushNotificationService.createPushData(PushType.PREABSENT_MESSAGE);
 
             // title 내용에 학생 이름과 날짜 삽입
-            String bodyWithStudentNameAndDate = String.format(pushData.get("title"), findStudent.getName(), absenceDate.getMonth(), absenceDate.getDayOfMonth());
+            String bodyWithStudentNameAndDate = String.format(pushData.get("title"), findStudent.getName(), absenceDate.getMonthValue(), absenceDate.getDayOfMonth());
             pushData.put("title", bodyWithStudentNameAndDate);
 
-            // 요일 구하기
-            DayOfWeek dayOfWeek = absenceDate.getDayOfWeek();
             // 요일을 한글로 출력
             String koreanDayOfWeek = dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, Locale.KOREAN);
             // body 내용에 학생 이름과 해당 학생의 경유지, 날짜 삽입
-            String bodyWithStudentNameAndWaypointAndDate = String.format(pushData.get("body"), findStudent.getName(), findStudent.getWaypoint().getWaypointName(), absenceDate.getMonth(), koreanDayOfWeek);
+            String bodyWithStudentNameAndWaypointAndDate = String.format(pushData.get("body"), findStudent.getName(), findStudent.getWaypoint().getWaypointName(), absenceDate.getMonthValue(), absenceDate.getDayOfMonth(), koreanDayOfWeek);
             pushData.put("body", bodyWithStudentNameAndWaypointAndDate);
 
-            pushNotificationService.sendPushNotifcationToGuardians(findStudent.getGroup().getId(), pushData.get("title"), pushData.get("body"), PushType.PREABSENT_MESSAGE);
+            // 알림센터에서 지도사가 받는 body 값 수정
+            String alarmBodyWithTime = String.format(pushData.get("guardian_alarm_center_body"), findStudent.getName(), monthValue, dayOfMonth, dayOfWeekKorean);
+            pushData.put("guardian_alarm_center_body", alarmBodyWithTime);
+
+            pushNotificationService.sendPushNotificationToGuardians(findStudent.getGroup().getId(), pushData.get("title"), pushData.get("body"), pushData.get("guardian_alarm_center_title"), pushData.get("guardian_alarm_center_body"), PushType.PREABSENT_MESSAGE);
+
+            // 해당 그룹의 모든 인솔자에게 메시지 보내기
+            List<Guardian> guardians = parent.getGroup().getGuardians();
+            for(Guardian guardian : guardians) {
+                MessageRecipient recipient = MessageRecipient.builder()
+                        .guardian(guardian)
+                        .message(message)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+
+                messageRecipientRepository.save(recipient);
+            }
 
             return BaseResponse.builder()
                     .message("사전 결석 신청이 완료되었습니다")

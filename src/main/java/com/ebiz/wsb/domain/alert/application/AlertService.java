@@ -2,6 +2,7 @@ package com.ebiz.wsb.domain.alert.application;
 
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
+import com.ebiz.wsb.domain.notification.entity.UserType;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.alert.entity.Alert;
 import com.ebiz.wsb.domain.alert.exception.AlertNotFoundException;
@@ -22,21 +23,18 @@ public class AlertService {
     private final AlertRepository alertRepository;
 
     @Transactional
-    public Alert createAlert(Long receiverId, Alert.AlertCategory category, String title, String content) {
-        log.info("createAlert 호출: receiverId={}, category={}, title={}, content={}", receiverId, category, title, content);
-
+    public void createAlert(Long receiverId, Alert.AlertCategory category, String alarmTitle, String alarmContent, UserType userType) {
         Alert alert = Alert.builder()
                 .receiverId(receiverId)
                 .alertCategory(category)
-                .title(title)
-                .content(content)
+                .title(alarmTitle)
+                .content(alarmContent)
                 .createdAt(LocalDateTime.now())
                 .isRead(false)
+                .userType(userType)
                 .build();
 
-        Alert savedAlert = alertRepository.save(alert);
-        log.info("Alert 저장 완료: alertId={}", savedAlert.getId()); // 저장 완료 확인
-        return savedAlert;
+        alertRepository.save(alert);
     }
 
     @Transactional
