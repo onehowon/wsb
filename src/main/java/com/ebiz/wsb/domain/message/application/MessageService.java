@@ -161,7 +161,7 @@ public class MessageService {
 
     public List<MessageDTO> getMessagesForGuardianOne(Long studentId) {
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
-        if(userByContextHolder instanceof Guardian) {
+        if (userByContextHolder instanceof Guardian) {
             Guardian guardian = (Guardian) userByContextHolder;
 
             List<MessageRecipient> recipients = messageRecipientRepository.findByGuardianId(guardian.getId());
@@ -171,12 +171,12 @@ public class MessageService {
                 return Collections.emptyList();
             }
 
-            //메시지 최신 순이 먼저 오게 정렬
+            // 메시지 최신 순으로 정렬
             recipients.sort((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()));
 
             MessageRecipient recentMessageRecipient = null;
 
-            //최신 메시지에서 studentId와 일치하면 break
+            // 최신 메시지 중 studentId와 일치하면 break
             for (MessageRecipient recipient : recipients) {
                 Message message = recipient.getMessage();
                 if (message.getStudent().getStudentId().equals(studentId)) {
@@ -185,6 +185,12 @@ public class MessageService {
                 }
             }
 
+            // 일치하는 메시지가 없는 경우 빈 리스트 반환
+            if (recentMessageRecipient == null) {
+                return Collections.emptyList();
+            }
+
+            // 메시지 DTO 생성
             MessageDTO messageDTO = MessageDTO.builder()
                     .messageId(recentMessageRecipient.getMessage().getMessageId())
                     .parent(toParentDTO(recentMessageRecipient.getMessage().getParent()))
@@ -197,6 +203,7 @@ public class MessageService {
         }
         throw new MessageAccessException("지도사님이 아니면 메시지를 확인할 수 없습니다");
     }
+
 
     @Async
     public void markMessagesAsReadAsync(List<Message> messages) {
