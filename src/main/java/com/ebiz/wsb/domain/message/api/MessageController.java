@@ -27,16 +27,14 @@ public class MessageController {
     }
 
     @GetMapping("/received/{studentId}")
-    public ResponseEntity<?> getMessagesForGuardian(@PathVariable Long studentId) {
+    public ResponseEntity<List<MessageDTO>> getMessagesForGuardian(@PathVariable Long studentId) {
         try {
             List<MessageDTO> messagesForGuardian = messageService.getMessagesForGuardian(studentId);
 
-            if (messagesForGuardian.isEmpty()) {
-                return ResponseEntity.ok("받은 메시지가 없습니다.");
-            }
+            // 비어있어도 빈 리스트 반환
             return ResponseEntity.ok(messagesForGuardian);
         } catch (GuardianNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 
