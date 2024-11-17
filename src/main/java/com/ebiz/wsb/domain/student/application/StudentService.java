@@ -5,7 +5,9 @@ import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
 import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
+import com.ebiz.wsb.domain.guardian.exception.GuardianNotAccessException;
 import com.ebiz.wsb.domain.parent.entity.Parent;
+import com.ebiz.wsb.domain.parent.exception.ParentAccessException;
 import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
 import com.ebiz.wsb.domain.parent.repository.ParentRepository;
 import com.ebiz.wsb.domain.student.dto.GroupStudentAssignRequest;
@@ -42,6 +44,7 @@ public class StudentService {
     private final ImageService imageService;
     private final AuthorizationHelper authorizationHelper;
     private final StudentMapper studentMapper;
+    private final UserDetailsServiceImpl userDetailsService;
 
     @Transactional
     public StudentDTO createStudent(StudentCreateRequestDTO requestDTO, MultipartFile imageFile) {
@@ -63,45 +66,56 @@ public class StudentService {
     }
 
 
-    public List<StudentDTO> getAllStudents(String userType) {
-        Object currentUser = authorizationHelper.getCurrentUser(userType); // PARENT 또는 GUARDIAN 전달
+    public List<StudentDTO> getAllStudents() {
+        Object currentUser = userDetailsService.getUserByContextHolder();
 
-        List<Student> students;
-        if (currentUser instanceof Parent parent) {
-            students = studentRepository.findAllByParentId(parent.getId());
-        } else if (currentUser instanceof Guardian guardian) {
+        if (currentUser instanceof Guardian guardian) {
+            // 지도사일 경우
             Group group = guardian.getGroup();
             if (group == null) {
                 throw new GroupNotFoundException("해당 지도사는 그룹에 속해 있지 않습니다.");
             }
-            students = studentRepository.findAllByGroupId(group.getId());
-        } else {
-            throw new StudentNotAccessException("학생 정보를 조회할 권한이 없습니다.");
+            List<Student> students = studentRepository.findAllByGroupId(group.getId());
+            return students.stream()
+                    .map(student -> studentMapper.toDTO(student, true))
+                    .toList();
+
+        } else if (currentUser instanceof Parent parent) {
+            // 부모일 경우
+            List<Student> students = studentRepository.findAllByParentId(parent.getId());
+            return students.stream()
+                    .map(student -> studentMapper.toDTO(student, true))
+                    .toList();
         }
 
-        return students.stream().map(student -> studentMapper.toDTO(student, true)).toList();
+        throw new StudentNotAccessException("학생 정보를 조회할 권한이 없습니다.");
     }
 
 
-
     @Transactional
-    public StudentDTO getStudentById(Long studentId, String userType) {
+    public StudentDTO getStudentById(Long studentId) {
         Student student = findStudentById(studentId);
+        Object currentUser = userDetailsService.getUserByContextHolder();
 
-        Object currentUser = authorizationHelper.getCurrentUser(userType); // PARENT 또는 GUARDIAN 전달
-        if (currentUser instanceof Parent parent) {
-            authorizationHelper.validateParentAccess(student.getParent(), parent.getId());
-        } else if (currentUser instanceof Guardian guardian) {
+        if (currentUser instanceof Guardian guardian) {
+            // 지도사 권한 검증
             Group group = student.getGroup();
             if (group == null || !group.getId().equals(guardian.getGroup().getId())) {
                 throw new StudentNotAccessException("해당 그룹의 학생 정보를 조회할 권한이 없습니다.");
             }
+
+        } else if (currentUser instanceof Parent parent) {
+            // 부모 권한 검증
+            authorizationHelper.validateParentAccess(student.getParent(), parent.getId());
+
         } else {
             throw new StudentNotAccessException("학생 정보를 조회할 권한이 없습니다.");
         }
 
         return studentMapper.toDTO(student, true);
     }
+
+
 
     @Transactional
     public StudentDTO updateStudent(Long studentId, StudentCreateRequestDTO requestDTO, MultipartFile imageFile) {

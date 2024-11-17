@@ -82,4 +82,21 @@ public class AuthorizationHelper {
             throw new GuardianNotAccessException("권한이 없습니다.");
         }
     }
+
+
+    public void validateStudentAccess(Student student, Object currentUser) {
+        if (currentUser instanceof Parent parent) {
+            // 부모는 자신의 자녀만 접근 가능
+            if (!student.getParent().getId().equals(parent.getId())) {
+                throw new StudentNotAccessException("본인의 자녀가 아닙니다.");
+            }
+        } else if (currentUser instanceof Guardian guardian) {
+            // 지도사는 같은 그룹의 학생만 접근 가능
+            if (student.getGroup() == null || !student.getGroup().getId().equals(guardian.getGroup().getId())) {
+                throw new StudentNotAccessException("해당 그룹의 학생이 아닙니다.");
+            }
+        } else {
+            throw new StudentNotAccessException("학생 정보를 조회할 권한이 없습니다.");
+        }
+    }
 }

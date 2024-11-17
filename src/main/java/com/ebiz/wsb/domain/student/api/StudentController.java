@@ -40,20 +40,17 @@ public class StudentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<StudentDTO>> getAllStudents(@RequestParam("userType") String userType) {
-        // userType: "PARENT" or "GUARDIAN"
-        List<StudentDTO> students = studentService.getAllStudents(userType);
+    public ResponseEntity<List<StudentDTO>> getAllStudents() {
+        List<StudentDTO> students = studentService.getAllStudents();
         return ResponseEntity.ok(students);
     }
 
     @GetMapping("/{studentId}")
-    public ResponseEntity<StudentDTO> getStudentById(
-            @PathVariable Long studentId,
-            @RequestParam("userType") String userType) {
-        // userType: "PARENT" or "GUARDIAN"
-        StudentDTO studentDTO = studentService.getStudentById(studentId, userType);
+    public ResponseEntity<StudentDTO> getStudentById(@PathVariable Long studentId) {
+        StudentDTO studentDTO = studentService.getStudentById(studentId);
         return ResponseEntity.ok(studentDTO);
     }
+
 
     @PutMapping("/{studentId}")
     public ResponseEntity<StudentDTO> updateStudent(

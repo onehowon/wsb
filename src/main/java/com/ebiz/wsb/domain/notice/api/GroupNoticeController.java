@@ -45,10 +45,9 @@ public class GroupNoticeController {
     @PostMapping
     public ResponseEntity<GroupNoticeDTO> createGroupNotice(
             @RequestParam("content") String content,
-            @RequestPart(value = "photos", required = false) List<MultipartFile> photos,
-            Authentication authentication
+            @RequestPart(value = "photos", required = false) List<MultipartFile> photos
     ) {
-        GroupNoticeDTO createdGroupNotice = groupNoticeService.createGroupNotice(content, photos, authentication);
+        GroupNoticeDTO createdGroupNotice = groupNoticeService.createGroupNotice(content, photos);
         return new ResponseEntity<>(createdGroupNotice, HttpStatus.CREATED);
     }
 

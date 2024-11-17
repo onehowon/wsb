@@ -141,11 +141,15 @@ public class GroupNoticeService {
     }
 
 
-    public GroupNoticeDTO createGroupNotice(String content, List<MultipartFile> imageFiles, Authentication authentication) {
+    public GroupNoticeDTO createGroupNotice(String content, List<MultipartFile> imageFiles) {
+        Object currentUser = userDetailsService.getUserByContextHolder();
 
-        Guardian guardian = (Guardian) userDetailsService.getUserByContextHolder();
+        if (!(currentUser instanceof Guardian guardian)) {
+            log.error("부모 계정 {}로 공지사항 등록 시도", currentUser);
+            throw new NoticeAccessDeniedException("부모 계정으로 공지사항을 등록할 수 없습니다.");
+        }
+
         Group group = guardian.getGroup();
-
         if (group == null) {
             throw new GroupNotFoundException("지도사가 그룹에 속해 있지 않습니다.");
         }
@@ -159,7 +163,6 @@ public class GroupNoticeService {
                 .photos(new ArrayList<>())
                 .build();
 
-
         List<GroupNoticePhoto> photoEntities = new ArrayList<>();
         if (imageFiles != null && !imageFiles.isEmpty()) {
             for (MultipartFile file : imageFiles) {
@@ -172,13 +175,11 @@ public class GroupNoticeService {
                 }
             }
         }
-
         groupNotice.getPhotos().addAll(photoEntities);
+
         groupNoticeRepository.save(groupNotice);
 
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.POST);
-
-        // body 내용에 지도사 이름 삽입
         String bodyWithGuardianName = String.format(pushData.get("body"), guardian.getName());
         pushData.put("body", bodyWithGuardianName);
 
@@ -354,4 +355,38 @@ public class GroupNoticeService {
                 .likesCount(likesCount)
                 .build();
     }
+
+    /**
+     * 현재 사용자와 그룹 정보를 검증합니다.
+     *
+     * @param targetGroupId 타겟 그룹 ID
+     */
+    private void validateGroupMembership(Long targetGroupId) {
+        Object currentUser = userDetailsService.getUserByContextHolder();
+
+        if (currentUser instanceof Guardian guardian) {
+            // 지도사가 그룹에 속하지 않은 경우
+            if (guardian.getGroup() == null) {
+                log.error("지도사 {}는 어떤 그룹에도 속하지 않습니다.", guardian.getId());
+                throw new NoticeAccessDeniedException("공지사항을 등록할 권한이 없습니다. 지도사는 그룹에 속해야 합니다.");
+            }
+
+            // 지도사가 다른 그룹에 공지사항을 등록하려고 하는 경우
+            if (!guardian.getGroup().getId().equals(targetGroupId)) {
+                log.error("지도사 {}는 그룹 {}에 속하지 않습니다.", guardian.getId(), targetGroupId);
+                throw new NoticeAccessDeniedException("해당 그룹에 공지사항을 등록할 권한이 없습니다.");
+            }
+
+        } else if (currentUser instanceof Parent) {
+            // 학부모 계정일 경우 공지사항 등록 불가
+            log.error("학부모는 공지사항을 등록할 수 없습니다.");
+            throw new NoticeAccessDeniedException("학부모 계정으로는 공지사항을 등록할 수 없습니다.");
+
+        } else {
+            // 비인증 사용자
+            log.error("인증되지 않은 사용자입니다.");
+            throw new NoticeAccessDeniedException("인증되지 않은 사용자입니다.");
+        }
+    }
+
 }
