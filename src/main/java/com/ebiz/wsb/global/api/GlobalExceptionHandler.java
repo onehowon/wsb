@@ -20,6 +20,7 @@ import com.ebiz.wsb.domain.token.exception.InvalidTokenException;
 import com.ebiz.wsb.domain.waypoint.exception.WaypointNotFoundException;
 import com.ebiz.wsb.global.dto.BaseResponse;
 import com.ebiz.wsb.global.dto.ErrorResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -37,6 +38,7 @@ import java.io.IOException;
 // 특정 Exception 발생 시 해당 응답을 반환해 에러 메시지를 클라이언트한테 반환
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     private static final String WRONG_USER_EXCEPTION_MESSAGE = "이메일 혹은 비밀번호가 일치하지 않습니다";
@@ -44,9 +46,10 @@ public class GlobalExceptionHandler {
     private static final String MAX_UPLOAD_SIZE_EXCEEDED_MESSAGE = "사진은 최대 10MB까지 업로드 가능합니다";
 
     @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
-    public ResponseEntity handleBadCredentialsException() {
-        return new ResponseEntity(ErrorResponse.builder()
-                .message(WRONG_USER_EXCEPTION_MESSAGE)
+    public ResponseEntity<ErrorResponse> handleBadCredentialsException(Exception ex) {
+        log.error("Authentication error: {}", ex.getMessage());
+        return new ResponseEntity<>(ErrorResponse.builder()
+                .message("이메일 혹은 비밀번호가 일치하지 않습니다")
                 .build(), HttpStatus.UNAUTHORIZED);
     }
 

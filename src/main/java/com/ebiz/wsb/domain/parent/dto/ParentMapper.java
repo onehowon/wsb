@@ -17,28 +17,30 @@ public class ParentMapper {
                 .phone(parent.getPhone())
                 .address(parent.getAddress())
                 .imagePath(parent.getImagePath())
+                .students(
+                        parent.getStudents().stream()
+                                .map(student -> StudentDTO.builder()
+                                        .studentId(student.getStudentId())
+                                        .name(student.getName())
+                                        .schoolName(student.getSchoolName())
+                                        .grade(student.getGrade())
+                                        .notes(student.getNotes())
+                                        .imagePath(student.getImagePath())
+                                        .build())
+                                .collect(Collectors.toList())
+                )
                 .build();
     }
 
-    public ParentDTO toDTOWithStudents(Parent parent) {
-        List<StudentDTO> students = parent.getStudents().stream()
-                .map(student -> StudentDTO.builder()
-                        .studentId(student.getStudentId())
-                        .name(student.getName())
-                        .schoolName(student.getSchoolName())
-                        .grade(student.getGrade())
-                        .notes(student.getNotes())
-                        .imagePath(student.getImagePath())
-                        .build())
-                .collect(Collectors.toList());
-
-        return ParentDTO.builder()
-                .id(parent.getId())
-                .name(parent.getName())
-                .phone(parent.getPhone())
-                .address(parent.getAddress())
-                .imagePath(parent.getImagePath())
-                .students(students)
+    public Parent fromDTO(ParentDTO parentDTO, Parent existingParent, String imagePath) {
+        return Parent.builder()
+                .id(existingParent.getId())
+                .name(parentDTO.getName())
+                .phone(parentDTO.getPhone())
+                .address(parentDTO.getAddress())
+                .email(existingParent.getEmail()) // 이메일은 변경하지 않음
+                .imagePath(imagePath)
+                .password(existingParent.getPassword()) // 패스워드는 유지
                 .build();
     }
 }

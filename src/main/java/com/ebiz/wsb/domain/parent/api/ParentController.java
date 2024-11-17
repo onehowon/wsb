@@ -22,24 +22,17 @@ public class ParentController {
     private final ParentService parentService;
 
     @GetMapping
-    public ResponseEntity<List<ParentDTO>> getAllParents() {
-        List<ParentDTO> parents = parentService.getAllParents();
-        return ResponseEntity.ok(parents);
+    public ResponseEntity<ParentDTO> getMyParentInfo() {
+        ParentDTO parentInfo = parentService.getMyParentInfo();
+        return ResponseEntity.ok(parentInfo);
     }
 
-    @GetMapping("/{parentsId}")
-    public ResponseEntity<ParentDTO> getParent(@PathVariable Long parentsId) {
-        ParentDTO parentDTO = parentService.getParentById(parentsId);
-        return ResponseEntity.ok(parentDTO);
-    }
-
-    @PutMapping("/{parentsId}")
+    @PutMapping
     public ResponseEntity<ParentDTO> updateParent(
-            @PathVariable Long parentsId,
             @RequestBody ParentDTO parentDTO,
             @RequestPart(value = "imageFile", required = false) MultipartFile imageFile) {
 
-        ParentDTO updatedParentDTO = parentService.updateParent(parentsId, parentDTO, imageFile);
+        ParentDTO updatedParentDTO = parentService.updateParent(parentDTO, imageFile);
         return ResponseEntity.ok(updatedParentDTO);
     }
 
@@ -50,8 +43,8 @@ public class ParentController {
     }
 
     @GetMapping("/group")
-    public ResponseEntity<GroupDTO> getParentGroup() {
-        GroupDTO group = parentService.getParentGroup();
-        return new ResponseEntity<>(group, HttpStatus.OK);
+    public ResponseEntity<GroupDTO> getParentGroup(@RequestParam("parentId") Long parentId) {
+        GroupDTO group = parentService.getParentGroup(parentId);
+        return ResponseEntity.ok(group);
     }
 }

@@ -19,34 +19,35 @@ import java.io.IOException;
 public class GuardianController {
     private final GuardianService guardianService;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<GuardianDTO> getGuardianById(@PathVariable Long id){
-        GuardianDTO guardianDTO = guardianService.getGuardianById(id);
+    @GetMapping
+    public ResponseEntity<GuardianDTO> getMyGuardianInfo() {
+        GuardianDTO guardianDTO = guardianService.getMyGuardianInfo();
+        log.info("Retrieved logged-in Guardian information");
         return new ResponseEntity<>(guardianDTO, HttpStatus.OK);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<GuardianDTO> updateGuardian(
-            @PathVariable Long id,
+    @PutMapping
+    public ResponseEntity<GuardianDTO> updateMyGuardianInfo(
             @RequestParam(value = "bio", required = false) String bio,
             @RequestParam(value = "experience", required = false) String experience,
+            @RequestParam(value = "phone", required = false) String phone,
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
         GuardianDTO guardianDTO = GuardianDTO.builder()
                 .bio(bio)
                 .experience(experience)
+                .phone(phone)
                 .build();
 
-        GuardianDTO updatedGuardian = guardianService.updateGuardian(id, guardianDTO, file);
-        return new ResponseEntity<>(updatedGuardian, HttpStatus.OK);
+        GuardianDTO updatedGuardian = guardianService.updateMyGuardianInfo(guardianDTO, file);
+        return ResponseEntity.ok(updatedGuardian);
     }
 
-
-
-    @DeleteMapping("{id}")
-    public ResponseEntity<Void> deleteGuardian(@PathVariable Long id){
-        guardianService.deleteGuardian(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    @DeleteMapping
+    public ResponseEntity<String> deleteMyGuardianInfo() {
+        guardianService.deleteMyGuardianInfo();
+        log.info("Deleted logged-in Guardian information");
+        return ResponseEntity.ok("정보가 성공적으로 삭제 되었습니다.");
     }
 
     @GetMapping("/group")
