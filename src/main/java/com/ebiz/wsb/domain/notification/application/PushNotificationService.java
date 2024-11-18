@@ -311,13 +311,13 @@ public class PushNotificationService {
         for (Guardian guardian : guardians) {
             // 모든 지도사에게 Alert 저장
             try {
-                alertService.createAlert(guardian.getId(), alertCategory, alarmTitle, alarmBody, UserType.PARENT);
+                alertService.createAlert(guardian.getId(), alertCategory, alarmTitle, alarmBody, UserType.GUARDIAN);
             } catch (Exception e) {
                 log.error("Alert 저장 실패 또는 예외 발생: parentId={}, error: {}", guardian.getId(), e.getMessage());
             }
 
             // FCM 토큰으로 푸시 메시지 전송
-            List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(guardian.getId(), UserType.PARENT);
+            List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(guardian.getId(), UserType.GUARDIAN);
             for (FcmToken token : tokens) {
                 try {
                     sendPushMessage(pushTitle, pushBody, data, token.getToken());
