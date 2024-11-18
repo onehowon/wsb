@@ -268,7 +268,7 @@ public class PushNotificationService {
             List<FcmToken> parentTokensList = fcmTokenRepository.findByUserIdAndUserType(parent.getId(), UserType.PARENT);
             for (FcmToken token : parentTokensList) {
                 try {
-                    sendPushMessage(parentTitle, parentBody, createPushData(parentPushType), token.getToken());
+                    sendPushMessage(parentTitle, parentBody, parentData, token.getToken());
                 } catch (IOException e) {
                     log.error("부모에게 푸시 메시지 전송 실패: token={} / error: {}", token.getToken(), e.getMessage());
                 }

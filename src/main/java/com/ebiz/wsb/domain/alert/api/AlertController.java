@@ -20,16 +20,7 @@ public class AlertController {
 
     @GetMapping
     public ResponseEntity<List<AlertDTO>> getAlertsForCurrentUser(){
-        List<Alert> alerts = alertService.getAlertsForCurrentUser();
-        List<AlertDTO> alertDTOS = alerts.stream()
-                .map(AlertDTO::from)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(alertDTOS);
-    }
-
-    @PatchMapping("/{alertId}/read")
-    public ResponseEntity<?> markAsRead(@PathVariable Long alertId){
-        alertService.markAsRead(alertId);
-        return ResponseEntity.ok(Map.of("message", "알림이 성공적으로 읽음 처리되었습니다."));
+        List<AlertDTO> alertsDTO = alertService.getAlertsForCurrentUser();
+        return ResponseEntity.ok(alertsDTO);
     }
 }
