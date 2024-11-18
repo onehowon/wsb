@@ -220,7 +220,7 @@ public class AttendanceService {
 
         // 알림 센터 body 내용에 한국 시간(Asia/Seoul)으로 시간 삽입
         LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
-        String alarmBodyWithTime = String.format(pushData.get("parent_alarm_center_body"), now.getDayOfYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute());
+        String alarmBodyWithTime = String.format(pushData.get("parent_alarm_center_body"), now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute());
         pushData.put("parent_alarm_center_body", alarmBodyWithTime);
 
         pushNotificationService.sendPushNotificationToParentsAtWaypoint(waypointId, pushData.get("title"), pushData.get("body"), pushData.get("parent_alarm_center_title"), pushData.get("parent_alarm_center_body"), PushType.PICKUP);

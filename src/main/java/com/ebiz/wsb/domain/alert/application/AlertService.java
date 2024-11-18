@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -29,7 +30,7 @@ public class AlertService {
                 .alertCategory(category)
                 .title(alarmTitle)
                 .content(alarmContent)
-                .createdAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
                 .isRead(false)
                 .userType(userType)
                 .build();
