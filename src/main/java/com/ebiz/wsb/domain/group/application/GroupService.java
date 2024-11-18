@@ -160,7 +160,7 @@ public class GroupService {
 
         // 알림센터에서 학부모가 받는 body 값 수정
         LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
-        String alarmBodyWithTime = String.format(parentPushData.get("parent_alarm_center_body"), now.getDayOfYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute(), group.getSchoolName());
+        String alarmBodyWithTime = String.format(parentPushData.get("parent_alarm_center_body"), now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute(), group.getSchoolName());
         parentPushData.put("parent_alarm_center_body", alarmBodyWithTime);
 
         pushNotificationService.sendStopGuidePushNotificationToGroupDifferentMessage(group.getId(), parentPushData.get("title"), parentPushData.get("body"), parentPushData.get("parent_alarm_center_title"), parentPushData.get("parent_alarm_center_body"), guardianPushData.get("title"), guardianPushData.get("body"), PushType.END_WORK_PARENT, PushType.END_WORK_GUARDIAN);
