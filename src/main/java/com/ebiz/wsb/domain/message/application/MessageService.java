@@ -25,6 +25,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -60,8 +61,8 @@ public class MessageService {
                     .parent(parent)
                     .student(student)
                     .content(content)
-                    .transferredAt(LocalDateTime.now())
-                    .isRead(false)
+                    .transferredAt(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
+                    .isRead(false) // build 전에 호출해야 함
                     .build();
 
             messageRepository.save(message);
@@ -98,7 +99,7 @@ public class MessageService {
                 MessageRecipient recipient = MessageRecipient.builder()
                         .guardian(guardian)
                         .message(message)
-                        .createdAt(LocalDateTime.now())
+                        .createdAt(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
                         .build();
 
                 messageRecipientRepository.save(recipient);

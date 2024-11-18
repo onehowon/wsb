@@ -431,7 +431,7 @@ public class PushNotificationService {
                 data.put("title", "%s 학생이 %d월 %d일 결석해요!");
                 data.put("body", "%s 학생(%s)이 %d월 %d일 %s요일 결석을 신청했어요");
                 data.put("guardian_alarm_center_title", "결석 등록");
-                data.put("guardian_alarm_center_body", "%s 학생이 %d월 %d일 %s요일 결석을 신청했어요.");
+                data.put("guardian_alarm_center_body", "%s 학생이 %d월 %d일 %s 결석을 신청했어요.");
                 data.put("type", "PREABSENT_MESSAGE");
                 break;
             case START_WORK_PARENT:

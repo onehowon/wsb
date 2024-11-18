@@ -285,6 +285,7 @@ public class AttendanceService {
                     .content(content)
                     .transferredAt(LocalDateTime.now())
                     .isRead(false)
+                    .student(findStudent)
                     .build();
 
             messageRepository.save(message);
