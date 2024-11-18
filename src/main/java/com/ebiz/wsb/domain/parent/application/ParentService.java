@@ -37,6 +37,7 @@ public class ParentService {
 
     private final ParentRepository parentRepository;
     private final AuthorizationHelper authorizationHelper;
+    private final UserDetailsServiceImpl userDetailsService;
     private final ParentMapper parentMapper;
     private final ImageService imageService;
 
@@ -78,10 +79,12 @@ public class ParentService {
         parentRepository.deleteById(parentId);
     }
 
-    public GroupDTO getParentGroup(Long parentId) {
-        Parent parent = parentRepository.findById(parentId)
-                .orElseThrow(() -> new ParentNotFoundException(PARENT_NOT_FOUND_MESSAGE));
-
+    public GroupDTO getParentGroup() {
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        if (!(userByContextHolder instanceof Parent)) {
+            throw new ParentNotFoundException("학부모 정보를 찾을 수 없습니다.");
+        }
+        Parent parent = (Parent) userByContextHolder;
         Group group = parent.getGroup();
         if (group == null) {
             throw new GroupNotFoundException("배정된 그룹을 찾을 수 없습니다.");

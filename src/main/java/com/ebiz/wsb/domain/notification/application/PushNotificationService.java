@@ -295,10 +295,11 @@ public class PushNotificationService {
         }
     }
 
-    public void sendPushNotificationToGuardians(Long groupId, String guardianTitle, String guardianBody, String pushGuardianTitle, String pushGuardianBody, PushType pushType){
+    public void sendPushNotificationToGuardians(Long groupId, String pushTitle, String pushBody, String alarmTitle, String alarmBody, PushType pushType){
         List<Guardian> guardians = guardianRepository.findByGroupId(groupId);
 
         List<String> guardianTokens = new ArrayList<>();
+
         for(Guardian guardian : guardians){
             List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(guardian.getId(), UserType.GUARDIAN);
             tokens.forEach(token -> guardianTokens.add(token.getToken()));
@@ -307,26 +308,27 @@ public class PushNotificationService {
         Map<String, String> data = createPushData(pushType);
         Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
 
-        for ( String token : guardianTokens){
-            Long userId = fcmTokenRepository.findByToken(token)
-                    .map(FcmToken::getUserId)
-                    .orElse(null);
-            if(userId != null){
-                try{
-                    alertService.createAlert(userId, alertCategory, pushGuardianTitle, pushGuardianBody, UserType.GUARDIAN);
-                    sendPushMessage(guardianTitle, guardianBody, data, token);
-                } catch (IOException e){
-                    log.error("푸시 메시지 전송 실패: token={} / error : {}", token, e.getMessage());
-                } catch (Exception e) {
-                    log.error("Alert 저장 실패 또는 예외 발생: userId={}, error: {}", userId, e.getMessage());
+        for (Guardian guardian : guardians) {
+            // 모든 지도사에게 Alert 저장
+            try {
+                alertService.createAlert(guardian.getId(), alertCategory, alarmTitle, alarmBody, UserType.PARENT);
+            } catch (Exception e) {
+                log.error("Alert 저장 실패 또는 예외 발생: parentId={}, error: {}", guardian.getId(), e.getMessage());
+            }
+
+            // FCM 토큰으로 푸시 메시지 전송
+            List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(guardian.getId(), UserType.PARENT);
+            for (FcmToken token : tokens) {
+                try {
+                    sendPushMessage(pushTitle, pushBody, data, token.getToken());
+                } catch (IOException e) {
+                    log.error("푸시 메시지 전송 실패: token={} / error: {}", token.getToken(), e.getMessage());
                 }
-            } else {
-                log.warn("유효하지 않은 토큰으로 알림 전송 시도: token={}", token);
             }
         }
     }
 
-    public void sendPushNotificationToParents(Long groupId, String title, String body, PushType pushType) {
+    public void sendPushNotificationToParents(Long groupId, String pushTitle, String pushBody, String alarmTitle, String alarmBody, PushType pushType) {
         List<Parent> parents = parentRepository.findByGroupId(groupId);
 
         List<String> parentTokens = new ArrayList<>();
@@ -337,22 +339,24 @@ public class PushNotificationService {
         }
 
         Map<String, String> data = createPushData(pushType);
+        Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
 
-        for (String token : parentTokens) {
-            Long userId = fcmTokenRepository.findByToken(token)
-                    .map(FcmToken::getUserId)
-                    .orElse(null);
+        for (Parent parent : parents) {
+            // 모든 학부모에게 Alert 저장
+            try {
+                alertService.createAlert(parent.getId(), alertCategory, alarmTitle, alarmBody, UserType.PARENT);
+            } catch (Exception e) {
+                log.error("Alert 저장 실패 또는 예외 발생: parentId={}, error: {}", parent.getId(), e.getMessage());
+            }
 
-            if (userId != null) {
+            // FCM 토큰으로 푸시 메시지 전송
+            List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(parent.getId(), UserType.PARENT);
+            for (FcmToken token : tokens) {
                 try {
-                    sendPushMessage(title, body, data, token);
+                    sendPushMessage(pushTitle, pushBody, data, token.getToken());
                 } catch (IOException e) {
-                    log.error("푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
-                } catch (Exception e) {
-                    log.error("Alert 저장 실패 또는 예외 발생: userId={}, error: {}", userId, e.getMessage());
+                    log.error("푸시 메시지 전송 실패: token={} / error: {}", token.getToken(), e.getMessage());
                 }
-            } else {
-                log.warn("유효하지 않은 토큰으로 알림 전송 시도: token={}", token);
             }
         }
     }
@@ -406,6 +410,8 @@ public class PushNotificationService {
             case POST:
                 data.put("title", "새로운 공지사항이 등록되었어요!");
                 data.put("body", "%s 지도사님이 새로운 공지사항을 작성했어요.");
+                data.put("parent_alarm_center_title", "새로운 공지사항이 등록되었어요!");
+                data.put("parent_alarm_center_body", "%s");
                 data.put("type", "POST");
                 break;
             case APP:

@@ -180,10 +180,16 @@ public class GroupNoticeService {
         groupNoticeRepository.save(groupNotice);
 
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.POST);
+
+        // 푸시 알림 body 내용에 인솔자 이름 삽입
         String bodyWithGuardianName = String.format(pushData.get("body"), guardian.getName());
         pushData.put("body", bodyWithGuardianName);
 
-        pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), PushType.POST);
+        // 알림센터 body 내용에 공지사항 글 삽입
+        String alertBodyWithContent = String.format(pushData.get("parent_alarm_center_body"), content);
+        pushData.put("parent_alarm_center_body", alertBodyWithContent);
+
+        pushNotificationService.sendPushNotificationToParents(group.getId(), pushData.get("title"), pushData.get("body"), pushData.get("parent_alarm_center_title"), pushData.get("parent_alarm_center_body"), PushType.POST);
 
         return convertToDTO(groupNotice);
     }

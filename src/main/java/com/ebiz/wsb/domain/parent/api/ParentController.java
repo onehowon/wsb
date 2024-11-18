@@ -43,8 +43,8 @@ public class ParentController {
     }
 
     @GetMapping("/group")
-    public ResponseEntity<GroupDTO> getParentGroup(@RequestParam("parentId") Long parentId) {
-        GroupDTO group = parentService.getParentGroup(parentId);
-        return ResponseEntity.ok(group);
+    public ResponseEntity<GroupDTO> getParentGroup() {
+        GroupDTO group = parentService.getParentGroup();
+        return new ResponseEntity<>(group, HttpStatus.OK);
     }
 }
