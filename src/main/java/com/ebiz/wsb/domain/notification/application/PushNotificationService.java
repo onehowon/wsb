@@ -373,29 +373,28 @@ public class PushNotificationService {
 
         for (Long parentId : parentIds) {
             List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(parentId, UserType.PARENT);
-            log.info("Parent ID {} has {} tokens", parentId, tokens.size());
             tokens.forEach(token -> parentTokens.add(token.getToken()));
         }
 
         Map<String, String> data = createPushData(pushType);
         Alert.AlertCategory alertCategory = mapPushTypeToAlertCategory(pushType);
 
-        for (String token : parentTokens) {
-            Long userId = fcmTokenRepository.findByToken(token)
-                    .map(FcmToken::getUserId)
-                    .orElse(null);
+        for (Long parentId : parentIds) {
+            // 모든 학부모에게 Alert 저장
+            try {
+                alertService.createAlert(parentId, alertCategory, alarmTitle, alarmBody, UserType.PARENT);
+            } catch (Exception e) {
+                log.error("Alert 저장 실패 또는 예외 발생: parentId={}, error: {}", parentId, e.getMessage());
+            }
 
-            if (userId != null) {
+            // FCM 토큰으로 푸시 메시지 전송
+            List<FcmToken> tokens = fcmTokenRepository.findByUserIdAndUserType(parentId, UserType.PARENT);
+            for (FcmToken token : tokens) {
                 try {
-                    alertService.createAlert(userId, alertCategory, alarmTitle, alarmBody, UserType.PARENT);
-                    sendPushMessage(pushTitle, pushBody, data, token);
+                    sendPushMessage(pushTitle, pushBody, data, token.getToken());
                 } catch (IOException e) {
-                    log.error("푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
-                } catch (Exception e) {
-                    log.error("Alert 저장 실패 또는 예외 발생: userId={}, error: {}", userId, e.getMessage());
+                    log.error("푸시 메시지 전송 실패: token={} / error: {}", token.getToken(), e.getMessage());
                 }
-            } else {
-                log.warn("유효하지 않은 토큰으로 알림 전송 시도: token={}", token);
             }
         }
     }
