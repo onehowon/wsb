@@ -256,23 +256,22 @@ public class PushNotificationService {
 
         Alert.AlertCategory parentAlertCategory = mapPushTypeToAlertCategory(parentPushType);
 
-        // 부모에게 메시지 전송
-        for (String token : parentTokens) {
-            Long userId = fcmTokenRepository.findByToken(token)
-                    .map(FcmToken::getUserId)
-                    .orElse(null);
+        for (Parent parent : parents) {
+            // 모든 부모에게 Alert 저장
+            try {
+                alertService.createAlert(parent.getId(), parentAlertCategory, pushParentTitle, pushParentBody, UserType.PARENT);
+            } catch (Exception e) {
+                log.error("부모 Alert 저장 실패: parentId={}, error: {}", parent.getId(), e.getMessage());
+            }
 
-            if (userId != null) {
+            // 부모의 FCM 토큰 조회 및 푸시 메시지 전송
+            List<FcmToken> parentTokensList = fcmTokenRepository.findByUserIdAndUserType(parent.getId(), UserType.PARENT);
+            for (FcmToken token : parentTokensList) {
                 try {
-                    alertService.createAlert(userId, parentAlertCategory, pushParentTitle, pushParentBody, UserType.PARENT);
-                    sendPushMessage(parentTitle, parentBody, parentData, token);
+                    sendPushMessage(parentTitle, parentBody, createPushData(parentPushType), token.getToken());
                 } catch (IOException e) {
-                    log.error("부모에게 푸시 메시지 전송 실패: token={} / error: {}", token, e.getMessage());
-                } catch (Exception e) {
-                    log.error("부모 Alert 저장 실패 또는 예외 발생: userId={}, error: {}", userId, e.getMessage());
+                    log.error("부모에게 푸시 메시지 전송 실패: token={} / error: {}", token.getToken(), e.getMessage());
                 }
-            } else {
-                log.warn("유효하지 않은 부모 토큰으로 알림 전송 시도: token={}", token);
             }
         }
 
