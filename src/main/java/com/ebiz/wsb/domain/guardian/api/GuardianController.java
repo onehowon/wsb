@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @Slf4j
@@ -24,6 +25,12 @@ public class GuardianController {
         GuardianDTO guardianDTO = guardianService.getMyGuardianInfo();
         log.info("Retrieved logged-in Guardian information");
         return new ResponseEntity<>(guardianDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/my-child")
+    public ResponseEntity<List<GuardianDTO>> getGuardiansForMyChild() {
+        List<GuardianDTO> guardians = guardianService.getGuardiansForMyChild();
+        return ResponseEntity.ok(guardians);
     }
 
     @PutMapping

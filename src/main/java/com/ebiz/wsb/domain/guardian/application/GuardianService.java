@@ -24,6 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +36,7 @@ public class GuardianService {
     private final GuardianRepository guardianRepository;
     private final AuthorizationHelper authorizationHelper;
     private final GuardianMapper guardianMapper;
+    private final UserDetailsServiceImpl userDetailsService;
     private final ImageService imageService;
 
     public GuardianDTO getMyGuardianInfo() {
@@ -40,7 +44,30 @@ public class GuardianService {
         return guardianMapper.toDTO(loggedInGuardian);
     }
 
-    // 향후 다른 지도사 정보 조회할 때 사용할 용도
+    @Transactional
+    public List<GuardianDTO> getGuardiansForMyChild() {
+        Object currentUser = userDetailsService.getUserByContextHolder();
+
+        if (!(currentUser instanceof Parent parent)) {
+            throw new GuardianNotAccessException("학부모만 지도사 정보를 조회할 수 있습니다.");
+        }
+
+        List<Long> childGroupIds = parent.getStudents().stream()
+                .map(student -> student.getGroup().getId())
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (childGroupIds.isEmpty()) {
+            throw new GroupNotFoundException("아이의 그룹 정보를 찾을 수 없습니다.");
+        }
+
+        List<Guardian> guardians = guardianRepository.findGuardiansByGroupId(childGroupIds.get(0));
+
+        return guardians.stream()
+                .map(guardianMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
     public GuardianDTO getGuardianById(Long guardianId) {
         Guardian guardian = guardianRepository.findById(guardianId)
                 .orElseThrow(() -> new GuardianNotFoundException("지도사 정보를 찾을 수 없습니다."));
