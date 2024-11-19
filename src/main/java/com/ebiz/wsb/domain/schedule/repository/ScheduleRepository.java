@@ -16,10 +16,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
-    @Query("SELECT s FROM Schedule s WHERE s.group.id = :groupId AND s.day = :day")
-    List<Schedule> findByGroupIdAndDay(@Param("groupId") Long groupId, @Param("day") LocalDate day);
+    @Query("SELECT s FROM Schedule s WHERE s.group.id = :groupId AND s.day BETWEEN :startDate AND :endDate")
+    List<Schedule> findByGroupIdAndDayBetween(@Param("groupId") Long groupId,
+                                              @Param("startDate") LocalDate startDate,
+                                              @Param("endDate") LocalDate endDate);
 
-
-
-    List<Schedule> findByGuardiansAndDayBetween(Guardian guardian, LocalDate startDay, LocalDate endDay);
+    @Query("SELECT s FROM Schedule s WHERE s.group.id IN :groupIds AND s.day BETWEEN :startDate AND :endDate")
+    List<Schedule> findByGroupIdInAndDayBetween(@Param("groupIds") List<Long> groupIds,
+                                                @Param("startDate") LocalDate startDate,
+                                                @Param("endDate") LocalDate endDate);
 }

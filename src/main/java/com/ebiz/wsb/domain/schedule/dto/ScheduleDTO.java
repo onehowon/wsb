@@ -4,6 +4,8 @@ import com.ebiz.wsb.domain.guardian.dto.GuardianDTO;
 import com.ebiz.wsb.domain.guardian.dto.GuardianSummaryDTO;
 import com.ebiz.wsb.domain.student.dto.StudentDTO;
 import com.ebiz.wsb.domain.student.entity.Student;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,8 +22,12 @@ import java.util.List;
 @NoArgsConstructor
 public class ScheduleDTO {
     private Long scheduleId;
-    private List<GuardianSummaryDTO> guardianList;
-    private List<TypeScheduleDTO> scheduleTypes;
     private LocalDate day;
-    private LocalTime time;
+    private String time;
+    @JsonInclude(Include.NON_NULL)
+    private Long scheduleTypeId;
+    private String scheduleType;
+    private Long groupId;
+    private String groupName;
+    private List<GuardianSummaryDTO> guardians;
 }

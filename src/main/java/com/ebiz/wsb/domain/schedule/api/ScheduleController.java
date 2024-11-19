@@ -1,12 +1,11 @@
 package com.ebiz.wsb.domain.schedule.api;
 
 import com.ebiz.wsb.domain.schedule.application.ScheduleService;
-import com.ebiz.wsb.domain.schedule.dto.ScheduleByMonthResponseDTO;
 import com.ebiz.wsb.domain.schedule.dto.ScheduleDTO;
 
 import java.time.LocalDate;
 
-import com.ebiz.wsb.domain.schedule.dto.ScheduleResponseDTO;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -25,19 +24,20 @@ public class ScheduleController {
         return ResponseEntity.ok(createdSchedule);
     }
 
-    @GetMapping("/group/date")
-    public ResponseEntity<ScheduleResponseDTO> getGroupScheduleByDate(
-            @RequestParam("specificDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate specificDate) {
-        ScheduleResponseDTO groupSchedules = scheduleService.getGroupScheduleByDate(specificDate);
-        return ResponseEntity.ok(groupSchedules);
+    @GetMapping("/day")
+    public ResponseEntity<List<ScheduleDTO>> getDaySchedules(
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        List<ScheduleDTO> schedules = scheduleService.getSchedulesByRoleAndDateRange(date, date);
+        return ResponseEntity.ok(schedules);
     }
 
     @GetMapping("/month")
-    public ResponseEntity<ScheduleByMonthResponseDTO> getMySchedulesByMonth(
-            @RequestParam("year") int year,
-            @RequestParam("month") int month) {
-        ScheduleByMonthResponseDTO myMonthlySchedules = scheduleService.getMyScheduleByMonth(year, month);
-        return ResponseEntity.ok(myMonthlySchedules);
+    public ResponseEntity<List<ScheduleDTO>> getMonthSchedules(
+            @RequestParam("year") int year, @RequestParam("month") int month) {
+        LocalDate startOfMonth = LocalDate.of(year, month, 1);
+        LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
+        List<ScheduleDTO> schedules = scheduleService.getSchedulesByRoleAndDateRange(startOfMonth, endOfMonth);
+        return ResponseEntity.ok(schedules);
     }
 
     @PutMapping("/{scheduleId}")
