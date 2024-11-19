@@ -5,15 +5,13 @@ import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
 import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
+import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotAccessException;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.exception.ParentAccessException;
 import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
 import com.ebiz.wsb.domain.parent.repository.ParentRepository;
-import com.ebiz.wsb.domain.student.dto.GroupStudentAssignRequest;
-import com.ebiz.wsb.domain.student.dto.StudentCreateRequestDTO;
-import com.ebiz.wsb.domain.student.dto.StudentDTO;
-import com.ebiz.wsb.domain.student.dto.StudentMapper;
+import com.ebiz.wsb.domain.student.dto.*;
 import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.student.exception.ImageUploadException;
 import com.ebiz.wsb.domain.student.exception.StudentNotAccessException;
@@ -25,6 +23,7 @@ import com.ebiz.wsb.global.service.AuthorizationHelper;
 import com.ebiz.wsb.global.service.ImageService;
 import com.ebiz.wsb.global.service.S3Service;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -34,17 +33,17 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StudentService {
 
     private final StudentRepository studentRepository;
-    private final GroupRepository groupRepository;
-    private final WaypointRepository waypointRepository;
     private final ImageService imageService;
     private final AuthorizationHelper authorizationHelper;
     private final StudentMapper studentMapper;
     private final UserDetailsServiceImpl userDetailsService;
+    private final S3Service s3Service;
 
     @Transactional
     public StudentDTO createStudent(StudentCreateRequestDTO requestDTO, MultipartFile imageFile) {
@@ -118,57 +117,55 @@ public class StudentService {
 
 
     @Transactional
-    public StudentDTO updateStudent(Long studentId, StudentCreateRequestDTO requestDTO, MultipartFile imageFile) {
-        Student existingStudent = findStudentById(studentId);
-        Parent parent = authorizationHelper.getLoggedInParent();
-        authorizationHelper.validateParentAccess(existingStudent.getParent(), parent.getId());
+    public void updateStudentNote(StudentUpdateNotesRequestDTO studentUpdateNotesRequestDTO) {
 
-        String imagePath = imageService.uploadImage(imageFile, "walkingschoolbus-bucket");
-        if (imagePath == null) {
-            imagePath = existingStudent.getImagePath();
+        Student existingStudent = findStudentById(studentUpdateNotesRequestDTO.getStudentId());
+        Long parentId = existingStudent.getParent().getId();
+
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+
+        if(userByContextHolder instanceof Parent) {
+            Parent parent = (Parent) userByContextHolder;
+
+            if(parent.getId().equals(parentId)) {
+                Student updateStudent = existingStudent.toBuilder()
+                        .notes(studentUpdateNotesRequestDTO.getNotes())
+                        .build();
+
+                log.info(updateStudent.toString());
+
+                studentRepository.save(updateStudent);
+            } else {
+                throw new ParentAccessException("본인의 정보만 조회할 수 있습니다.");
+            }
+        } else {
+            throw new ParentNotFoundException("해당 학부모를 찾을 수 없습니다.");
         }
-
-        Student updatedStudent = Student.builder()
-                .studentId(existingStudent.getStudentId())
-                .name(requestDTO.getName())
-                .schoolName(requestDTO.getSchoolName())
-                .grade(requestDTO.getGrade())
-                .notes(requestDTO.getNotes())
-                .imagePath(imagePath)
-                .parent(existingStudent.getParent())
-                .group(existingStudent.getGroup())
-                .waypoint(existingStudent.getWaypoint())
-                .ParentPhone(requestDTO.getParentPhone())
-                .build();
-
-        return studentMapper.toDTO(studentRepository.save(updatedStudent), false);
     }
 
-    @Transactional
-    public StudentDTO assignGroupAndWaypoint(Long studentId, GroupStudentAssignRequest request) {
+    public void updateStudentImageFile(MultipartFile imageFile, Long studentId) {
         Student existingStudent = findStudentById(studentId);
+        Long parentId = existingStudent.getParent().getId();
 
-        Group group = groupRepository.findById(request.getGroupId())
-                .orElseThrow(() -> new GroupNotFoundException("그룹을 찾을 수 없습니다."));
-        Waypoint waypoint = waypointRepository.findById(request.getWaypointId())
-                .orElseThrow(() -> new RuntimeException("경유지를 찾을 수 없습니다."));
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
 
-        Student updatedStudent = Student.builder()
-                .studentId(existingStudent.getStudentId())
-                .name(existingStudent.getName())
-                .schoolName(existingStudent.getSchoolName())
-                .grade(existingStudent.getGrade())
-                .notes(existingStudent.getNotes())
-                .imagePath(existingStudent.getImagePath())
-                .parent(existingStudent.getParent())
-                .group(group)
-                .waypoint(waypoint)
-                .ParentPhone(existingStudent.getParentPhone())
-                .build();
+        if(userByContextHolder instanceof Parent) {
+            Parent parent = (Parent) userByContextHolder;
 
-        return studentMapper.toDTO(studentRepository.save(updatedStudent), true);
+            if(parent.getId().equals(parentId)) {
+                String photoUrl = uploadImage(imageFile);
+                Student updateStudent = existingStudent.toBuilder()
+                        .imagePath(photoUrl)
+                        .build();
+
+                studentRepository.save(updateStudent);
+            } else {
+                throw new ParentAccessException("본인의 정보만 조회할 수 있습니다.");
+            }
+        } else {
+            throw new ParentNotFoundException("해당 학부모를 찾을 수 없습니다.");
+        }
     }
-
 
 
     @Transactional
@@ -187,5 +184,13 @@ public class StudentService {
     private Student findStudentById(Long studentId) {
         return studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException("학생을 찾을 수 없습니다."));
+    }
+
+    private String uploadImage(MultipartFile imageFile) {
+        try {
+            return s3Service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
+        } catch (IOException e) {
+            throw new FileUploadException("이미지 업로드 실패", e);
+        }
     }
 }

@@ -15,6 +15,7 @@ public class ParentMapper {
                 .id(parent.getId())
                 .name(parent.getName())
                 .phone(parent.getPhone())
+                .email(parent.getEmail())
                 .address(parent.getAddress())
                 .imagePath(parent.getImagePath())
                 .students(

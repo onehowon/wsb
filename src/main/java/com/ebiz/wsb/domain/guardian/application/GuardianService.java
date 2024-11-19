@@ -38,6 +38,7 @@ public class GuardianService {
     private final GuardianMapper guardianMapper;
     private final UserDetailsServiceImpl userDetailsService;
     private final ImageService imageService;
+    private final S3Service s3Service;
 
     public GuardianDTO getMyGuardianInfo() {
         Guardian loggedInGuardian = authorizationHelper.getLoggedInGuardian();
@@ -81,16 +82,16 @@ public class GuardianService {
     }
 
     @Transactional
-    public GuardianDTO updateMyGuardianInfo(GuardianDTO guardianDTO, MultipartFile file) {
+    public void updateGuardianImageFile(MultipartFile imageFile) {
         Guardian loggedInGuardian = authorizationHelper.getLoggedInGuardian();
-        String imageUrl = loggedInGuardian.getImagePath();
-        if (file != null && !file.isEmpty()) {
-            imageUrl = imageService.uploadImage(file, "walkingschoolbus-bucket");
-        }
-        Guardian updatedGuardian = guardianMapper.fromDTO(guardianDTO, loggedInGuardian, imageUrl, loggedInGuardian.getGroup());
-        guardianRepository.save(updatedGuardian);
 
-        return guardianMapper.toDTO(updatedGuardian);
+        String photoUrl = uploadImage(imageFile);
+
+        Guardian updateGuardian = loggedInGuardian.toBuilder()
+                .imagePath(photoUrl)
+                .build();
+
+        guardianRepository.save(updateGuardian);
     }
 
     @Transactional
@@ -122,5 +123,13 @@ public class GuardianService {
                 .dutyGuardianId(group.getDutyGuardianId())
                 .id(group.getId())
                 .build();
+    }
+
+    private String uploadImage(MultipartFile imageFile) {
+        try {
+            return s3Service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
+        } catch (IOException e) {
+            throw new FileUploadException("이미지 업로드 실패", e);
+        }
     }
 }
