@@ -16,6 +16,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+
 public class GroupNoticeDTO {
     private Long groupNoticeId;
     private String content;

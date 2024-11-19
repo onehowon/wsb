@@ -47,6 +47,7 @@ import static com.ebiz.wsb.domain.notice.entity.QGroupNotice.groupNotice;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+
 public class GroupNoticeService {
 
     private final GroupNoticeRepository groupNoticeRepository;
@@ -318,19 +319,12 @@ public class GroupNoticeService {
             likesRepository.delete(existingLike.get());
             likesCount = groupNotice.getLikes() - 1;
 
-            GroupNotice updatedGroupNotice = GroupNotice.builder()
-                    .groupNoticeId(groupNotice.getGroupNoticeId())
-                    .guardian(groupNotice.getGuardian())
-                    .group(groupNotice.getGroup())
-                    .content(groupNotice.getContent())
-                    .photos(groupNotice.getPhotos())
-                    .likes(likesCount)
-                    .createdAt(groupNotice.getCreatedAt())
-                    .build();
-            groupNoticeRepository.save(updatedGroupNotice);
+            groupNotice = groupNotice.toBuilder().likes(likesCount).build();
+            groupNoticeRepository.save(groupNotice);
 
             liked = false;
         } else {
+
             Likes newLike = Likes.builder()
                     .userId(userId)
                     .groupNotice(groupNotice)
@@ -340,20 +334,11 @@ public class GroupNoticeService {
 
             likesCount = groupNotice.getLikes() + 1;
 
-            GroupNotice updatedGroupNotice = GroupNotice.builder()
-                    .groupNoticeId(groupNotice.getGroupNoticeId())
-                    .guardian(groupNotice.getGuardian())
-                    .group(groupNotice.getGroup())
-                    .content(groupNotice.getContent())
-                    .photos(groupNotice.getPhotos())
-                    .likes(likesCount)
-                    .createdAt(groupNotice.getCreatedAt())
-                    .build();
-            groupNoticeRepository.save(updatedGroupNotice);
+            groupNotice = groupNotice.toBuilder().likes(likesCount).build();
+            groupNoticeRepository.save(groupNotice);
 
             liked = true;
         }
-
 
         return LikesResponseDTO.builder()
                 .groupNoticeId(groupNoticeId)
@@ -361,38 +346,4 @@ public class GroupNoticeService {
                 .likesCount(likesCount)
                 .build();
     }
-
-    /**
-     * 현재 사용자와 그룹 정보를 검증합니다.
-     *
-     * @param targetGroupId 타겟 그룹 ID
-     */
-    private void validateGroupMembership(Long targetGroupId) {
-        Object currentUser = userDetailsService.getUserByContextHolder();
-
-        if (currentUser instanceof Guardian guardian) {
-            // 지도사가 그룹에 속하지 않은 경우
-            if (guardian.getGroup() == null) {
-                log.error("지도사 {}는 어떤 그룹에도 속하지 않습니다.", guardian.getId());
-                throw new NoticeAccessDeniedException("공지사항을 등록할 권한이 없습니다. 지도사는 그룹에 속해야 합니다.");
-            }
-
-            // 지도사가 다른 그룹에 공지사항을 등록하려고 하는 경우
-            if (!guardian.getGroup().getId().equals(targetGroupId)) {
-                log.error("지도사 {}는 그룹 {}에 속하지 않습니다.", guardian.getId(), targetGroupId);
-                throw new NoticeAccessDeniedException("해당 그룹에 공지사항을 등록할 권한이 없습니다.");
-            }
-
-        } else if (currentUser instanceof Parent) {
-            // 학부모 계정일 경우 공지사항 등록 불가
-            log.error("학부모는 공지사항을 등록할 수 없습니다.");
-            throw new NoticeAccessDeniedException("학부모 계정으로는 공지사항을 등록할 수 없습니다.");
-
-        } else {
-            // 비인증 사용자
-            log.error("인증되지 않은 사용자입니다.");
-            throw new NoticeAccessDeniedException("인증되지 않은 사용자입니다.");
-        }
-    }
-
 }

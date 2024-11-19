@@ -98,14 +98,14 @@ public class StudentService {
         Object currentUser = userDetailsService.getUserByContextHolder();
 
         if (currentUser instanceof Guardian guardian) {
-            // 지도사 권한 검증
+
             Group group = student.getGroup();
             if (group == null || !group.getId().equals(guardian.getGroup().getId())) {
                 throw new StudentNotAccessException("해당 그룹의 학생 정보를 조회할 권한이 없습니다.");
             }
 
         } else if (currentUser instanceof Parent parent) {
-            // 부모 권한 검증
+
             authorizationHelper.validateParentAccess(student.getParent(), parent.getId());
 
         } else {
