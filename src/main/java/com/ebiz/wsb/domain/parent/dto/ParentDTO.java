@@ -19,6 +19,7 @@ public class ParentDTO {
     private Long id;
     private String name;
     private String phone;
+    private String email;
     private String address;
     private GroupDTO group;
 

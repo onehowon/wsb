@@ -14,7 +14,7 @@ import org.hibernate.annotations.DynamicInsert;
 
 @Entity
 @Getter
-@Builder
+@Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor
 @DynamicInsert

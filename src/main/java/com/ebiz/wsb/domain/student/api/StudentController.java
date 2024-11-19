@@ -1,8 +1,6 @@
 package com.ebiz.wsb.domain.student.api;
 
-import com.ebiz.wsb.domain.student.dto.GroupStudentAssignRequest;
-import com.ebiz.wsb.domain.student.dto.StudentCreateRequestDTO;
-import com.ebiz.wsb.domain.student.dto.StudentDTO;
+import com.ebiz.wsb.domain.student.dto.*;
 import com.ebiz.wsb.domain.student.application.StudentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -52,38 +50,21 @@ public class StudentController {
     }
 
 
-    @PutMapping("/{studentId}")
-    public ResponseEntity<StudentDTO> updateStudent(
-            @PathVariable Long studentId,
-            @RequestParam("name") String name,
-            @RequestParam("schoolName") String schoolName,
-            @RequestParam("grade") String grade,
-            @RequestParam("notes") String notes,
-            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile) {
+    @PatchMapping("/update/notes")
+    public ResponseEntity<Void> updateStudentNote(@RequestBody StudentUpdateNotesRequestDTO studentUpdateNotesRequestDTO) {
+        studentService.updateStudentNote(studentUpdateNotesRequestDTO);
+        return ResponseEntity.ok().build();
+    }
 
-        StudentCreateRequestDTO studentCreateRequestDTO = StudentCreateRequestDTO.builder()
-                .name(name)
-                .schoolName(schoolName)
-                .grade(grade)
-                .notes(notes)
-                .build();
-
-        StudentDTO updatedStudent = studentService.updateStudent(studentId, studentCreateRequestDTO, imageFile);
-        return ResponseEntity.ok(updatedStudent);
+    @PatchMapping("/update/imageFile")
+    public ResponseEntity<Void> updateStudentImageFile(@RequestPart MultipartFile imageFile, @RequestPart Long studentId) {
+        studentService.updateStudentImageFile(imageFile, studentId);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{studentId}")
     public ResponseEntity<Void> deleteStudent(@PathVariable Long studentId) {
         studentService.deleteStudent(studentId);
         return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/assign/{studentId}")
-    public ResponseEntity<StudentDTO> assignStudentToGroup(
-            @PathVariable Long studentId,
-            @RequestBody GroupStudentAssignRequest request) {
-
-        StudentDTO assignedStudent = studentService.assignGroupAndWaypoint(studentId, request);
-        return ResponseEntity.ok(assignedStudent);
     }
 }
