@@ -137,6 +137,7 @@ public class WaypointService {
                 .studentId(student.getStudentId())
                 .name(student.getName())
                 .schoolName(student.getSchoolName())
+                .parentPhone(student.getParentPhone())
                 .grade(student.getGrade())
                 .notes(student.getNotes())
                 .imagePath(student.getImagePath())
