@@ -82,7 +82,7 @@ public class MessageService {
 
                     messageRepository.save(message);
                 }
-
+              
                 // 메시지 보낼 때, 인솔자들에게 메시지 푸시알림 보내기
                 Map<String, String> pushData = pushNotificationService.createPushData(PushType.MESSAGE);
 

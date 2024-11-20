@@ -26,6 +26,7 @@ import com.ebiz.wsb.global.service.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -50,6 +51,8 @@ import static com.ebiz.wsb.domain.notice.entity.QGroupNotice.groupNotice;
 
 public class GroupNoticeService {
 
+    @Value("${cloud.aws.s3.reviewImageBucketName}")
+    private String reviewImageBucketName;
     private final GroupNoticeRepository groupNoticeRepository;
     private final S3Service s3service;
     private final UserDetailsServiceImpl userDetailsService;
@@ -59,41 +62,9 @@ public class GroupNoticeService {
 
     @Transactional
     public Page<GroupNoticeDTO> getAllGroupNotices(Pageable pageable) {
-        Object currentUser = userDetailsService.getUserByContextHolder();
-
-        if (currentUser == null) {
-            throw new NoticeAccessDeniedException("인증되지 않은 사용자입니다.");
-        }
-
-        Long groupId = null;
-        if (currentUser instanceof Guardian) {
-            Guardian guardian = (Guardian) currentUser;
-
-            if (guardian.getGroup() == null || guardian.getGroup().getId() == null) {
-                log.error("지도사 ID {}는 그룹에 속해 있지 않습니다.", guardian.getId());
-                throw new NoticeAccessDeniedException("해당 지도사는 그룹에 속해 있지 않습니다.");
-            }
-
-            groupId = guardian.getGroup().getId();
-
-        } else if (currentUser instanceof Parent) {
-            Parent parent = (Parent) currentUser;
-
-            if (parent.getGroup() == null || parent.getGroup().getId() == null) {
-                log.error("학부모 ID {}는 그룹에 속해 있지 않습니다.", parent.getId());
-                throw new NoticeAccessDeniedException("해당 학부모는 그룹에 속해 있지 않습니다.");
-            }
-
-            groupId = parent.getGroup().getId();
-        }
-
-        if (groupId == null) {
-            throw new NoticeAccessDeniedException("그룹 정보를 찾을 수 없습니다.");
-        }
-
+        Long groupId = getCurrentGroupId();
         Page<GroupNotice> notices = groupNoticeRepository.findAllByGroupIdOrderByCreatedAtDesc(groupId, pageable);
 
-        // 공지사항이 비어 있으면 빈 배열을 반환
         if (notices.isEmpty()) {
             log.info("그룹 ID {}에 대한 공지사항이 없습니다.", groupId);
             return Page.empty();
@@ -101,6 +72,7 @@ public class GroupNoticeService {
 
         return notices.map(this::convertToDTO);
     }
+
 
     @Transactional
     public GroupNoticeDTO getGroupNoticeByGroupNoticeId(Long groupNoticeId) {
@@ -288,7 +260,7 @@ public class GroupNoticeService {
 
     private String uploadImage(MultipartFile imageFile) {
         try {
-            return s3service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
+            return s3service.uploadImageFile(imageFile, reviewImageBucketName);
         } catch (IOException e) {
             throw new FileUploadException("이미지 업로드 실패", e);
         }
@@ -346,4 +318,33 @@ public class GroupNoticeService {
                 .likesCount(likesCount)
                 .build();
     }
+
+    private Long getCurrentUserId() {
+        Object currentUser = userDetailsService.getUserByContextHolder();
+        if (currentUser instanceof Guardian) {
+            return ((Guardian) currentUser).getId();
+        } else if (currentUser instanceof Parent) {
+            return ((Parent) currentUser).getId();
+        } else {
+            throw new NoticeAccessDeniedException("인증되지 않은 사용자입니다.");
+        }
+    }
+
+    private Long getCurrentGroupId() {
+        Object currentUser = userDetailsService.getUserByContextHolder();
+        if (currentUser instanceof Guardian guardian) {
+            if (guardian.getGroup() == null) {
+                throw new NoticeAccessDeniedException("해당 지도사는 그룹에 속해 있지 않습니다.");
+            }
+            return guardian.getGroup().getId();
+        } else if (currentUser instanceof Parent parent) {
+            if (parent.getGroup() == null) {
+                throw new NoticeAccessDeniedException("해당 학부모는 그룹에 속해 있지 않습니다.");
+            }
+            return parent.getGroup().getId();
+        } else {
+            throw new NoticeAccessDeniedException("인증되지 않은 사용자입니다.");
+        }
+    }
+
 }

@@ -15,7 +15,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +32,7 @@ public class AlertService {
                 .alertCategory(category)
                 .title(alarmTitle)
                 .content(alarmContent)
-                .createdAt(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
+                .createdAt(LocalDateTime.now())
                 .isRead(false)
                 .userType(userType)
                 .build();
@@ -41,7 +40,7 @@ public class AlertService {
         alertRepository.save(alert);
     }
 
-    @Transactional
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<AlertDTO> getAlertsForCurrentUser() {
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
         if (userByContextHolder instanceof Guardian) {
@@ -129,11 +128,12 @@ public class AlertService {
 
     @Async
     public void markAlertsAsReadAsync(List<Alert> alerts) {
-        for (Alert alert : alerts) {
-            alert.setRead(true);
-        }
-        alertRepository.saveAll(alerts);
+        if (alerts.isEmpty()) return;
+
+        List<Long> alertIds = alerts.stream()
+                .map(Alert::getId)
+                .toList();
+
+        alertRepository.markAlertsAsRead(alertIds);
     }
-
-
 }
