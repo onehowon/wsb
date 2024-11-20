@@ -37,6 +37,10 @@ public class Message {
     @JoinColumn(name = "student_id")
     private Student student;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guardian_id")
+    private Guardian guardian;
+
     @Column(name = "content")
     private String content;
 
