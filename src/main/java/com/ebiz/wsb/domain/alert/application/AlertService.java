@@ -129,11 +129,9 @@ public class AlertService {
 
     @Async
     public void markAlertsAsReadAsync(List<Alert> alerts) {
-        for (Alert alert : alerts) {
-            alert.setRead(true);
-        }
-        alertRepository.saveAll(alerts);
+        List<Long> alertIds = alerts.stream()
+                .map(Alert::getId)
+                .toList();
+        alertRepository.markAlertsAsRead(alertIds);
     }
-
-
 }
