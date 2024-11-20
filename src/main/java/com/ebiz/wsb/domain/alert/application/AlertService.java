@@ -33,7 +33,7 @@ public class AlertService {
                 .alertCategory(category)
                 .title(alarmTitle)
                 .content(alarmContent)
-                .createdAt(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
+                .createdAt(LocalDateTime.now())
                 .isRead(false)
                 .userType(userType)
                 .build();

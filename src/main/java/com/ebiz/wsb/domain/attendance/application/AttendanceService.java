@@ -214,12 +214,12 @@ public class AttendanceService {
         Map<String, String> pushData = pushNotificationService.createPushData(PushType.PICKUP);
 
         // 푸시 알림 body 내용에 한국 시간(Asia/Seoul)으로 시간 삽입
-        LocalTime nowInKorea = LocalTime.now(ZoneId.of("Asia/Seoul"));
+        LocalTime nowInKorea = LocalTime.now();
         String bodyWithTime = String.format(pushData.get("body"), nowInKorea.getHour(), nowInKorea.getMinute());
         pushData.put("body", bodyWithTime);
 
         // 알림 센터 body 내용에 한국 시간(Asia/Seoul)으로 시간 삽입
-        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        LocalDateTime now = LocalDateTime.now();
         String alarmBodyWithTime = String.format(pushData.get("parent_alarm_center_body"), now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute());
         pushData.put("parent_alarm_center_body", alarmBodyWithTime);
 

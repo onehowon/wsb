@@ -149,7 +149,7 @@ public class GroupService {
         Map<String, String> parentPushData = pushNotificationService.createPushData(PushType.END_WORK_PARENT);
         Map<String, String> guardianPushData = pushNotificationService.createPushData(PushType.END_WORK_GUARDIAN);
 
-        LocalTime nowInKorea = LocalTime.now(ZoneId.of("Asia/Seoul"));
+        LocalTime nowInKorea = LocalTime.now();
         // 부모님한테 보내는 메시지 body 값 수정
         String bodyWithTimeAndSchoolName = String.format(parentPushData.get("body"), nowInKorea.getHour(), nowInKorea.getMinute(), group.getSchoolName());
         parentPushData.put("body", bodyWithTimeAndSchoolName);
@@ -159,7 +159,7 @@ public class GroupService {
         guardianPushData.put("body", bodyWithGuardianName);
 
         // 알림센터에서 학부모가 받는 body 값 수정
-        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        LocalDateTime now = LocalDateTime.now();
         String alarmBodyWithTime = String.format(parentPushData.get("parent_alarm_center_body"), now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute(), group.getSchoolName());
         parentPushData.put("parent_alarm_center_body", alarmBodyWithTime);
 

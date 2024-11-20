@@ -61,7 +61,7 @@ public class MessageService {
                     .parent(parent)
                     .student(student)
                     .content(content)
-                    .transferredAt(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
+                    .transferredAt(LocalDateTime.now())
                     .isRead(false) // build 전에 호출해야 함
                     .build();
 
@@ -99,7 +99,7 @@ public class MessageService {
                 MessageRecipient recipient = MessageRecipient.builder()
                         .guardian(guardian)
                         .message(message)
-                        .createdAt(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
+                        .createdAt(LocalDateTime.now())
                         .build();
 
                 messageRecipientRepository.save(recipient);
