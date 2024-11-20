@@ -22,9 +22,12 @@ public class GroupDTO {
     private Long id;
     private String groupName;
     private String schoolName;
+    private List<GuardianDTO> guardians;
+    private Integer studentCount;
     private Boolean isGuideActive;
-    @JsonInclude(JsonInclude.Include.ALWAYS)
-    private Long dutyGuardianId;
     private AttendanceMessageType messageType;
     private Boolean shuttleStatus;
+
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    private Long dutyGuardianId;
 }

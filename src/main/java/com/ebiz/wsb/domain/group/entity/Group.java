@@ -33,6 +33,9 @@ public class Group {
     @Column(name = "group_name")
     private String groupName;
 
+    @Column(name = "group_image")
+    private String groupImage;
+
     @Column(name = "is_guide_active", nullable = false)
     private Boolean isGuideActive = false;
 

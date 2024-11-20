@@ -12,13 +12,20 @@ import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.notification.application.PushNotificationService;
 import com.ebiz.wsb.domain.notification.dto.PushType;
+import com.ebiz.wsb.domain.parent.entity.Parent;
+import com.ebiz.wsb.domain.parent.exception.ParentAccessException;
+import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
+import com.ebiz.wsb.domain.student.entity.Student;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
 import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
+import com.ebiz.wsb.global.service.ImageService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -30,11 +37,14 @@ import java.util.Map;
 @Slf4j
 public class GroupService {
 
+    @Value("${cloud.aws.s3.reviewImageBucketName}")
+    private String reviewImageBucketName;
     private final GroupRepository groupRepository;
     private final UserDetailsServiceImpl userDetailsService;
     private final SimpMessagingTemplate template;
     private final PushNotificationService pushNotificationService;
     private final WaypointRepository waypointRepository;
+    private final ImageService imageService;
 
 
     @Transactional()
@@ -185,4 +195,17 @@ public class GroupService {
                 .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다"));
     }
 
+    // 임의로 사진 넣는 거라 별 기능 x
+    public void updateStudentImage(MultipartFile imageFile, Long groupId) {
+
+        Group existingGroup = groupRepository.findById(groupId)
+                .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다."));
+
+        String photoUrl = imageService.uploadImage(imageFile, reviewImageBucketName);
+        Group updateGroup = existingGroup.toBuilder()
+                .groupImage(photoUrl)
+                .build();
+
+        groupRepository.save(updateGroup);
+    }
 }
