@@ -56,7 +56,7 @@ public class GroupService {
                 .build();
 
         Group save = groupRepository.save(updateGroup);
-        groupRepository.flush();
+        // groupRepository.flush();
 
         // 웹소캣으로 보낼 GroupDTO 정보 생성
         GroupDTO groupDTO = GroupDTO.builder()
