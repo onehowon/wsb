@@ -113,6 +113,7 @@ public class ParentService {
                 .id(group.getId())
                 .guardians(guardianDTOs)
                 .studentCount(studentCount)
+                .groupImage(group.getGroupImage())
                 .build();
     }
 }
