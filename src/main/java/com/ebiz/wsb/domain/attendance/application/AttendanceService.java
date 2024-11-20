@@ -13,8 +13,6 @@ import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.message.entity.Message;
-import com.ebiz.wsb.domain.message.entity.MessageRecipient;
-import com.ebiz.wsb.domain.message.repository.MessageRecipientRepository;
 import com.ebiz.wsb.domain.message.repository.MessageRepository;
 import com.ebiz.wsb.domain.notification.application.PushNotificationService;
 import com.ebiz.wsb.domain.notification.dto.PushType;
@@ -56,7 +54,6 @@ public class AttendanceService {
     private final GroupRepository groupRepository;
     private final PushNotificationService pushNotificationService;
     private final MessageRepository messageRepository;
-    private final MessageRecipientRepository messageRecipientRepository;
 
     @Transactional
     public void updateAttendance(Long studentId, AttendanceStatus attendanceStatus, Long groupId) {
@@ -278,17 +275,21 @@ public class AttendanceService {
                     dayOfMonth,
                     dayOfWeekKorean);
 
-            // 메시지 생성 및 저장
-            Message message = Message.builder()
-                    .group(parent.getGroup())
-                    .parent(parent)
-                    .content(content)
-                    .transferredAt(LocalDateTime.now())
-                    .isRead(false)
-                    .student(findStudent)
-                    .build();
+            // 그룹 내 모든 인솔자에게 메시지 생성 및 저장
+            List<Guardian> guardians = parent.getGroup().getGuardians();
+            for (Guardian guardian : guardians) {
+                Message message = Message.builder()
+                        .group(parent.getGroup())
+                        .parent(parent)
+                        .content(content)
+                        .transferredAt(LocalDateTime.now())
+                        .isRead(false)
+                        .guardian(guardian) // 각 메시지를 인솔자와 연결
+                        .student(findStudent)
+                        .build();
 
-            messageRepository.save(message);
+                messageRepository.save(message);
+            }
 
             Map<String, String> pushData = pushNotificationService.createPushData(PushType.PREABSENT_MESSAGE);
 
@@ -307,18 +308,6 @@ public class AttendanceService {
             pushData.put("guardian_alarm_center_body", alarmBodyWithTime);
 
             pushNotificationService.sendPushNotificationToGuardians(findStudent.getGroup().getId(), pushData.get("title"), pushData.get("body"), pushData.get("guardian_alarm_center_title"), pushData.get("guardian_alarm_center_body"), PushType.PREABSENT_MESSAGE);
-
-            // 해당 그룹의 모든 인솔자에게 메시지 보내기
-            List<Guardian> guardians = parent.getGroup().getGuardians();
-            for(Guardian guardian : guardians) {
-                MessageRecipient recipient = MessageRecipient.builder()
-                        .guardian(guardian)
-                        .message(message)
-                        .createdAt(LocalDateTime.now())
-                        .build();
-
-                messageRecipientRepository.save(recipient);
-            }
 
             return BaseResponse.builder()
                     .message("사전 결석 신청이 완료되었습니다")

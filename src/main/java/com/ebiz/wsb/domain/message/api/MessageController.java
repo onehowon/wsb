@@ -3,7 +3,7 @@ package com.ebiz.wsb.domain.message.api;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.message.application.MessageService;
 import com.ebiz.wsb.domain.message.dto.MessageDTO;
-import com.ebiz.wsb.global.dto.BaseResponse;
+import com.ebiz.wsb.domain.message.dto.MessageSendRequestDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -20,16 +20,16 @@ public class MessageController {
 
     private final MessageService messageService;
 
-    @PostMapping("/send/{studentId}")
-    public ResponseEntity<String> sendMessage(@PathVariable Long studentId, @RequestParam String content ) {
-        messageService.sendMessage(studentId, content);
+    @PostMapping("/send")
+    public ResponseEntity<String> sendMessage(@RequestBody MessageSendRequestDTO messageSendRequestDTO) {
+        messageService.sendMessage(messageSendRequestDTO);
         return ResponseEntity.ok("메시지가 성공적으로 전달되었습니다.");
     }
 
-    @GetMapping("/received/{studentId}")
-    public ResponseEntity<List<MessageDTO>> getMessagesForGuardian(@PathVariable Long studentId) {
+    @GetMapping("/received")
+    public ResponseEntity<List<MessageDTO>> getMessagesForGuardian(@RequestBody MessageSendRequestDTO messageSendRequestDTO) {
         try {
-            List<MessageDTO> messagesForGuardian = messageService.getMessagesForGuardian(studentId);
+            List<MessageDTO> messagesForGuardian = messageService.getMessagesForGuardian(messageSendRequestDTO);
 
             // 비어있어도 빈 리스트 반환
             return ResponseEntity.ok(messagesForGuardian);
@@ -38,9 +38,9 @@ public class MessageController {
         }
     }
 
-    @GetMapping("/received/one/{studentId}")
-    public ResponseEntity<?> getMessagesForGuardianOne(@PathVariable Long studentId) {
-        List<MessageDTO> messagesForGuardianOne = messageService.getMessagesForGuardianOne(studentId);
+    @GetMapping("/received/one")
+    public ResponseEntity<?> getMessagesForGuardianOne(@RequestBody MessageSendRequestDTO messageSendRequestDTO) {
+        List<MessageDTO> messagesForGuardianOne = messageService.getMessagesForGuardianOne(messageSendRequestDTO);
         return ResponseEntity.ok(messagesForGuardianOne);
     }
 
