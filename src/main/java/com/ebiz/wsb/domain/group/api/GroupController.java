@@ -2,9 +2,11 @@ package com.ebiz.wsb.domain.group.api;
 
 import com.ebiz.wsb.domain.group.application.GroupService;
 import com.ebiz.wsb.domain.group.dto.GroupDTO;
+import com.ebiz.wsb.domain.student.dto.StudentUpdateNotesRequestDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,5 +33,11 @@ public class GroupController {
     public ResponseEntity<GroupDTO> getGuideStatus() {
         GroupDTO guideStatus = groupService.getGuideStatus();
         return ResponseEntity.ok(guideStatus);
+    }
+
+    @PatchMapping("/update/image")
+    public ResponseEntity<Void> updateStudentImage(@RequestPart MultipartFile imageFile, @RequestPart Long groupId ) {
+        groupService.updateStudentImage(imageFile, groupId);
+        return ResponseEntity.ok().build();
     }
 }
