@@ -40,7 +40,7 @@ public class AlertService {
         alertRepository.save(alert);
     }
 
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional
     public List<AlertDTO> getAlertsForCurrentUser() {
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
         if (userByContextHolder instanceof Guardian) {
