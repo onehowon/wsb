@@ -22,6 +22,8 @@ public class GroupDTO {
     private Long id;
     private String groupName;
     private String schoolName;
+    private String regionName;
+    private String districtName;
     private List<GuardianDTO> guardians;
     private Integer studentCount;
     private Boolean isGuideActive;

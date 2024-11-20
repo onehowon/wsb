@@ -33,6 +33,12 @@ public class Group {
     @Column(name = "group_name")
     private String groupName;
 
+    @Column(name = "region_name")
+    private String regionName;
+
+    @Column(name = "district_name")
+    private String districtName;
+
     @Column(name = "group_image")
     private String groupImage;
 

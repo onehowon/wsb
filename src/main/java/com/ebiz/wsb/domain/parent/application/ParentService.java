@@ -114,6 +114,8 @@ public class ParentService {
                 .guardians(guardianDTOs)
                 .studentCount(studentCount)
                 .groupImage(group.getGroupImage())
+                .regionName(group.getRegionName())
+                .districtName(group.getDistrictName())
                 .build();
     }
 }
