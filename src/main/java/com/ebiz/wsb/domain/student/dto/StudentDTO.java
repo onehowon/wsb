@@ -20,6 +20,8 @@ public class StudentDTO {
     private String schoolName;
     private String grade;
     private String notes;
+
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     private String imagePath;
     private Long waypointId;
     private String waypointName;
