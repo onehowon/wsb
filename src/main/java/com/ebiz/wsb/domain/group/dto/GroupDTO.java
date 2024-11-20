@@ -27,6 +27,7 @@ public class GroupDTO {
     private Boolean isGuideActive;
     private AttendanceMessageType messageType;
     private Boolean shuttleStatus;
+    private String groupImage;
 
     @JsonInclude(JsonInclude.Include.ALWAYS)
     private Long dutyGuardianId;
