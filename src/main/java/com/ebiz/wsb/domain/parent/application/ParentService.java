@@ -21,6 +21,7 @@ import com.ebiz.wsb.global.service.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,8 +34,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ParentService {
 
-    private static final String PARENT_NOT_FOUND_MESSAGE = "부모 정보를 찾을 수 없습니다.";
-
+    @Value("${cloud.aws.s3.reviewImageBucketName}")
+    private String reviewImageBucketName;
     private final ParentRepository parentRepository;
     private final AuthorizationHelper authorizationHelper;
     private final UserDetailsServiceImpl userDetailsService;
@@ -60,7 +61,7 @@ public class ParentService {
 
         String imagePath = null;
         if (imageFile != null && !imageFile.isEmpty()) {
-            imagePath = imageService.uploadImage(imageFile, "walkingschoolbus-bucket");
+            imagePath = imageService.uploadImage(imageFile, reviewImageBucketName);
         }
 
         Parent updatedParent = parentMapper.fromDTO(parentDTO, loggedInParent, imagePath);

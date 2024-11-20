@@ -3,34 +3,27 @@ package com.ebiz.wsb.domain.student.application;
 import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
-import com.ebiz.wsb.domain.group.repository.GroupRepository;
 import com.ebiz.wsb.domain.guardian.entity.Guardian;
-import com.ebiz.wsb.domain.guardian.exception.FileUploadException;
-import com.ebiz.wsb.domain.guardian.exception.GuardianNotAccessException;
 import com.ebiz.wsb.domain.parent.entity.Parent;
 import com.ebiz.wsb.domain.parent.exception.ParentAccessException;
 import com.ebiz.wsb.domain.parent.exception.ParentNotFoundException;
-import com.ebiz.wsb.domain.parent.repository.ParentRepository;
-import com.ebiz.wsb.domain.student.dto.*;
+import com.ebiz.wsb.domain.student.dto.StudentCreateRequestDTO;
+import com.ebiz.wsb.domain.student.dto.StudentDTO;
+import com.ebiz.wsb.domain.student.dto.StudentMapper;
+import com.ebiz.wsb.domain.student.dto.StudentUpdateNotesRequestDTO;
 import com.ebiz.wsb.domain.student.entity.Student;
-import com.ebiz.wsb.domain.student.exception.ImageUploadException;
 import com.ebiz.wsb.domain.student.exception.StudentNotAccessException;
 import com.ebiz.wsb.domain.student.exception.StudentNotFoundException;
 import com.ebiz.wsb.domain.student.repository.StudentRepository;
-import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
-import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
 import com.ebiz.wsb.global.service.AuthorizationHelper;
 import com.ebiz.wsb.global.service.ImageService;
-import com.ebiz.wsb.global.service.S3Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 
 @Slf4j
@@ -38,18 +31,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StudentService {
 
+    @Value("${cloud.aws.s3.reviewImageBucketName}")
+    private String reviewImageBucketName;
     private final StudentRepository studentRepository;
     private final ImageService imageService;
     private final AuthorizationHelper authorizationHelper;
     private final StudentMapper studentMapper;
     private final UserDetailsServiceImpl userDetailsService;
-    private final S3Service s3Service;
 
     @Transactional
     public StudentDTO createStudent(StudentCreateRequestDTO requestDTO, MultipartFile imageFile) {
         Parent parent = authorizationHelper.getLoggedInParent();
 
-        String imagePath = imageService.uploadImage(imageFile, "walkingschoolbus-bucket");
+        String imagePath = imageService.uploadImage(imageFile, reviewImageBucketName);
 
         Student student = Student.builder()
                 .name(requestDTO.getName())
@@ -91,7 +85,7 @@ public class StudentService {
     }
 
 
-    @Transactional
+    @Transactional(readOnly = true)
     public StudentDTO getStudentById(Long studentId) {
         Student student = findStudentById(studentId);
         Object currentUser = userDetailsService.getUserByContextHolder();
@@ -153,7 +147,7 @@ public class StudentService {
             Parent parent = (Parent) userByContextHolder;
 
             if(parent.getId().equals(parentId)) {
-                String photoUrl = uploadImage(imageFile);
+                String photoUrl = imageService.uploadImage(imageFile, reviewImageBucketName);
                 Student updateStudent = existingStudent.toBuilder()
                         .imagePath(photoUrl)
                         .build();
@@ -175,7 +169,7 @@ public class StudentService {
         authorizationHelper.validateParentAccess(student.getParent(), parent.getId());
 
         if (student.getImagePath() != null) {
-            imageService.deleteImage(student.getImagePath(), "walkingschoolbus-bucket");
+            imageService.deleteImage(student.getImagePath(), reviewImageBucketName);
         }
 
         studentRepository.delete(student);
@@ -184,13 +178,5 @@ public class StudentService {
     private Student findStudentById(Long studentId) {
         return studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException("학생을 찾을 수 없습니다."));
-    }
-
-    private String uploadImage(MultipartFile imageFile) {
-        try {
-            return s3Service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
-        } catch (IOException e) {
-            throw new FileUploadException("이미지 업로드 실패", e);
-        }
     }
 }

@@ -23,7 +23,6 @@ public class GuardianController {
     @GetMapping
     public ResponseEntity<GuardianDTO> getMyGuardianInfo() {
         GuardianDTO guardianDTO = guardianService.getMyGuardianInfo();
-        log.info("Retrieved logged-in Guardian information");
         return new ResponseEntity<>(guardianDTO, HttpStatus.OK);
     }
 

@@ -20,6 +20,7 @@ import com.ebiz.wsb.global.service.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,8 +32,16 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+
 public class GuardianService {
 
+    private static final String GUARDIAN_NOT_FOUND = "지도사 정보를 찾을 수 없습니다.";
+    private static final String GUARDIAN_ACCESS_DENIED = "본인의 정보만 조회할 수 있습니다.";
+    private static final String GROUP_NOT_FOUND = "아이의 그룹 정보를 찾을 수 없습니다.";
+
+
+    @Value("${cloud.aws.s3.reviewImageBucketName}")
+    private String reviewImageBucketName;
     private final GuardianRepository guardianRepository;
     private final AuthorizationHelper authorizationHelper;
     private final GuardianMapper guardianMapper;
@@ -40,12 +49,12 @@ public class GuardianService {
     private final ImageService imageService;
     private final S3Service s3Service;
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public GuardianDTO getMyGuardianInfo() {
         Guardian loggedInGuardian = authorizationHelper.getLoggedInGuardian();
         return guardianMapper.toDTO(loggedInGuardian);
     }
 
-    @Transactional
     public List<GuardianDTO> getGuardiansForMyChild() {
         Object currentUser = userDetailsService.getUserByContextHolder();
 
@@ -59,7 +68,7 @@ public class GuardianService {
                 .collect(Collectors.toList());
 
         if (childGroupIds.isEmpty()) {
-            throw new GroupNotFoundException("아이의 그룹 정보를 찾을 수 없습니다.");
+            throw new GroupNotFoundException(GROUP_NOT_FOUND);
         }
 
         List<Guardian> guardians = guardianRepository.findGuardiansByGroupId(childGroupIds.get(0));
@@ -71,11 +80,11 @@ public class GuardianService {
 
     public GuardianDTO getGuardianById(Long guardianId) {
         Guardian guardian = guardianRepository.findById(guardianId)
-                .orElseThrow(() -> new GuardianNotFoundException("지도사 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new GuardianNotFoundException(GUARDIAN_NOT_FOUND));
 
         Guardian loggedInGuardian = authorizationHelper.getLoggedInGuardian();
         if (!loggedInGuardian.getId().equals(guardianId)) {
-            throw new GuardianNotAccessException("본인의 정보만 조회할 수 있습니다.");
+            throw new GuardianNotAccessException(GUARDIAN_ACCESS_DENIED);
         }
 
         return guardianMapper.toDTO(guardian);
@@ -83,16 +92,21 @@ public class GuardianService {
 
     @Transactional
     public void updateGuardianImageFile(MultipartFile imageFile) {
-        Guardian loggedInGuardian = authorizationHelper.getLoggedInGuardian();
+        if (imageFile == null || imageFile.isEmpty()) {
+            throw new IllegalArgumentException("업로드할 파일이 없습니다.");
+        }
 
+        Guardian loggedInGuardian = getLoggedInGuardian();
         String photoUrl = uploadImage(imageFile);
 
-        Guardian updateGuardian = loggedInGuardian.toBuilder()
+        Guardian updatedGuardian = loggedInGuardian.toBuilder()
                 .imagePath(photoUrl)
                 .build();
 
-        guardianRepository.save(updateGuardian);
+        guardianRepository.save(updatedGuardian);
+        log.info("지도사 이미지 업데이트 완료 - ID: {}, 이미지 경로: {}", loggedInGuardian.getId(), photoUrl);
     }
+
 
     @Transactional
     public void deleteMyGuardianInfo() {
@@ -100,7 +114,7 @@ public class GuardianService {
 
         if (loggedInGuardian.getImagePath() != null) {
             try {
-                imageService.deleteImage(loggedInGuardian.getImagePath(), "walkingschoolbus-bucket");
+                imageService.deleteImage(loggedInGuardian.getImagePath(), reviewImageBucketName);
             } catch (Exception e) {
                 log.error("이미지 삭제 실패 - 경로: {}, 에러 메시지: {}", loggedInGuardian.getImagePath(), e.getMessage());
             }
@@ -127,9 +141,16 @@ public class GuardianService {
 
     private String uploadImage(MultipartFile imageFile) {
         try {
-            return s3Service.uploadImageFile(imageFile, "walkingschoolbus-bucket");
+            String photoUrl = s3Service.uploadImageFile(imageFile, reviewImageBucketName);
+            log.info("이미지 업로드 성공 - 파일 이름: {}, S3 URL: {}", imageFile.getOriginalFilename(), photoUrl);
+            return photoUrl;
         } catch (IOException e) {
+            log.error("이미지 업로드 실패 - 파일 이름: {}, 에러 메시지: {}", imageFile.getOriginalFilename(), e.getMessage());
             throw new FileUploadException("이미지 업로드 실패", e);
         }
+    }
+
+    private Guardian getLoggedInGuardian() {
+        return authorizationHelper.getLoggedInGuardian();
     }
 }

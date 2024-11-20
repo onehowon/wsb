@@ -5,7 +5,6 @@ import com.ebiz.wsb.domain.auth.application.UserDetailsServiceImpl;
 import com.ebiz.wsb.domain.group.dto.GroupDTO;
 import com.ebiz.wsb.domain.group.entity.Group;
 import com.ebiz.wsb.domain.group.exception.GroupAlreadyActiveException;
-import com.ebiz.wsb.domain.group.exception.GroupNotAccessException;
 import com.ebiz.wsb.domain.group.exception.GroupNotFoundException;
 import com.ebiz.wsb.domain.group.exception.GuideNotOnDutyException;
 import com.ebiz.wsb.domain.group.repository.GroupRepository;
@@ -13,20 +12,16 @@ import com.ebiz.wsb.domain.guardian.entity.Guardian;
 import com.ebiz.wsb.domain.guardian.exception.GuardianNotFoundException;
 import com.ebiz.wsb.domain.notification.application.PushNotificationService;
 import com.ebiz.wsb.domain.notification.dto.PushType;
-import com.ebiz.wsb.domain.waypoint.dto.WaypointDTO;
 import com.ebiz.wsb.domain.waypoint.entity.Waypoint;
 import com.ebiz.wsb.domain.waypoint.repository.WaypointRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.User;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
@@ -44,17 +39,9 @@ public class GroupService {
 
     @Transactional()
     public GroupDTO startGuide() {
-        // 현재 사용자 정보를 가져와 인솔자인지 확인
-        Object userByContextHolder = userDetailsService.getUserByContextHolder();
-        if (!(userByContextHolder instanceof Guardian)) {
-            throw new GuardianNotFoundException("해당 지도사를 찾을 수 없습니다");
-        }
+        Guardian guardian = getAuthenticatedGuardian();
 
-        Guardian guardian = (Guardian) userByContextHolder;
-
-        // 인솔자가 속한 그룹 정보를 조회
-        Group group = groupRepository.findById(guardian.getGroup().getId())
-                .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다"));
+        Group group = getGroupByGuardian(guardian);
 
         // 다른 인솔자가 이미 출근을 시작한 경우 예외 발생
         if (group.getIsGuideActive()) {
@@ -103,17 +90,10 @@ public class GroupService {
 
     @Transactional
     public GroupDTO stopGuide() {
-        // 현재 사용자 정보를 가져와 인솔자인지 확인
-        Object userByContextHolder = userDetailsService.getUserByContextHolder();
-        if (!(userByContextHolder instanceof Guardian)) {
-            throw new GuardianNotFoundException("해당 지도사를 찾을 수 없습니다");
-        }
-
-        Guardian guardian = (Guardian) userByContextHolder;
+        Guardian guardian = getAuthenticatedGuardian();
 
         // 인솔자가 속한 그룹 정보 가져오기
-        Group group = groupRepository.findById(guardian.getGroup().getId())
-                .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다"));
+        Group group = getGroupByGuardian(guardian);
 
         // 해당 그룹의 마지막 경유지 true 값으로 변경 후 저장하기
         List<Waypoint> waypoints = group.getWaypoints();
@@ -136,7 +116,7 @@ public class GroupService {
                 .build();
 
         Group save = groupRepository.save(updateGroup);
-        groupRepository.flush();
+        // groupRepository.flush();
 
         // 웹소캣으로 보낼 GroupDTO와 WaypointDTO 정보 생성
         GroupDTO groupDTO = GroupDTO.builder()
@@ -181,16 +161,9 @@ public class GroupService {
     @Transactional
     public GroupDTO getGuideStatus() {
         // 현재 사용자 정보를 가져와 인솔자인지 확인
-        Object userByContextHolder = userDetailsService.getUserByContextHolder();
-        if (!(userByContextHolder instanceof Guardian)) {
-            throw new GuardianNotFoundException("해당 지도사를 찾을 수 없습니다");
-        }
+        Guardian guardian = getAuthenticatedGuardian();
 
-        Guardian guardian = (Guardian) userByContextHolder;
-
-        // 인솔자가 속한 그룹 정보를 조회
-        Group group = groupRepository.findById(guardian.getGroup().getId())
-                .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다"));
+        Group group = getGroupByGuardian(guardian);
 
         return GroupDTO.builder()
                 .isGuideActive(group.getIsGuideActive())
@@ -198,4 +171,18 @@ public class GroupService {
                 .shuttleStatus(group.getShuttleStatus())
                 .build();
     }
+
+    private Guardian getAuthenticatedGuardian() {
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        if (!(userByContextHolder instanceof Guardian)) {
+            throw new GuardianNotFoundException("해당 지도사를 찾을 수 없습니다");
+        }
+        return (Guardian) userByContextHolder;
+    }
+
+    private Group getGroupByGuardian(Guardian guardian) {
+        return groupRepository.findById(guardian.getGroup().getId())
+                .orElseThrow(() -> new GroupNotFoundException("해당 그룹을 찾을 수 없습니다"));
+    }
+
 }
