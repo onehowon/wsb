@@ -47,4 +47,10 @@ public class ParentController {
         GroupDTO group = parentService.getParentGroup();
         return new ResponseEntity<>(group, HttpStatus.OK);
     }
+
+    @GetMapping("/shuttle-status")
+    public ResponseEntity<GroupDTO> getShuttleStatus() {
+        GroupDTO shuttleStatus = parentService.getShuttleStatus();
+        return ResponseEntity.ok(shuttleStatus);
+    }
 }

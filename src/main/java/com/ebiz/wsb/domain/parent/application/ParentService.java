@@ -118,5 +118,24 @@ public class ParentService {
                 .districtName(group.getDistrictName())
                 .build();
     }
+
+    // 학부모가 운행 탭 들어갈 때, 운행 여부에 대해 알 수 있는 api
+    public GroupDTO getShuttleStatus() {
+        Object userByContextHolder = userDetailsService.getUserByContextHolder();
+        if(userByContextHolder instanceof Parent) {
+            Parent parent = (Parent) userByContextHolder;
+
+            Group group = parent.getGroup();
+
+            GroupDTO groupDTO = GroupDTO.builder()
+                    .isGuideActive(group.getIsGuideActive())
+                    .build();
+
+            return groupDTO;
+        } else {
+            throw new ParentNotFoundException("해당 학부모를 찾을 수 없습니다.");
+        }
+    }
+
 }
 
