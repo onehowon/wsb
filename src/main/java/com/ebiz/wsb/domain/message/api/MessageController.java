@@ -26,10 +26,10 @@ public class MessageController {
         return ResponseEntity.ok("메시지가 성공적으로 전달되었습니다.");
     }
 
-    @GetMapping("/received")
-    public ResponseEntity<List<MessageDTO>> getMessagesForGuardian(@RequestBody MessageSendRequestDTO messageSendRequestDTO) {
+    @GetMapping("/received/{studentId}")
+    public ResponseEntity<List<MessageDTO>> getMessagesForGuardian(@PathVariable Long studentId) {
         try {
-            List<MessageDTO> messagesForGuardian = messageService.getMessagesForGuardian(messageSendRequestDTO);
+            List<MessageDTO> messagesForGuardian = messageService.getMessagesForGuardian(studentId);
 
             // 비어있어도 빈 리스트 반환
             return ResponseEntity.ok(messagesForGuardian);
@@ -38,9 +38,9 @@ public class MessageController {
         }
     }
 
-    @GetMapping("/received/one")
-    public ResponseEntity<?> getMessagesForGuardianOne(@RequestBody MessageSendRequestDTO messageSendRequestDTO) {
-        List<MessageDTO> messagesForGuardianOne = messageService.getMessagesForGuardianOne(messageSendRequestDTO);
+    @GetMapping("/received/one/{studentId}")
+    public ResponseEntity<?> getMessagesForGuardianOne(@PathVariable Long studentId) {
+        List<MessageDTO> messagesForGuardianOne = messageService.getMessagesForGuardianOne(studentId);
         return ResponseEntity.ok(messagesForGuardianOne);
     }
 
