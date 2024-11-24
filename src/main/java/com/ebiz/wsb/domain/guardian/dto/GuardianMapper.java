@@ -11,6 +11,7 @@ public class GuardianMapper {
     public GuardianDTO toDTO(Guardian guardian) {
         return GuardianDTO.builder()
                 .id(guardian.getId())
+                .email(guardian.getEmail())
                 .name(guardian.getName())
                 .phone(guardian.getPhone())
                 .bio(guardian.getBio())

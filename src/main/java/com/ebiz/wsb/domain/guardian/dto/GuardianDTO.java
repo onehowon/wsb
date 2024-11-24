@@ -18,6 +18,7 @@ public class GuardianDTO {
     private String bio;
     private String experience;
     private String phone;
+    private String email;
 
     @JsonInclude(JsonInclude.Include.ALWAYS)
     private String imagePath;
