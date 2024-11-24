@@ -125,12 +125,11 @@ public class MessageService {
 
 
     @Transactional
-    public List<MessageDTO> getMessagesForGuardian(MessageSendRequestDTO messageSendRequestDTO) {
+    public List<MessageDTO> getMessagesForGuardian(Long studentId) {
         // 현재 사용자 정보(인증 객체)로 지도사 여부 확인
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
         if (userByContextHolder instanceof Guardian) {
             Guardian guardian = (Guardian) userByContextHolder;
-            Long studentId = messageSendRequestDTO.getStudentId();
 
             // 학생 정보 조회
             Student student = studentRepository.findById(studentId)
@@ -188,12 +187,11 @@ public class MessageService {
 
 
     @Transactional
-    public List<MessageDTO> getMessagesForGuardianOne(MessageSendRequestDTO messageSendRequestDTO) {
+    public List<MessageDTO> getMessagesForGuardianOne(Long studentId) {
         Object userByContextHolder = userDetailsService.getUserByContextHolder();
 
         if (userByContextHolder instanceof Guardian) {
             Guardian guardian = (Guardian) userByContextHolder;
-            Long studentId = messageSendRequestDTO.getStudentId();
 
             // 학생 정보 조회
             Student student = studentRepository.findById(studentId)
