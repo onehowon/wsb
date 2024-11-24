@@ -57,7 +57,7 @@ public class StudentController {
     }
 
     @PatchMapping("/update/imageFile")
-    public ResponseEntity<Void> updateStudentImageFile(@RequestPart MultipartFile imageFile, @RequestPart Long studentId) {
+    public ResponseEntity<Void> updateStudentImageFile(@RequestPart(value = "imageFile", required = false) MultipartFile imageFile, @RequestParam("studentId") Long studentId) {
         studentService.updateStudentImageFile(imageFile, studentId);
         return ResponseEntity.ok().build();
     }
